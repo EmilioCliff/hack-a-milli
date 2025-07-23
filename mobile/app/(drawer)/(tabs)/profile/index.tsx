@@ -4,7 +4,7 @@ import AppSafeView from '~/components/shared/AppSafeView';
 export default function index() {
 	return (
 		<AppSafeView>
-			<Text>Profile</Text>
+			<Text>Profile Here</Text>
 		</AppSafeView>
 	);
 }

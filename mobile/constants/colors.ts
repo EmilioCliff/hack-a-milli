@@ -37,4 +37,21 @@ export const NAV_THEME = {
 		// primary: 'hsl(210 40% 98%)', // primary
 		// text: 'hsl(210 40% 98%)', // foreground
 	},
+	kenyaFlag: {
+		black: {
+			front: '#000000',
+			mid: '#333333',
+			back: '#666666',
+		},
+		red: {
+			front: '#CE1126',
+			mid: '#E63946',
+			back: '#FF6B78',
+		},
+		green: {
+			front: '#006B3F',
+			mid: '#228B22',
+			back: '#90EE90',
+		},
+	},
 };

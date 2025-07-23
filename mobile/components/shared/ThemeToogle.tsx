@@ -18,13 +18,13 @@ export function ThemeToggle() {
 			<View className="flex-1 aspect-square pt-0.5 justify-center items-start web:px-5">
 				{isDarkColorScheme ? (
 					<MoonStar
-						className="text-foreground"
+						className="text-foreground bg-black"
 						size={23}
 						strokeWidth={1.25}
 					/>
 				) : (
 					<Sun
-						className="text-foreground"
+						className="text-foreground bg-black"
 						size={24}
 						strokeWidth={1.25}
 					/>

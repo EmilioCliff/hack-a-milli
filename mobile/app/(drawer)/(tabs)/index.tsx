@@ -1,6 +1,7 @@
 import { ScrollView, View } from 'react-native';
 import AvailableDomain from '~/components/home/AvailableDomain';
 import Carousel from '~/components/home/Carousel';
+import ChooseRegistar from '~/components/home/ChooseRegistar';
 import SearchDomain from '~/components/home/SearchDomain';
 import TakenDomain from '~/components/home/TakenDomain';
 import AppSafeView from '~/components/shared/AppSafeView';
@@ -26,6 +27,7 @@ export default function Home() {
 					</Text>
 					<AvailableDomain />
 					<TakenDomain />
+					<ChooseRegistar />
 				</View>
 				<View className="flex px-4 gap-2 flex-row justify-evenly">
 					<Card className="py-2 px-6 items-center">

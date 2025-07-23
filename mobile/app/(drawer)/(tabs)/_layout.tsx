@@ -45,9 +45,9 @@ export default function TabLayout() {
 				}}
 			/>
 			<Tabs.Screen
-				name="registars"
+				name="whois"
 				options={{
-					title: 'Registart',
+					title: 'WhoIs',
 				}}
 			/>
 		</Tabs>

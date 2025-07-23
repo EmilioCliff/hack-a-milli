@@ -8,12 +8,8 @@ import {
 } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import * as React from 'react';
-import { Appearance, Platform, View } from 'react-native';
-import { NAV_THEME } from '~/constants/colors';
-import { useColorScheme } from '~/hooks/useColorScheme';
 import { PortalHost } from '@rn-primitives/portal';
-import { setAndroidNavigationBar } from '~/lib/android-navigation-bar';
+import { NAV_THEME } from '~/constants/colors';
 
 const LIGHT_THEME: Theme = {
 	...DefaultTheme,
@@ -29,21 +25,12 @@ export {
 	ErrorBoundary,
 } from 'expo-router';
 
-const usePlatformSpecificSetup = Platform.select({
-	web: useSetWebBackgroundClassName,
-	android: useSetAndroidNavigationBar,
-	default: noop,
-});
-
 export default function RootLayout() {
-	usePlatformSpecificSetup();
-	const { isDarkColorScheme } = useColorScheme();
-
 	return (
-		<ThemeProvider value={isDarkColorScheme ? DARK_THEME : LIGHT_THEME}>
-			<StatusBar style="light" />
+		<ThemeProvider value={LIGHT_THEME}>
+			<StatusBar style="dark" />
 			<Stack screenOptions={{ headerShown: false }}>
-				<Stack.Screen name="(tabs)" />
+				<Stack.Screen name="(drawer)" />
 				<Stack.Screen name="(auth)" />
 				<Stack.Screen name="+not-found" />
 			</Stack>
@@ -51,23 +38,3 @@ export default function RootLayout() {
 		</ThemeProvider>
 	);
 }
-
-const useIsomorphicLayoutEffect =
-	Platform.OS === 'web' && typeof window === 'undefined'
-		? React.useEffect
-		: React.useLayoutEffect;
-
-function useSetWebBackgroundClassName() {
-	useIsomorphicLayoutEffect(() => {
-		// Adds the background color to the html element to prevent white background on overscroll.
-		document.documentElement.classList.add('bg-background');
-	}, []);
-}
-
-function useSetAndroidNavigationBar() {
-	React.useLayoutEffect(() => {
-		setAndroidNavigationBar(Appearance.getColorScheme() ?? 'light');
-	}, []);
-}
-
-function noop() {}

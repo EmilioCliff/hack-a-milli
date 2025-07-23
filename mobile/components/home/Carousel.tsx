@@ -133,6 +133,7 @@ export default function Carousel() {
 					showsHorizontalScrollIndicator={false}
 					snapToInterval={itemWidth}
 					decelerationRate="fast"
+					bounces={false}
 				/>
 			</View>
 
