@@ -1,10 +1,11 @@
-import { FlatList, Pressable, TouchableOpacity, View } from 'react-native';
+import { FlatList, Pressable, View } from 'react-native';
+import { Text } from '~/components/ui/text';
+import { Link } from 'expo-router';
+import EmptyCart from '~/components/merchandise/EmptyCart';
 import AppSafeView from '~/components/shared/AppSafeView';
-import { Link, useRouter } from 'expo-router';
-import { Entypo } from '@expo/vector-icons';
-import MerchCard from '~/components/merchandise/MerchCard';
-import { s } from 'react-native-size-matters';
-import ModalToLogo from '~/components/modal/ModalToLogo';
+import CartItem from '~/components/merchandise/CartItem';
+import { vs } from 'react-native-size-matters';
+import { Button } from '~/components/ui/button';
 
 const data = [
 	{
@@ -72,70 +73,68 @@ const data = [
 	},
 ];
 
-const colNum = 2;
-const gap = 12;
-
-export default function index() {
-	const router = useRouter();
-
+export default function CartPage() {
 	return (
 		<AppSafeView>
-			<FlatList
-				numColumns={2}
-				data={data}
-				keyExtractor={(item) => item.id.toString()}
-				ListHeaderComponent={() => (
-					<View className="mb-4">
-						<ModalToLogo
-							title="KENIC Store"
-							subtitle="Official KENIC merchandise and branded items"
-							icon={
-								<Entypo
-									name="shopping-bag"
-									size={32}
-									color="white"
-								/>
-							}
-						/>
-					</View>
-				)}
-				renderItem={({ item, index }) => (
-					<View
-						style={{
-							// flexGrow: 1,
-							paddingLeft: index % colNum === 0 ? gap : 0,
-							paddingRight: index % 1 === 0 ? gap : 0,
-							paddingBottom: index % 1 === 0 ? gap : 0,
-							paddingTop: index < colNum ? gap : 0,
-						}}
-					>
-						<Link
-							href={{
-								pathname: '/(drawer)/merchandise/[id]',
-								params: { id: item.id },
-							}}
-							asChild
-						>
-							<Pressable>
-								<MerchCard
+			{data.length > 0 ? (
+				<>
+					<View className="flex-1 justify-between p-4">
+						<FlatList
+							data={data}
+							keyExtractor={(item) => item.id.toString()}
+							renderItem={({ item }) => (
+								<CartItem
 									id={item.id}
 									imageUrl={item.imageUrl[0]}
 									title={item.title}
 									amount={item.amount}
 								/>
-							</Pressable>
-						</Link>
+							)}
+							showsVerticalScrollIndicator={false}
+							contentContainerStyle={{ paddingBottom: vs(4) }}
+						/>
+						<View style={{ marginBlock: vs(8) }}>
+							<View className="flex flex-row justify-between items-center">
+								<Text className="font-bold text-lg">
+									Subtotal:{' '}
+								</Text>
+								<Text className="font-bold text-lg">
+									KES 9893
+								</Text>
+							</View>
+							<View className="flex flex-row justify-between items-center">
+								<Text className="font-bold text-lg">
+									Shipping:{' '}
+								</Text>
+								<Text className="font-bold text-lg">
+									KES 100
+								</Text>
+							</View>
+							<View
+								className="h-1 w-full bg-border"
+								style={{ marginBlock: vs(5) }}
+							/>
+							<View className="flex flex-row justify-between items-center">
+								<Text className="font-bold text-lg">
+									Total:{' '}
+								</Text>
+								<Text className="font-bold text-lg">
+									KES 9918
+								</Text>
+							</View>
+						</View>
 					</View>
-				)}
-				showsVerticalScrollIndicator={false}
-			/>
-			<TouchableOpacity
-				onPress={() => router.push('/(drawer)/merchandise/cart')}
-				className="absolute right-4 bottom-4 z-10 justify-center items-center rounded-full bg-black"
-				style={{ height: s(32), width: s(32) }}
-			>
-				<Entypo name="shopping-cart" size={18} color="white" />
-			</TouchableOpacity>
+					<Link href={'/(drawer)/merchandise/checkout'} asChild>
+						<Button className="my-2 mx-4">
+							<Text className="text-lg font-bold">
+								Continue To Checkout
+							</Text>
+						</Button>
+					</Link>
+				</>
+			) : (
+				<EmptyCart />
+			)}
 		</AppSafeView>
 	);
 }

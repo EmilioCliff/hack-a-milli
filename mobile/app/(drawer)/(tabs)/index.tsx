@@ -7,7 +7,6 @@ import TakenDomain from '~/components/home/TakenDomain';
 import AppSafeView from '~/components/shared/AppSafeView';
 import HomeHeader from '~/components/shared/HomeHeader';
 import KenyaWave from '~/components/shared/KenyaWave';
-import { ThemeToggle } from '~/components/shared/ThemeToogle';
 import { Card, CardContent, CardTitle } from '~/components/ui/card';
 import { Text } from '~/components/ui/text';
 

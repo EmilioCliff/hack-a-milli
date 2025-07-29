@@ -219,6 +219,22 @@ export default function DrawerLayout() {
 					}}
 				/>
 				<Drawer.Screen
+					name="merchandise"
+					options={{
+						headerShown: false,
+						title: '',
+						headerShadowVisible: false,
+					}}
+				/>
+				<Drawer.Screen
+					name="blog"
+					options={{
+						headerShown: false,
+						title: '',
+						headerShadowVisible: false,
+					}}
+				/>
+				{/* <Drawer.Screen
 					name="blog"
 					options={{
 						headerShown: true,
@@ -236,7 +252,7 @@ export default function DrawerLayout() {
 							</Button>
 						),
 					}}
-				/>
+				/> */}
 			</Drawer>
 		</GestureHandlerRootView>
 	);
