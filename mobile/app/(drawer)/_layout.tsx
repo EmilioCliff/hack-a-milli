@@ -183,6 +183,38 @@ export default function DrawerLayout() {
 				}}
 			>
 				<Drawer.Screen
+					name="contact"
+					options={{
+						headerShown: true,
+						title: '',
+						headerShadowVisible: false,
+						headerLeft: () =>
+							backToHome(
+								'/(drawer)/(tabs)' as RelativePathString,
+							),
+					}}
+				/>
+				<Drawer.Screen
+					name="registrars"
+					options={{
+						headerShown: true,
+						title: '',
+						headerShadowVisible: false,
+						headerLeft: () =>
+							backToHome(
+								'/(drawer)/(tabs)' as RelativePathString,
+							),
+					}}
+				/>
+				<Drawer.Screen
+					name="blog"
+					options={{
+						headerShown: false,
+						title: '',
+						headerShadowVisible: false,
+					}}
+				/>
+				<Drawer.Screen
 					name="domain-products"
 					options={{
 						headerShown: true,
@@ -226,33 +258,6 @@ export default function DrawerLayout() {
 						headerShadowVisible: false,
 					}}
 				/>
-				<Drawer.Screen
-					name="blog"
-					options={{
-						headerShown: false,
-						title: '',
-						headerShadowVisible: false,
-					}}
-				/>
-				{/* <Drawer.Screen
-					name="blog"
-					options={{
-						headerShown: true,
-						headerLeft: () => (
-							<Button
-								onPress={() => router.push('/(drawer)/(tabs)')}
-								className="ml-2"
-							>
-								<Feather
-									name="arrow-left"
-									size={20}
-									color="black"
-								/>
-								<Text>Back to Home</Text>
-							</Button>
-						),
-					}}
-				/> */}
 			</Drawer>
 		</GestureHandlerRootView>
 	);

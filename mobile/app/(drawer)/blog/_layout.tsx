@@ -40,7 +40,7 @@ export default function _layout() {
 				}}
 			/>
 			<Stack.Screen
-				name="blog"
+				name="[id]"
 				options={{
 					headerShown: true,
 					title: '',

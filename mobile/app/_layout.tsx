@@ -8,7 +8,7 @@ import {
 } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { PortalHost } from '@rn-primitives/portal';
+import { PortalHost } from '~/components/primitives/portal';
 import { NAV_THEME } from '~/constants/colors';
 
 const LIGHT_THEME: Theme = {

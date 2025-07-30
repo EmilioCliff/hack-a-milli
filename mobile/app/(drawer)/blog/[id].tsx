@@ -1,19 +1,23 @@
-import { FontAwesome5 } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { FlatList, View } from 'react-native';
-import BlogCard from '~/components/blog/BlogCard';
-import ModalToLogo from '~/components/modal/ModalToLogo';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Text } from '~/components/ui/text';
 import AppSafeView from '~/components/shared/AppSafeView';
+import { Dimensions, ScrollView, View } from 'react-native';
+import RenderHtml, { HTMLSource } from 'react-native-render-html';
+import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar';
+import { LinearGradient } from 'expo-linear-gradient';
+import { NAV_THEME } from '~/constants/colors';
+import { Image } from 'react-native';
 
-const data = [
-	{
-		id: 1,
-		coverImg: 'https://picsum.photos/200/120',
-		category: 'Technology',
-		title: 'Exploring the Future of AI in Daily Life',
-		description:
-			'A deep dive into how AI is transforming everything from transportation to healthcare. A guide to building scalable and resilient apps using cloud-native principles.',
-		content: `
+const { width } = Dimensions.get('window');
+
+const data = {
+	id: 1,
+	coverImg: 'https://picsum.photos/200/120',
+	category: 'Technology',
+	title: 'Exploring the Future of AI in Daily Life',
+	description:
+		'A deep dive into how AI is transforming everything from transportation to healthcare. A guide to building scalable and resilient apps using cloud-native principles.',
+	content: `
 		<p>In the final part of our Go observability series, we bring our efforts full circle. With Grafana Alloy, Loki, Tempo, Prometheus, and our Go app running via Docker Compose, it's time to connect the dots in Grafana. We'll log in, configure dashboards, query logs, explore traces, and monitor metrics — all from a single pane of glass. The magic finally happens here.</p>
 <h2>A Little Recap</h2>
 <p>In <a href="../../blogs/part-1-adding-observability-to-a-go-application" target="_blank" rel="noopener">Part 1</a>, we instrumented our Go application using OpenTelemetry. In <a href="../../blogs/part-2-laying-the-observability-foundation-infrastructure-integration" target="_blank" rel="noopener">Part 2</a>, we built and wired a full observability pipeline using Docker Compose — plugging in <strong>Backend, </strong><strong data-start="889" data-end="916">Prometheus, Loki, Tempo</strong>, and <strong data-start="922" data-end="939">Grafana Alloy</strong>.</p>
@@ -144,131 +148,150 @@ const data = [
 </blockquote>
 <p data-start="1227" data-end="1305">Thanks for sticking through this series, until next time</p>
 <pre style="text-align: center;" data-start="1227" data-end="1305">stay observable 😅</pre>`,
-		readTime: 7,
-		datePublished: '2025-07-20',
-		featured: false,
-		publisher: {
-			name: 'Emilio Cliff',
-			profileUrl: 'https://i.pravatar.cc/100',
-		},
+	readTime: 7,
+	datePublished: '2025-07-20',
+	featured: false,
+	publisher: {
+		name: 'Emilio Cliff',
+		profileUrl: 'https://i.pravatar.cc/100',
 	},
-	{
-		id: 2,
-		coverImg: 'https://picsum.photos/200/120',
-		category: 'Security',
-		title: 'Cybersecurity Tips for Remote Workers',
-		description:
-			'Learn the best practices to protect your data while working from anywhere.',
-		readTime: 5,
-		datePublished: '2025-06-10',
-		featured: true,
-		publisher: {
-			name: 'Njeri Mwangi',
-			profileUrl: 'https://i.pravatar.cc/100',
-		},
-	},
-	{
-		id: 3,
-		coverImg: 'https://picsum.photos/200/120',
-		category: 'Cloud',
-		title: 'Understanding Cloud-Native Applications',
-		description:
-			'A guide to building scalable and resilient apps using cloud-native principles.',
-		readTime: 6,
-		datePublished: '2025-05-18',
-		featured: false,
-		publisher: {
-			name: 'James Odhiambo',
-			profileUrl: 'https://i.pravatar.cc/100',
-		},
-	},
-	{
-		id: 4,
-		coverImg: 'https://picsum.photos/200/120',
-		category: 'Programming',
-		title: 'Go vs Rust: Choosing the Right Tool',
-		description:
-			'Comparing two powerful system languages to help you decide which fits your project.',
-		readTime: 8,
-		datePublished: '2025-07-01',
-		featured: false,
-		publisher: {
-			name: 'Faith Kibaki',
-			profileUrl: 'https://i.pravatar.cc/100',
-		},
-	},
-	{
-		id: 5,
-		coverImg: 'https://picsum.photos/200/120',
-		category: 'Entrepreneurship',
-		title: 'Lessons from Building a Tech Startup in Africa',
-		description:
-			'Insights, struggles, and wins from launching a company in a fast-growing tech ecosystem.',
-		readTime: 9,
-		datePublished: '2025-06-28',
-		featured: false,
-		publisher: {
-			name: 'Brian Otieno',
-			profileUrl: 'https://i.pravatar.cc/100',
-		},
-	},
-	{
-		id: 6,
-		coverImg: 'https://picsum.photos/200/120',
-		category: 'UI/UX',
-		title: 'The Art of Minimalist Design in Mobile Apps',
-		description:
-			'Why less is more when designing intuitive and beautiful mobile interfaces.',
-		readTime: 4,
-		datePublished: '2025-07-10',
-		featured: true,
-		publisher: {
-			name: 'Aisha Lemayian',
-			profileUrl: 'https://i.pravatar.cc/100',
-		},
-	},
-	{
-		id: 7,
-		coverImg: 'https://picsum.photos/200/120',
-		category: 'Machine Learning',
-		title: 'Training Efficient Models on Low-Powered Devices',
-		description:
-			'Techniques to run ML models on mobile or embedded systems without sacrificing performance.',
-		readTime: 6,
-		datePublished: '2025-07-25',
-		featured: false,
-		publisher: {
-			name: 'Samuel Kiprop',
-			profileUrl: 'https://i.pravatar.cc/100',
-		},
-	},
-];
+};
 
-export default function index() {
-	const router = useRouter();
+export default function Blog() {
+	const { id } = useLocalSearchParams();
 	return (
 		<AppSafeView>
-			<View className="flex-1 px-4">
-				<FlatList
-					data={data}
-					keyExtractor={(item) => item.id.toString()}
-					ListHeaderComponent={() => (
-						<ModalToLogo
-							title="KENIC Blog"
-							subtitle="Insights, tutorials and industry updates"
-							icon={
-								<FontAwesome5
-									name="book-reader"
-									size={32}
-									color="white"
-								/>
-							}
+			<ScrollView
+				showsVerticalScrollIndicator={false}
+				showsHorizontalScrollIndicator={false}
+				className="flex-1 px-4"
+			>
+				<LinearGradient
+					colors={[
+						NAV_THEME.kenyaFlag.red.front,
+						NAV_THEME.kenyaFlag.green.mid,
+					]}
+					start={{ x: 0, y: 0 }}
+					end={{ x: 1, y: 0 }}
+					locations={[0, 1]}
+					style={{ marginBottom: 14 }}
+				>
+					<Image
+						style={{
+							width: '100%',
+							height: 300,
+							resizeMode: 'cover',
+						}}
+						source={{ uri: data.coverImg }}
+					/>
+				</LinearGradient>
+				<Text className="text-4xl font-extrabold mb-4">
+					{data.title}
+				</Text>
+				<Text className="mb-2">
+					{data.datePublished} · {data.readTime} min Read
+				</Text>
+				<View className="flex-row justify-start items-center gap-2 mb-2">
+					<Avatar alt="Publisher Avatar">
+						<AvatarImage
+							source={{ uri: data.publisher.profileUrl }}
 						/>
-					)}
-					renderItem={({ item, index }) => <BlogCard {...item} />}
-					showsVerticalScrollIndicator={false}
+						<AvatarFallback>
+							<Text>
+								{data.publisher.name
+									.split(' ')
+									.map((word) => word.charAt(0))
+									.join('')
+									.toUpperCase()}
+							</Text>
+						</AvatarFallback>
+					</Avatar>
+					<View>
+						<Text className="text-sm font-semibold">
+							{data.publisher.name}
+						</Text>
+						<Text className="text-xs text-gray-500">
+							{data.datePublished}
+						</Text>
+					</View>
+				</View>
+				<RenderHtml
+					contentWidth={width - 32}
+					source={{ html: data.content }}
+					tagsStyles={tagsStyles}
 				/>
-			</View>
+			</ScrollView>
 		</AppSafeView>
 	);
 }
+
+const tagsStyles = {
+	h1: {
+		fontSize: 24,
+		fontWeight: 'bold',
+		marginBottom: 12,
+		marginTop: 24,
+	},
+	h2: {
+		fontSize: 20,
+		fontWeight: 'bold',
+		marginBottom: 10,
+		marginTop: 20,
+	},
+	h3: {
+		fontSize: 18,
+		fontWeight: 'bold',
+		marginBottom: 8,
+		marginTop: 18,
+	},
+	p: {
+		fontSize: 16,
+		lineHeight: 24,
+		marginBottom: 12,
+	},
+	pre: {
+		backgroundColor: '#f6f6f6',
+		padding: 12,
+		borderRadius: 6,
+		color: '#333',
+		overflow: 'hidden', // ✅ fix: "scroll" is invalid
+	},
+	code: {
+		fontSize: 14,
+		backgroundColor: '#eee',
+		padding: 4,
+		borderRadius: 4,
+	},
+	img: {
+		alignSelf: 'center',
+		marginVertical: 12,
+	},
+	figcaption: {
+		textAlign: 'center',
+		fontSize: 14,
+		fontStyle: 'italic',
+		marginTop: 4,
+		color: '#666',
+	},
+	ul: {
+		marginVertical: 12,
+		paddingLeft: 20,
+	},
+	ol: {
+		marginVertical: 12,
+		paddingLeft: 20,
+	},
+	li: {
+		fontSize: 16,
+		lineHeight: 24,
+		marginBottom: 6,
+	},
+	blockquote: {
+		borderLeftWidth: 4,
+		borderLeftColor: '#ccc',
+		paddingLeft: 12,
+		color: '#555',
+		fontStyle: 'italic',
+		marginVertical: 12,
+	},
+} as const;

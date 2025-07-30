@@ -1,0 +1,13 @@
+import type {
+	SlottableViewProps,
+	ViewRef,
+} from '~/components/primitives/types';
+
+type RootProps = SlottableViewProps & {
+	orientation?: 'horizontal' | 'vertical';
+	decorative?: boolean;
+};
+
+type RootRef = ViewRef;
+
+export type { RootProps, RootRef };
