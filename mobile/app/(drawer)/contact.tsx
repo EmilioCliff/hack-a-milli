@@ -1,5 +1,4 @@
-import { View, Text, ScrollView, TextInput } from 'react-native';
-import React from 'react';
+import { View, ScrollView, TextInput } from 'react-native';
 import AppSafeView from '~/components/shared/AppSafeView';
 import { Feather, FontAwesome, Ionicons } from '@expo/vector-icons';
 import ModalToLogo from '~/components/modal/ModalToLogo';
@@ -16,6 +15,7 @@ import {
 	SelectValue,
 } from '~/components/ui/select';
 import FAQ from '~/components/shared/FAQ';
+import { Text } from '~/components/ui/text';
 
 const faq = [
 	{
@@ -131,7 +131,7 @@ export default function ContactPage() {
 									</View>
 									<View className="bg-blue-50 rounded-lg p-3">
 										<Text className="text-sm text-blue-800">
-											<Text className="font-bold">
+											<Text className="text-sm text-blue-800 font-bold">
 												Tip:
 											</Text>{' '}
 											Have your domain name and account
@@ -229,7 +229,7 @@ export default function ContactPage() {
 									</View>
 									<View className="bg-purple-50 rounded-lg p-3">
 										<Text className="text-sm text-purple-800">
-											<Text className="font-bold">
+											<Text className="text-sm text-purple-800 font-bold">
 												Available:
 											</Text>{' '}
 											Monday - Friday, 8:00 AM - 8:00 PM
@@ -429,7 +429,9 @@ export default function ContactPage() {
 							</View>
 							<Separator className="my-2" />
 							<Text className="text-white">
-								<Text className="font-bold">Office Hours:</Text>{' '}
+								<Text className="text-white font-bold">
+									Office Hours:
+								</Text>{' '}
 								Monday - Friday, 8:00 AM - 5:00 PM EAST
 							</Text>
 						</LinearGradient>

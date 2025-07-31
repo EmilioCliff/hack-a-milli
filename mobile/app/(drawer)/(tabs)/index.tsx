@@ -20,14 +20,14 @@ export default function Home() {
 			>
 				<Carousel />
 				<SearchDomain />
-				<View className="px-4 my-4 gap-2">
+				{/* <View className="px-4 my-4 gap-2">
 					<Text className="font-extrabold font-2xl">
 						Search Results
 					</Text>
 					<AvailableDomain />
 					<TakenDomain />
 					<ChooseRegistar />
-				</View>
+				</View> */}
 				<View className="flex px-4 gap-2 flex-row justify-evenly">
 					<Card className="py-2 px-6 items-center">
 						<CardTitle className="text-2xl text-primary">

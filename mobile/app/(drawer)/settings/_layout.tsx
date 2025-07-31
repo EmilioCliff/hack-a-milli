@@ -1,10 +1,10 @@
 import { Entypo } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { Stack, useRouter } from 'expo-router';
+import { router, Stack } from 'expo-router';
+import { View } from 'react-native';
 import { Button } from '~/components/ui/button';
 import { Text } from '~/components/ui/text';
 
-export default function MerchLayout() {
+export default function SettingsLayout() {
 	return (
 		<Stack>
 			<Stack.Screen
@@ -49,50 +49,12 @@ export default function MerchLayout() {
 				}}
 			/>
 			<Stack.Screen
-				name="cart"
+				name="password"
 				options={{
 					headerShown: true,
 					title: '',
 					headerShadowVisible: false,
 					headerLeft: () => backButton(),
-				}}
-			/>
-			<Stack.Screen
-				name="checkout"
-				options={{
-					headerShown: true,
-					title: '',
-					headerShadowVisible: false,
-					headerLeft: () => (
-						<Button
-							onPress={() => router.back()}
-							className="ml-2 bg-white flex-row gap-2 items-center"
-							style={{
-								paddingTop: 0,
-								paddingBottom: 0,
-								paddingStart: 0,
-								paddingEnd: 0,
-							}}
-						>
-							<Entypo
-								name="chevron-left"
-								size={16}
-								color="black"
-							/>
-							<Text
-								style={{ fontSize: 14 }}
-								className="font-bold text-black"
-							>
-								Back to Cart
-							</Text>
-						</Button>
-					),
-				}}
-			/>
-			<Stack.Screen
-				name="order-success"
-				options={{
-					headerShown: false,
 				}}
 			/>
 		</Stack>
@@ -113,7 +75,7 @@ const backButton = () => {
 		>
 			<Entypo name="chevron-left" size={16} color="black" />
 			<Text style={{ fontSize: 14 }} className="font-bold text-black">
-				Back to Products
+				Back to Settings
 			</Text>
 		</Button>
 	);

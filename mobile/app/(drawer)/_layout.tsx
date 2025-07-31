@@ -183,6 +183,26 @@ export default function DrawerLayout() {
 				}}
 			>
 				<Drawer.Screen
+					name="settings"
+					options={{
+						headerShown: false,
+						title: '',
+						headerShadowVisible: false,
+					}}
+				/>
+				<Drawer.Screen
+					name="newsletter"
+					options={{
+						headerShown: true,
+						title: '',
+						headerShadowVisible: false,
+						headerLeft: () =>
+							backToHome(
+								'/(drawer)/(tabs)' as RelativePathString,
+							),
+					}}
+				/>
+				<Drawer.Screen
 					name="contact"
 					options={{
 						headerShown: true,

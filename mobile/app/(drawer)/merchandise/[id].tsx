@@ -1,5 +1,4 @@
 import { ScrollView, TouchableOpacity, View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
 import { Text } from '~/components/ui/text';
 import AppSafeView from '~/components/shared/AppSafeView';
 import { useState } from 'react';
