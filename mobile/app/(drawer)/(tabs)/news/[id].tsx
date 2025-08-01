@@ -1,22 +1,33 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Text } from '~/components/ui/text';
-import AppSafeView from '~/components/shared/AppSafeView';
-import { Dimensions, ScrollView, View } from 'react-native';
-import RenderHtml, { HTMLSource } from 'react-native-render-html';
-import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar';
+import { Entypo, EvilIcons, FontAwesome, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Dimensions, Image, Pressable, ScrollView, View } from 'react-native';
+import RenderHTML from 'react-native-render-html';
+import { Text } from '~/components/ui/text';
 import { NAV_THEME } from '~/constants/colors';
-import { Image } from 'react-native';
+import { TagsStyles } from '~/constants/sharedStyles';
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from '~/components/ui/dropdown-menu';
+import { Button } from '~/components/ui/button';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import RelatedBlogCard from '~/components/news/RelatedBlogCard';
 
 const { width } = Dimensions.get('window');
 
 const data = {
-	id: 1,
-	coverImg: 'https://picsum.photos/200/120',
-	category: 'Technology',
-	title: 'Exploring the Future of AI in Daily Life',
-	description:
-		'A deep dive into how AI is transforming everything from transportation to healthcare. A guide to building scalable and resilient apps using cloud-native principles.',
+	id: '1',
+	title: '.KE Domain Pricing Revised for 2025',
+	imageUrl: 'https://picsum.photos/200/200',
+	category: 'Policy Update',
+	readTime: 3,
+	datePublished: '2025-07-28',
+	excerpt:
+		'KENIC announces new pricing structure for .KE domains, aiming to enhance accessibility and competitiveness in the local market.',
 	content: `
 		<p>In the final part of our Go observability series, we bring our efforts full circle. With Grafana Alloy, Loki, Tempo, Prometheus, and our Go app running via Docker Compose, it's time to connect the dots in Grafana. We'll log in, configure dashboards, query logs, explore traces, and monitor metrics — all from a single pane of glass. The magic finally happens here.</p>
 <h2>A Little Recap</h2>
@@ -148,149 +159,146 @@ const data = {
 </blockquote>
 <p data-start="1227" data-end="1305">Thanks for sticking through this series, until next time</p>
 <pre style="text-align: center;" data-start="1227" data-end="1305">stay observable 😅</pre>`,
-	readTime: 7,
-	datePublished: '2025-07-20',
-	featured: false,
-	publisher: {
-		name: 'Emilio Cliff',
-		profileUrl: 'https://i.pravatar.cc/100',
-	},
+	likesCount: 27,
 };
 
-export default function Blog() {
+const relatedBlogs = [
+	{
+		id: 1,
+		title: '.KE Domain Pricing Revised for 2025',
+		readTime: 3,
+		datePublished: '2025-07-28',
+		excerpt:
+			'KENIC announces new pricing structure for .KE domains, aiming to enhance accessibility and competitiveness in the local market.',
+	},
+	{
+		id: 2,
+		title: 'New Cybersecurity Protocols for Domain Registrars',
+		readTime: 4,
+		datePublished: '2025-07-26',
+		excerpt:
+			'Domain registrars will be required to implement stronger security protocols to protect registrant data under the new KENIC guidelines.',
+	},
+	{
+		id: 3,
+		title: 'KENIC Launches Youth Awareness Campaign',
+		readTime: 2,
+		datePublished: '2025-07-20',
+		excerpt:
+			'A new digital literacy initiative by KENIC targets young Kenyans to raise awareness on the importance of .KE domains in digital identity.',
+	},
+	{
+		id: 4,
+		title: '.KE Registry Upgraded to Improve Reliability',
+		readTime: 5,
+		datePublished: '2025-07-18',
+		excerpt:
+			'The .KE registry infrastructure has been upgraded to boost performance, reduce downtime, and support higher domain traffic.',
+	},
+];
+
+export default function NewsPage() {
+	const insets = useSafeAreaInsets();
+	const contentInsets = {
+		top: insets.top,
+		bottom: insets.bottom,
+		left: 12,
+		right: 12,
+	};
 	return (
-		<AppSafeView>
+		<View className="flex-1 px-4">
 			<ScrollView
-				showsVerticalScrollIndicator={false}
 				showsHorizontalScrollIndicator={false}
-				className="flex-1 px-4"
+				showsVerticalScrollIndicator={false}
 			>
+				<Text className="mt-6 text-sm font-extrabold text-green-700">
+					{data.category}
+				</Text>
+				<Text className="text-2xl font-bold">{data.title}</Text>
 				<LinearGradient
 					colors={[
 						NAV_THEME.kenyaFlag.red.front,
 						NAV_THEME.kenyaFlag.green.mid,
 					]}
 					start={{ x: 0, y: 0 }}
-					end={{ x: 1, y: 0 }}
-					locations={[0, 1]}
+					end={{ x: 1, y: 1 }}
 					style={{ marginBottom: 14 }}
 				>
 					<Image
 						style={{
 							width: '100%',
-							height: 300,
+							height: 200,
 							resizeMode: 'cover',
 						}}
-						source={{ uri: data.coverImg }}
+						source={{ uri: data.imageUrl || '' }}
 					/>
 				</LinearGradient>
-				<Text className="text-4xl font-extrabold mb-4">
-					{data.title}
-				</Text>
-				<Text className="mb-2">
-					{data.datePublished} · {data.readTime} min Read
-				</Text>
-				<View className="flex-row justify-start items-center gap-2 mb-2">
-					<Avatar alt="Publisher Avatar">
-						<AvatarImage
-							source={{ uri: data.publisher.profileUrl }}
-						/>
-						<AvatarFallback>
-							<Text>
-								{data.publisher.name
-									.split(' ')
-									.map((word) => word.charAt(0))
-									.join('')
-									.toUpperCase()}
-							</Text>
-						</AvatarFallback>
-					</Avatar>
-					<View>
-						<Text className="text-sm font-semibold">
-							{data.publisher.name}
-						</Text>
-						<Text className="text-xs text-gray-500">
-							{data.datePublished}
-						</Text>
-					</View>
-				</View>
-				<RenderHtml
+				<RenderHTML
 					contentWidth={width - 32}
 					source={{ html: data.content }}
-					tagsStyles={tagsStyles}
+					tagsStyles={TagsStyles}
 				/>
+				<View className="flex-row gap-6 border-b-2 items-center border-gray-500 px-4 py-6">
+					<View className="flex-row items-center gap-2 p-2 rounded-lg bg-gray-200">
+						<FontAwesome name="heart-o" size={18} color="#6b7280" />
+						<Text className="text-gray-700">245</Text>
+					</View>
+					<View className="flex-row items-center gap-2 p-2 rounded-lg bg-gray-200">
+						<Ionicons
+							name="chatbox-outline"
+							size={18}
+							color="#6b7280"
+						/>
+						<Text>3</Text>
+					</View>
+					<View className="ml-auto">
+						<DropdownMenu>
+							<DropdownMenuTrigger asChild>
+								<Pressable>
+									<Entypo
+										name="dots-three-horizontal"
+										size={24}
+										color="#6b7280"
+									/>
+								</Pressable>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent
+								insets={contentInsets}
+								className="w-64 native:w-72"
+							>
+								<DropdownMenuLabel>Actions</DropdownMenuLabel>
+								<DropdownMenuSeparator />
+								<DropdownMenuItem>
+									<View className="flex-row items-center gap-6">
+										<FontAwesome
+											name="heart-o"
+											size={18}
+											color="black"
+										/>
+										<Text>Like News</Text>
+									</View>
+								</DropdownMenuItem>
+								<DropdownMenuItem>
+									<View className="flex-row items-center gap-6">
+										<EvilIcons
+											name="share-google"
+											size={18}
+											color="black"
+										/>
+										<Text>Share News</Text>
+									</View>
+								</DropdownMenuItem>
+							</DropdownMenuContent>
+						</DropdownMenu>
+					</View>
+				</View>
+				<Text className="text-2xl font-bold mt-6">
+					Related Articles
+				</Text>
+				{relatedBlogs.map((news, index) => (
+					<RelatedBlogCard key={index} {...news} />
+				))}
 			</ScrollView>
-		</AppSafeView>
+		</View>
 	);
 }
-
-const tagsStyles = {
-	h1: {
-		fontSize: 24,
-		fontWeight: 'bold',
-		marginBottom: 12,
-		marginTop: 24,
-	},
-	h2: {
-		fontSize: 20,
-		fontWeight: 'bold',
-		marginBottom: 10,
-		marginTop: 20,
-	},
-	h3: {
-		fontSize: 18,
-		fontWeight: 'bold',
-		marginBottom: 8,
-		marginTop: 18,
-	},
-	p: {
-		fontSize: 16,
-		lineHeight: 24,
-		marginBottom: 12,
-	},
-	pre: {
-		backgroundColor: '#f6f6f6',
-		padding: 12,
-		borderRadius: 6,
-		color: '#333',
-		overflow: 'hidden', // ✅ fix: "scroll" is invalid
-	},
-	code: {
-		fontSize: 14,
-		backgroundColor: '#eee',
-		padding: 4,
-		borderRadius: 4,
-	},
-	img: {
-		alignSelf: 'center',
-		marginVertical: 12,
-	},
-	figcaption: {
-		textAlign: 'center',
-		fontSize: 14,
-		fontStyle: 'italic',
-		marginTop: 4,
-		color: '#666',
-	},
-	ul: {
-		marginVertical: 12,
-		paddingLeft: 20,
-	},
-	ol: {
-		marginVertical: 12,
-		paddingLeft: 20,
-	},
-	li: {
-		fontSize: 16,
-		lineHeight: 24,
-		marginBottom: 6,
-	},
-	blockquote: {
-		borderLeftWidth: 4,
-		borderLeftColor: '#ccc',
-		paddingLeft: 12,
-		color: '#555',
-		fontStyle: 'italic',
-		marginVertical: 12,
-	},
-} as const;

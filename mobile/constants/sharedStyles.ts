@@ -1,6 +1,77 @@
 import { StyleSheet } from 'react-native';
 import { s, vs } from 'react-native-size-matters';
 
+export const TagsStyles = {
+	h1: {
+		fontSize: 24,
+		fontWeight: 'bold',
+		marginBottom: 12,
+		marginTop: 24,
+	},
+	h2: {
+		fontSize: 20,
+		fontWeight: 'bold',
+		marginBottom: 10,
+		marginTop: 20,
+	},
+	h3: {
+		fontSize: 18,
+		fontWeight: 'bold',
+		marginBottom: 8,
+		marginTop: 18,
+	},
+	p: {
+		fontSize: 16,
+		lineHeight: 24,
+		marginBottom: 12,
+	},
+	pre: {
+		backgroundColor: '#f6f6f6',
+		padding: 12,
+		borderRadius: 6,
+		color: '#333',
+		overflow: 'hidden', // ✅ fix: "scroll" is invalid
+	},
+	code: {
+		fontSize: 14,
+		backgroundColor: '#eee',
+		padding: 4,
+		borderRadius: 4,
+	},
+	img: {
+		alignSelf: 'center',
+		marginVertical: 12,
+	},
+	figcaption: {
+		textAlign: 'center',
+		fontSize: 14,
+		fontStyle: 'italic',
+		marginTop: 4,
+		color: '#666',
+	},
+	ul: {
+		marginVertical: 12,
+		paddingLeft: 20,
+	},
+	ol: {
+		marginVertical: 12,
+		paddingLeft: 20,
+	},
+	li: {
+		fontSize: 16,
+		lineHeight: 24,
+		marginBottom: 6,
+	},
+	blockquote: {
+		borderLeftWidth: 4,
+		borderLeftColor: '#ccc',
+		paddingLeft: 12,
+		color: '#555',
+		fontStyle: 'italic',
+		marginVertical: 12,
+	},
+} as const;
+
 export const commonStyles = StyleSheet.create({
 	shadow: {
 		// IOS

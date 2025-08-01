@@ -1,4 +1,4 @@
-import { Image, View } from 'react-native';
+import { Image, Pressable, View } from 'react-native';
 import { s, vs } from 'react-native-size-matters';
 import { IMAGES } from '~/constants/images';
 import { Text } from '~/components/ui/text';
@@ -7,40 +7,46 @@ import { NAV_THEME } from '~/constants/colors';
 import { useNavigation, useRouter } from 'expo-router';
 import { Button } from '../ui/button';
 import { DrawerActions } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function HomeHeader() {
 	const nativagtion = useNavigation();
+	const insets = useSafeAreaInsets();
 
 	return (
-		<View
-			className="flex flex-row items-center justify-between pt-20 -mt-20 pb-4 px-4 text-white"
-			style={{ backgroundColor: NAV_THEME.light.primary }}
+		<LinearGradient
+			colors={['#dc2626', '#b91c1c']}
+			start={{ x: 0, y: 0 }}
+			end={{ x: 1, y: 0 }}
+			locations={[0, 1]}
+			style={{
+				paddingTop: insets.top,
+				paddingBottom: 12,
+			}}
 		>
-			<View className="flex flex-row items-center gap-2">
-				<View className="bg-white/45 p-2 rounded-lg">
-					<Image source={IMAGES.appLogo} />
+			<View className={`flex-row items-center justify-between px-4`}>
+				<View className="flex-row items-center gap-2">
+					<View className="bg-white/45 p-2 rounded-lg">
+						<Image source={IMAGES.appLogo} />
+					</View>
+					<View>
+						<Text className="font-extrabold text-lg text-white">
+							KENIC
+						</Text>
+						<Text className="text-xs text-white">
+							Kenya Network Information Center
+						</Text>
+					</View>
 				</View>
-				<View>
-					<Text className="font-extrabold text-lg text-white">
-						KENIC
-					</Text>
-					<Text className="text-xs text-white">
-						Kenya Network Information Center
-					</Text>
-				</View>
-			</View>
-			<View className="flex flex-row items-center">
-				<EvilIcons name="bell" size={s(20)} color={'white'} />
-				<Button
-					className="p-0 m-0"
+				<Pressable
 					onPress={() =>
 						nativagtion.dispatch(DrawerActions.toggleDrawer())
 					}
 				>
 					<Feather name="menu" size={s(18)} color={'white'} />
-				</Button>
+				</Pressable>
 			</View>
-		</View>
+		</LinearGradient>
 	);
 }
-// D12323;

@@ -1,19 +1,15 @@
 import { ScrollView, View } from 'react-native';
-import AvailableDomain from '~/components/home/AvailableDomain';
 import Carousel from '~/components/home/Carousel';
-import ChooseRegistar from '~/components/home/ChooseRegistar';
 import SearchDomain from '~/components/home/SearchDomain';
-import TakenDomain from '~/components/home/TakenDomain';
 import AppSafeView from '~/components/shared/AppSafeView';
-import HomeHeader from '~/components/shared/HomeHeader';
 import KenyaWave from '~/components/shared/KenyaWave';
-import { Card, CardContent, CardTitle } from '~/components/ui/card';
+import { Card, CardTitle } from '~/components/ui/card';
 import { Text } from '~/components/ui/text';
 
 export default function Home() {
 	return (
 		<AppSafeView>
-			<HomeHeader />
+			{/* <HomeHeader /> */}
 			<ScrollView
 				showsVerticalScrollIndicator={false}
 				showsHorizontalScrollIndicator={false}

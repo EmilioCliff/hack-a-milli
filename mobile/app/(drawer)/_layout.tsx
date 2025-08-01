@@ -1,10 +1,8 @@
 import {
-	Feather,
 	Ionicons,
 	FontAwesome,
 	FontAwesome5,
 	Entypo,
-	AntDesign,
 } from '@expo/vector-icons';
 import {
 	DrawerContentComponentProps,
@@ -182,6 +180,14 @@ export default function DrawerLayout() {
 					drawerHideStatusBarOnOpen: true,
 				}}
 			>
+				<Drawer.Screen
+					name="(tabs)"
+					options={{
+						headerShown: false,
+						title: '',
+						headerShadowVisible: false,
+					}}
+				/>
 				<Drawer.Screen
 					name="settings"
 					options={{
