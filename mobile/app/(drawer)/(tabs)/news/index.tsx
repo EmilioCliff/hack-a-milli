@@ -56,7 +56,7 @@ const data = [
 
 export default function index() {
 	return (
-		<View className="px-4">
+		<View className="flex-1 px-4">
 			<FlatList
 				data={data}
 				keyExtractor={(item) => item.id.toString()}

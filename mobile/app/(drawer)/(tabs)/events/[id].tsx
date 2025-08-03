@@ -1,23 +1,86 @@
-import { Text } from '~/components/ui/text';
-import AppSafeView from '~/components/shared/AppSafeView';
-import { Dimensions, ScrollView, View } from 'react-native';
-import RenderHtml from 'react-native-render-html';
-import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar';
+import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { NAV_THEME } from '~/constants/colors';
+import { useState } from 'react';
 import { Image } from 'react-native';
+import { ScrollView } from 'react-native';
+import { View } from 'react-native';
+import { eventCardProps } from '~/components/events/EventCard';
+import ExpandableHtml from '~/components/events/ExpandableHtml';
+import AppSafeView from '~/components/shared/AppSafeView';
+import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar';
+import { Badge } from '~/components/ui/badge';
+import { Card } from '~/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
+import { Text } from '~/components/ui/text';
+import { NAV_THEME } from '~/constants/colors';
 
-const { width } = Dimensions.get('window');
-
-const data = {
+const data: eventCardProps = {
 	id: 1,
 	coverImg: 'https://picsum.photos/200/120',
-	category: 'Technology',
-	title: 'Exploring the Future of AI in Daily Life',
-	description:
-		'A deep dive into how AI is transforming everything from transportation to healthcare. A guide to building scalable and resilient apps using cloud-native principles.',
-	content: `
-		<p>In the final part of our Go observability series, we bring our efforts full circle. With Grafana Alloy, Loki, Tempo, Prometheus, and our Go app running via Docker Compose, it's time to connect the dots in Grafana. We'll log in, configure dashboards, query logs, explore traces, and monitor metrics — all from a single pane of glass. The magic finally happens here.</p>
+	title: 'Kenya Webinar: Domain Landscape 2023',
+	time: {
+		startDate: 'October 3, 2023',
+		startTime: '10:00 AM',
+		endDate: 'October 3, 2023',
+		endTime: '11:30 AM',
+	},
+	category: 'Webinar',
+	status: 'upcoming',
+	website: 'https://bit.ly/KeWebinarDomainLandscape',
+	registrationDeadline: 'October 2, 2023',
+	maxAttendees: 500,
+	currentAttendees: 342,
+	price: 'Free',
+	location: {
+		type: 'virtual',
+		platform: 'Zoom',
+		meetingId: '123 456 7890',
+		passcode: 'Domain2023',
+		eventLink: 'https://ictboard.go.ke',
+		address: '',
+
+		// type: 'physical',
+		// address: 'KICC, Nairobi, Kenya',
+	},
+	organizer: {
+		name: 'Kenya ICT Board',
+		logo: 'https://picsum.photos/200/120',
+		website: 'https://ictboard.go.ke',
+		contact: 'events@ictboard.go.ke',
+	},
+	partners: [
+		{
+			name: 'Kenya ICT Board',
+			logo: 'https://picsum.photos/200/120',
+			website: 'https://ictboard.go.ke',
+			contact: 'events@ictboard.go.ke',
+		},
+		{
+			name: 'Kenya ICT Board',
+			logo: 'https://picsum.photos/200/120',
+			website: 'https://ictboard.go.ke',
+			contact: 'events@ictboard.go.ke',
+		},
+	],
+	speakers: [
+		{
+			name: 'Dr. Sarah Kimani',
+			title: 'Director of Digital Infrastructure',
+			organization: 'Kenya ICT Board',
+			bio: 'Expert in domain management and digital policy in Africa.',
+			image: 'https://i.pravatar.cc/100',
+			linkedin: 'https://linkedin.com/in/sarahkimani',
+		},
+		{
+			name: 'Emilio Cliff',
+			title: 'Student at JKUA',
+			organization: 'JKUAT',
+			bio: 'Expert in domain management and digital policy in Africa.',
+			image: 'https://i.pravatar.cc/100',
+			linkedin: 'https://linkedin.com/in/sarahkimani',
+		},
+	],
+	description: `<p>In the final part of our Go observability series, we bring our efforts full circle. With Grafana Alloy, Loki, Tempo, Prometheus, and our Go app running via Docker Compose, it's time to connect the dots in Grafana. We'll log in, configure dashboards, query logs, explore traces, and monitor metrics — all from a single pane of glass. The magic finally happens here.</p>
 <h2>A Little Recap</h2>
 <p>In <a href="../../blogs/part-1-adding-observability-to-a-go-application" target="_blank" rel="noopener">Part 1</a>, we instrumented our Go application using OpenTelemetry. In <a href="../../blogs/part-2-laying-the-observability-foundation-infrastructure-integration" target="_blank" rel="noopener">Part 2</a>, we built and wired a full observability pipeline using Docker Compose — plugging in <strong>Backend, </strong><strong data-start="889" data-end="916">Prometheus, Loki, Tempo</strong>, and <strong data-start="922" data-end="939">Grafana Alloy</strong>.</p>
 <p data-start="942" data-end="1056">Now, in this final part we finally visualize the logs, metrics, and traces we've worked so hard to collect. We'll:</p>
@@ -147,16 +210,33 @@ const data = {
 </blockquote>
 <p data-start="1227" data-end="1305">Thanks for sticking through this series, until next time</p>
 <pre style="text-align: center;" data-start="1227" data-end="1305">stay observable 😅</pre>`,
-	readTime: 7,
-	datePublished: '2025-07-20',
-	featured: false,
-	publisher: {
-		name: 'Emilio Cliff',
-		profileUrl: 'https://i.pravatar.cc/100',
-	},
+	agenda: [
+		{
+			time: '10:00 - 10:10',
+			title: 'Welcome & Intro',
+			speaker: 'Host',
+		},
+		{
+			time: '10:10 - 10:30',
+			title: 'Trends',
+			speaker: 'Dr. Sarah Kimani',
+		},
+	],
+	tags: [
+		'Digital',
+		'Domain',
+		'Kenya',
+		'Digital',
+		'Domain',
+		'Kenya',
+		'Digital',
+		'Domain',
+		'Kenya',
+	],
 };
 
-export default function Blog() {
+export default function EventPage() {
+	const [value, setValue] = useState('overview');
 	return (
 		<AppSafeView>
 			<ScrollView
@@ -172,7 +252,7 @@ export default function Blog() {
 					start={{ x: 0, y: 0 }}
 					end={{ x: 1, y: 0 }}
 					locations={[0, 1]}
-					style={{ marginBottom: 14 }}
+					style={{ marginBottom: 14, marginTop: 14 }}
 				>
 					<Image
 						style={{
@@ -183,113 +263,305 @@ export default function Blog() {
 						source={{ uri: data.coverImg }}
 					/>
 				</LinearGradient>
+				<Text className="text-sm font-extrabold text-green-700">
+					{data.category.toUpperCase()}
+				</Text>
 				<Text className="text-4xl font-extrabold mb-4">
 					{data.title}
 				</Text>
-				<Text className="mb-2">
-					{data.datePublished} · {data.readTime} min Read
-				</Text>
-				<View className="flex-row justify-start items-center gap-2 mb-2">
-					<Avatar alt="Publisher Avatar">
-						<AvatarImage
-							source={{ uri: data.publisher.profileUrl }}
-						/>
-						<AvatarFallback>
-							<Text>
-								{data.publisher.name
-									.split(' ')
-									.map((word) => word.charAt(0))
-									.join('')
-									.toUpperCase()}
+				<Tabs
+					value={value}
+					onValueChange={setValue}
+					className="w-full max-w-[400px] mx-auto gap-1.5"
+				>
+					<TabsList className="flex-row w-full">
+						<TabsTrigger value="overview" className="flex-1">
+							<Text>Overview</Text>
+						</TabsTrigger>
+						<TabsTrigger value="agenda" className="flex-1">
+							<Text>Agenda</Text>
+						</TabsTrigger>
+						<TabsTrigger value="speakers" className="flex-1">
+							<Text>Speakers</Text>
+						</TabsTrigger>
+						<TabsTrigger value="details" className="flex-1">
+							<Text>Details</Text>
+						</TabsTrigger>
+					</TabsList>
+					<TabsContent value="overview">
+						<Card className="p-4 mt-4">
+							<Text className="text-2xl font-semibold mb-4">
+								About This Event
 							</Text>
-						</AvatarFallback>
-					</Avatar>
-					<View>
-						<Text className="text-sm font-semibold">
-							{data.publisher.name}
-						</Text>
-						<Text className="text-xs text-gray-500">
-							{data.datePublished}
-						</Text>
-					</View>
-				</View>
-				<RenderHtml
-					contentWidth={width - 32}
-					source={{ html: data.content }}
-					tagsStyles={tagsStyles}
-				/>
+							<View className="">
+								<ExpandableHtml
+									htmlContent={data.description}
+								/>
+							</View>
+						</Card>
+						<Card className="p-4 my-6">
+							<Text className="text-2xl font-semibold mb-4">
+								Topics
+							</Text>
+							<View className="flex-row gap-2 flex-wrap">
+								{data.tags.map((tag, index) => (
+									<Badge variant={'secondary'} key={index}>
+										<Text className="font-extrabold">
+											{tag}
+										</Text>
+									</Badge>
+								))}
+							</View>
+						</Card>
+					</TabsContent>
+					<TabsContent value="agenda">
+						<Card className="p-4 my-4">
+							<Text className="text-2xl font-semibold mb-4">
+								Event Agenda
+							</Text>
+							<View className="gap-2">
+								{data.agenda.map((agenda, index) => (
+									<View
+										key={index}
+										className="flex-row items-start p-4 bg-gray-50 rounded-lg"
+									>
+										<View className="bg-primary px-3 py-1 rounded-full mr-4 whitespace-nowrap">
+											<Text className="text-white text-sm font-bold">
+												{agenda.time}
+											</Text>
+										</View>
+										<View className="flex-1">
+											<Text className="font-bold text-gray-900 mb-1">
+												{agenda.title}
+											</Text>
+											<Text className="text-sm text-gray-600">
+												{agenda.speaker}
+											</Text>
+										</View>
+									</View>
+								))}
+							</View>
+						</Card>
+					</TabsContent>
+					<TabsContent value="speakers">
+						{data.speakers.map((speaker, index) => (
+							<Card className="p-4 mt-4" key={index}>
+								<View className="flex-row justify-start gap-2 mb-2">
+									<Avatar alt="Publisher Avatar">
+										<AvatarImage
+											source={{ uri: speaker.image }}
+										/>
+										<AvatarFallback>
+											<Text>
+												{speaker.name
+													.split(' ')
+													.map((word) =>
+														word.charAt(0),
+													)
+													.join('')
+													.toUpperCase()}
+											</Text>
+										</AvatarFallback>
+									</Avatar>
+									<View className="flex-shrink">
+										<Text className="text-lg font-semibold text-gray-900">
+											{speaker.name}
+										</Text>
+										<Text className="text-primary font-medium">
+											{speaker.title}
+										</Text>
+										<Text className="text-gray-600 mb-3">
+											{speaker.organization}
+										</Text>
+										<Text className="text-gray-700 mb-4">
+											{speaker.bio}
+										</Text>
+										<View className="flex-row gap-2 items-center">
+											<Feather
+												name="external-link"
+												size={18}
+												color="red"
+											/>
+											<Text className="text-primary">
+												LinkedInn
+											</Text>
+										</View>
+									</View>
+								</View>
+							</Card>
+						))}
+					</TabsContent>
+					<TabsContent value="details">
+						<Card className="p-4 mt-4">
+							<Text className="text-2xl font-semibold mb-4">
+								Event Details
+							</Text>
+							<View className="flex-row items-center gap-4 mb-6">
+								<Feather name="map-pin" size={24} color="red" />
+								<View>
+									<Text className="text-lg font-bold">
+										{data.location.type === 'virtual'
+											? 'Virtual'
+											: 'Physical'}{' '}
+										Event
+									</Text>
+									{data.location.type === 'virtual' ? (
+										<Text className="text-gray-500">
+											Platform: {data.location.platform}
+										</Text>
+									) : (
+										<Text className="text-gray-500">
+											{data.location.address}
+										</Text>
+									)}
+								</View>
+							</View>
+							{data.location.type === 'virtual' && (
+								<View className="p-2 bg-gray-50">
+									<Text className="text-gray-500">
+										Meeting Details:{' '}
+									</Text>
+									<Text>ID: {data.location.meetingId}</Text>
+									<Text>
+										Passcode: {data.location.passcode}
+									</Text>
+									<Text>
+										Link:{' '}
+										<Text className="text-primary font-bold">
+											{data.location.eventLink}
+										</Text>
+									</Text>
+								</View>
+							)}
+						</Card>
+						<Card className="p-4 my-4">
+							<Text className="text-2xl font-semibold mb-4">
+								Organizers
+							</Text>
+							<View className="flex-row gap-4">
+								<LinearGradient
+									colors={[
+										NAV_THEME.kenyaFlag.red.front,
+										NAV_THEME.kenyaFlag.green.mid,
+									]}
+									start={{ x: 0, y: 0 }}
+									end={{ x: 1, y: 1 }}
+									style={{
+										width: '30%',
+										aspectRatio: 1,
+										borderRadius: 8,
+									}}
+								>
+									<Image
+										style={{
+											width: '100%',
+											height: '100%',
+											resizeMode: 'cover',
+										}}
+										source={{ uri: data.organizer.logo }}
+									/>
+								</LinearGradient>
+								<View>
+									<Text className="text-lg font-bold">
+										{data.organizer.name}
+									</Text>
+									<Text className="text-gray-500 font-bold">
+										{data.organizer.contact}
+									</Text>
+									<Text className="text-primary font-semibold mt-2">
+										Visit Website
+									</Text>
+								</View>
+							</View>
+						</Card>
+						<Card className="p-4 mb-4">
+							<Text className="text-2xl font-semibold mb-4">
+								Partners
+							</Text>
+							<View className="gap-4">
+								{data.partners.map((partner, index) => (
+									<View
+										key={index}
+										className="flex-row gap-4"
+									>
+										<LinearGradient
+											colors={[
+												NAV_THEME.kenyaFlag.red.front,
+												NAV_THEME.kenyaFlag.green.mid,
+											]}
+											start={{ x: 0, y: 0 }}
+											end={{ x: 1, y: 1 }}
+											style={{
+												width: '30%',
+												aspectRatio: 1,
+												borderRadius: 8,
+											}}
+										>
+											<Image
+												style={{
+													width: '100%',
+													height: '100%',
+													resizeMode: 'cover',
+												}}
+												source={{
+													uri: partner.logo,
+												}}
+											/>
+										</LinearGradient>
+										<View>
+											<Text className="text-lg font-bold">
+												{partner.name}
+											</Text>
+											<Text className="text-gray-500 font-bold">
+												{partner.contact}
+											</Text>
+											<Text className="text-primary font-semibold mt-2">
+												Visit Website
+											</Text>
+										</View>
+									</View>
+								))}
+							</View>
+						</Card>
+						<Card className="p-4 my-6">
+							<Text className="text-2xl font-semibold mb-4">
+								Additional Information
+							</Text>
+							<View className="flex-row gap-2 flex-wrap">
+								<View className="flex-1">
+									<Text className="text-gray-500">
+										Attendees
+									</Text>
+									<Text className=" font-semibold">
+										{data.currentAttendees} /{' '}
+										{data.maxAttendees}
+									</Text>
+								</View>
+								<View className="flex-1">
+									<Text className="text-gray-500">
+										Status
+									</Text>
+									<Text
+										className={`font-semibold ${data.status === 'upcoming' ? 'text-secondary' : 'text-primary'}`}
+									>
+										{data.status === 'upcoming'
+											? 'Open'
+											: 'Closed'}
+									</Text>
+								</View>
+							</View>
+							<View className="mt-2">
+								<View>
+									<Text className="text-gray-500">Price</Text>
+									<Text className="text-secondary font-semibold">
+										{data.price.toUpperCase()}
+									</Text>
+								</View>
+							</View>
+						</Card>
+					</TabsContent>
+				</Tabs>
 			</ScrollView>
 		</AppSafeView>
 	);
 }
-
-const tagsStyles = {
-	h1: {
-		fontSize: 24,
-		fontWeight: 'bold',
-		marginBottom: 12,
-		marginTop: 24,
-	},
-	h2: {
-		fontSize: 20,
-		fontWeight: 'bold',
-		marginBottom: 10,
-		marginTop: 20,
-	},
-	h3: {
-		fontSize: 18,
-		fontWeight: 'bold',
-		marginBottom: 8,
-		marginTop: 18,
-	},
-	p: {
-		fontSize: 16,
-		lineHeight: 24,
-		marginBottom: 12,
-	},
-	pre: {
-		backgroundColor: '#f6f6f6',
-		padding: 12,
-		borderRadius: 6,
-		color: '#333',
-		overflow: 'hidden', // ✅ fix: "scroll" is invalid
-	},
-	code: {
-		fontSize: 14,
-		backgroundColor: '#eee',
-		padding: 4,
-		borderRadius: 4,
-	},
-	img: {
-		alignSelf: 'center',
-		marginVertical: 12,
-	},
-	figcaption: {
-		textAlign: 'center',
-		fontSize: 14,
-		fontStyle: 'italic',
-		marginTop: 4,
-		color: '#666',
-	},
-	ul: {
-		marginVertical: 12,
-		paddingLeft: 20,
-	},
-	ol: {
-		marginVertical: 12,
-		paddingLeft: 20,
-	},
-	li: {
-		fontSize: 16,
-		lineHeight: 24,
-		marginBottom: 6,
-	},
-	blockquote: {
-		borderLeftWidth: 4,
-		borderLeftColor: '#ccc',
-		paddingLeft: 12,
-		color: '#555',
-		fontStyle: 'italic',
-		marginVertical: 12,
-	},
-} as const;
