@@ -1,0 +1,42 @@
+package repository
+
+import (
+	"context"
+	"time"
+
+	"github.com/EmilioCliff/hack-a-milli/cms-backend/pkg"
+)
+
+type Payment struct {
+	ID            int64     `json:"id"`
+	OrderID       int64     `json:"order_id"`
+	PaymentMethod string    `json:"payment_method"`
+	Amount        float64   `json:"amount"`
+	Status        bool      `json:"status"`
+	UpdatedBy     *int64    `json:"updated_by"`
+	CreatedBy     *int64    `json:"created_by"`
+	UpdatedAt     time.Time `json:"updated_at"`
+	CreatedAt     time.Time `json:"created_at"`
+}
+
+type UpdatePayment struct {
+	ID        int64 `json:"id"`
+	UpdatedBy int64 `json:"updated_by"`
+	Status    *bool `json:"status"`
+}
+
+type PaymentFilter struct {
+	Pagination    *pkg.Pagination
+	PaymentMethod *string
+	Status        *bool
+	StartDate     *time.Time
+	EndDate       *time.Time
+}
+
+type PaymentRepository interface {
+	CreatePayment(ctx context.Context, payment *Payment) (*Payment, error)
+	GetPayment(ctx context.Context, id int64) (*Payment, error)
+	UpdatePayment(ctx context.Context, payment *UpdatePayment) (*Payment, error)
+	ListPayment(ctx context.Context, filter *PaymentFilter) ([]*Payment, *pkg.Pagination, error)
+	DeletePayment(ctx context.Context, paymentID int64, userID int64) error
+}

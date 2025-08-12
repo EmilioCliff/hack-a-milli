@@ -1,0 +1,157 @@
+{
+	"server": {
+		"port": 8080,
+		"read_timeout": 30,
+		"write_timeout": 30
+	},
+	"auth": {
+		"jwt_secret": "your-super-secret-jwt-key-here",
+		"token_issuer": "BACKEND_APP",
+		"token_header": "Authorization",
+		"casbin_model": "model.conf",
+		"casbin_policy": "policy.csv"
+	},
+	"routes": [
+		{
+			"path": "/api/blogs",
+			"method": "GET",
+			"public": true,
+			"permission": "read:blogs",
+			"backend_url": "http://127.0.0.1:7000/blogs",
+			"timeout": 30
+		},
+		{
+			"path": "/api/blogs",
+			"method": "POST",
+			"public": false,
+			"permission": "create:blogs",
+			"backend_url": "http://127.0.0.1:7000/blogs",
+			"timeout": 30
+		},
+		{
+			"path": "/api/blogs/{id}",
+			"method": "GET",
+			"public": true,
+			"permission": "read:blogs",
+			"backend_url": "http://127.0.0.1:7000/blogs/{id}",
+			"timeout": 30
+		},
+		{
+			"path": "/api/blogs/{id}",
+			"method": "PUT",
+			"public": false,
+			"permission": "update:blogs",
+			"backend_url": "http://127.0.0.1:7000/blogs/{id}",
+			"timeout": 30
+		},
+		{
+			"path": "/api/blogs/{id}",
+			"method": "DELETE",
+			"public": false,
+			"permission": "delete:blogs",
+			"backend_url": "http://127.0.0.1:7000/blogs/{id}",
+			"timeout": 30
+		},
+		{
+			"path": "/api/courses",
+			"method": "GET",
+			"public": true,
+			"permission": "read:courses",
+			"backend_url": "http://127.0.0.1:8000/courses",
+			"timeout": 30
+		},
+		{
+			"path": "/api/courses",
+			"method": "POST",
+			"public": false,
+			"permission": "create:courses",
+			"backend_url": "http://127.0.0.1:8000/courses",
+			"timeout": 30
+		},
+		{
+			"path": "/api/courses/{id}",
+			"method": "GET",
+			"public": true,
+			"permission": "read:courses",
+			"backend_url": "http://127.0.0.1:8000/courses/{id}",
+			"timeout": 30
+		},
+		{
+			"path": "/api/events",
+			"method": "GET",
+			"public": true,
+			"permission": "read:events",
+			"backend_url": "http://127.0.0.1:9000/events",
+			"timeout": 30
+		},
+		{
+			"path": "/api/events",
+			"method": "POST",
+			"public": false,
+			"permission": "create:events",
+			"backend_url": "http://127.0.0.1:9000/events",
+			"timeout": 30
+		},
+		{
+			"path": "/api/careers",
+			"method": "GET",
+			"public": true,
+			"backend_url": "http://127.0.0.1:10000/careers",
+			"timeout": 30
+		},
+		{
+			"path": "/api/careers",
+			"method": "POST",
+			"public": false,
+			"permission": "create:careers",
+			"backend_url": "http://127.0.0.1:10000/careers",
+			"timeout": 30
+		},
+		{
+			"path": "/api/orders",
+			"method": "GET",
+			"public": false,
+			"permission": "read:orders",
+			"backend_url": "http://127.0.0.1:11000/orders",
+			"timeout": 30
+		},
+		{
+			"path": "/api/users",
+			"method": "GET",
+			"public": false,
+			"permission": "read:users",
+			"backend_url": "http://127.0.0.1:12000/users",
+			"timeout": 30
+		},
+		{
+			"path": "/api/users/{id}",
+			"method": "PUT",
+			"public": false,
+			"permission": "update:users",
+			"backend_url": "http://127.0.0.1:12000/users/{id}",
+			"timeout": 30
+		},
+		{
+			"path": "/api/dashboard",
+			"method": "GET",
+			"public": false,
+			"compose": [
+				"http://127.0.0.1:8000/courses/summary",
+				"http://127.0.0.1:7000/blogs/latest",
+				"http://127.0.0.1:9000/events/upcoming"
+			],
+			"timeout": 30
+		},
+		{
+			"path": "/api/mobile/dashboard",
+			"method": "GET",
+			"public": true,
+			"compose": [
+				"http://127.0.0.1:8000/courses/featured",
+				"http://127.0.0.1:7000/blogs/published/latest",
+				"http://127.0.0.1:9000/events/published/upcoming"
+			],
+			"timeout": 30
+		}
+	]
+}

@@ -1,0 +1,29 @@
+2025/08/05 21:28:04 Running in interactive mode.
+2025/08/05 21:28:13 Initializing project .
+2025/08/05 21:28:13 Creating file: /home/emilio-cliff/hack-a-milli/backend/.gitignore
+2025/08/05 21:28:13 Creating file: /home/emilio-cliff/hack-a-milli/backend/Makefile
+2025/08/05 21:28:13 Creating file: /home/emilio-cliff/hack-a-milli/backend/Dockerfile
+2025/08/05 21:28:13 Creating directory: /home/emilio-cliff/hack-a-milli/backend/.envs
+2025/08/05 21:28:13 Creating directory: /home/emilio-cliff/hack-a-milli/backend/.envs/.local
+2025/08/05 21:28:13 Creating file: /home/emilio-cliff/hack-a-milli/backend/.envs/.local/config.env
+2025/08/05 21:28:13 Creating directory: /home/emilio-cliff/hack-a-milli/backend/.envs/configs
+2025/08/05 21:28:13 Creating file: /home/emilio-cliff/hack-a-milli/backend/.envs/configs/sqlc.yaml
+2025/08/05 21:28:13 Creating directory: /home/emilio-cliff/hack-a-milli/backend/cmd
+2025/08/05 21:28:13 Creating directory: /home/emilio-cliff/hack-a-milli/backend/cmd/server
+2025/08/05 21:28:13 Creating file: /home/emilio-cliff/hack-a-milli/backend/cmd/server/main.go
+2025/08/05 21:28:13 Creating directory: /home/emilio-cliff/hack-a-milli/backend/cmd/cli
+2025/08/05 21:28:13 Creating file: /home/emilio-cliff/hack-a-milli/backend/cmd/cli/main.go
+2025/08/05 21:28:13 Creating directory: /home/emilio-cliff/hack-a-milli/backend/internal
+2025/08/05 21:28:13 Creating empty directory: /home/emilio-cliff/hack-a-milli/backend/internal/handlers
+2025/08/05 21:28:13 Creating empty directory: /home/emilio-cliff/hack-a-milli/backend/internal/repository
+2025/08/05 21:28:13 Creating empty directory: /home/emilio-cliff/hack-a-milli/backend/internal/mock
+2025/08/05 21:28:13 Creating empty directory: /home/emilio-cliff/hack-a-milli/backend/internal/services
+2025/08/05 21:28:13 Creating directory: /home/emilio-cliff/hack-a-milli/backend/internal/postgres
+2025/08/05 21:28:13 Creating empty directory: /home/emilio-cliff/hack-a-milli/backend/internal/postgres/generated
+2025/08/05 21:28:13 Creating empty directory: /home/emilio-cliff/hack-a-milli/backend/internal/postgres/migrations
+2025/08/05 21:28:13 Creating empty directory: /home/emilio-cliff/hack-a-milli/backend/internal/postgres/queries
+2025/08/05 21:28:13 Creating empty directory: /home/emilio-cliff/hack-a-milli/backend/internal/postgres/mock
+2025/08/05 21:28:13 Creating directory: /home/emilio-cliff/hack-a-milli/backend/pkg
+2025/08/05 21:28:13 Creating file: /home/emilio-cliff/hack-a-milli/backend/pkg/errors.go
+2025/08/05 21:28:13 Creating file: /home/emilio-cliff/hack-a-milli/backend/README.md
+2025/08/05 21:28:13 Initializing go module...

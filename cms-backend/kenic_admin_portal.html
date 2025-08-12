@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>KENIC Admin Portal</title>
+		<link
+			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+			rel="stylesheet"
+		/>
+		<style>
+			:root {
+				/* KENIC Brand Colors - Green, Red, Black (Kenya flag inspired) */
+				--primary-color: #1b5e20; /* Deep green */
+				--secondary-color: #4caf50; /* Light green */
+				--accent-color: #c62828; /* Red */
+				--dark-color: #212121; /* Black */
+				--light-green: #e8f5e8;
+				--warning-color: #ff9800;
+				--success-color: #4caf50;
+				--danger-color: #f44336;
+				--info-color: #2196f3;
+
+				/* Neutral colors */
+				--white: #ffffff;
+				--gray-50: #fafafa;
+				--gray-100: #f5f5f5;
+				--gray-200: #eeeeee;
+				--gray-300: #e0e0e0;
+				--gray-400: #bdbdbd;
+				--gray-500: #9e9e9e;
+				--gray-600: #757575;
+				--gray-700: #616161;
+				--gray-800: #424242;
+				--gray-900: #212121;
+
+				/* Layout */
+				--sidebar-width: 280px;
+				--header-height: 64px;
+				--border-radius: 8px;
+				--shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12);
+				--shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+				--shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
+			}
+
+			* {
+				margin: 0;
+				padding: 0;
+				box-sizing: border-box;
+			}
+
+			body {
+				font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+				background-color: var(--gray-100);
+				color: var(--gray-800);
+				line-height: 1.6;
+			}
+
+			/* Loading skeletons */
+			.skeleton {
+				background: linear-gradient(
+					90deg,
+					#f0f0f0 25%,
+					#e0e0e0 50%,
+					#f0f0f0 75%
+				);
+				background-size: 200% 100%;
+				animation: loading 1.5s infinite;
+			}
+
+			@keyframes loading {
+				0% {
+					background-position: 200% 0;
+				}
+				100% {
+					background-position: -200% 0;
+				}
+			}
+
+			.skeleton-text {
+				height: 16px;
+				margin: 8px 0;
+				border-radius: 4px;
+			}
+
+			.skeleton-card {
+				height: 120px;
+				border-radius: 8px;
+				margin: 16px 0;
+			}
+
+			/* Layout */
+			.app-container {
+				display: flex;
+				height: 100vh;
+			}
+
+			/* Sidebar */
+			.sidebar {
+				width: var(--sidebar-width);
+				background: var(--white);
+				box-shadow: var(--shadow-md);
+				z-index: 1000;
+				overflow-y: auto;
+				border-right: 1px solid var(--gray-200);
+			}
+
+			.sidebar-header {
+				padding: 20px;
+				border-bottom: 1px solid var(--gray-200);
+				text-align: center;
+			}
+
+			.logo {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				gap: 10px;
+				font-size: 24px;
+				font-weight: bold;
+				color: var(--primary-color);
+			}
+
+			.logo i {
+				background: linear-gradient(
+					135deg,
+					var(--primary-color),
+					var(--secondary-color)
+				);
+				-webkit-background-clip: text;
+				-webkit-text-fill-color: transparent;
+				background-clip: text;
+			}
+
+			.nav-menu {
+				padding: 20px 0;
+			}
+
+			.nav-section {
+				margin-bottom: 24px;
+			}
+
+			.nav-section-title {
+				padding: 0 20px 8px;
+				font-size: 12px;
+				font-weight: 600;
+				color: var(--gray-500);
+				text-transform: uppercase;
+				letter-spacing: 0.5px;
+			}
+
+			.nav-item {
+				display: block;
+				padding: 12px 20px;
+				color: var(--gray-600);
+				text-decoration: none;
+				transition: all 0.3s ease;
+				border-left: 3px solid transparent;
+			}
+
+			.nav-item:hover {
+				background-color: var(--light-green);
+				color: var(--primary-color);
+				border-left-color: var(--secondary-color);
+			}
+
+			.nav-item.active {
+				background-color: var(--light-green);
+				color: var(--primary-color);
+				border-left-color: var(--primary-color);
+				font-weight: 600;
+			}
+
+			.nav-item i {
+				width: 20px;
+				margin-right: 12px;
+			}
+
+			/* Main content */
+			.main-content {
+				flex: 1;
+				display: flex;
+				flex-direction: column;
+				overflow: hidden;
+			}
+
+			/* Header */
+			.header {
+				height: var(--header-height);
+				background: var(--white);
+				border-bottom: 1px solid var(--gray-200);
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				padding: 0 24px;
+				box-shadow: var(--shadow-sm);
+			}
+
+			.header-left {
+				display: flex;
+				align-items: center;
+				gap: 16px;
+			}
+
+			.breadcrumb {
+				color: var(--gray-600);
+				font-size: 14px;
+			}
+
+			.breadcrumb a {
+				color: var(--primary-color);
+				text-decoration: none;
+			}
+
+			.search-box {
+				position: relative;
+				width: 300px;
+			}
+
+			.search-input {
+				width: 100%;
+				padding: 8px 16px 8px 40px;
+				border: 1px solid var(--gray-300);
+				border-radius: 20px;
+				font-size: 14px;
+				background-color: var(--gray-50);
+			}
+
+			.search-icon {
+				position: absolute;
+				left: 12px;
+				top: 50%;
+				transform: translateY(-50%);
+				color: var(--gray-400);
+			}
+
+			.header-right {
+				display: flex;
+				align-items: center;
+				gap: 16px;
+			}
+
+			.notification-icon {
+				position: relative;
+				padding: 8px;
+				color: var(--gray-600);
+				cursor: pointer;
+				border-radius: 50%;
+				transition: background-color 0.3s;
+			}
+
+			.notification-icon:hover {
+				background-color: var(--gray-100);
+			}
+
+			.notification-badge {
+				position: absolute;
+				top: 2px;
+				right: 2px;
+				width: 8px;
+				height: 8px;
+				background-color: var(--accent-color);
+				border-radius: 50%;
+			}
+
+			.user-profile {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				padding: 8px;
+				border-radius: 8px;
+				cursor: pointer;
+				transition: background-color 0.3s;
+			}
+
+			.user-profile:hover {
+				background-color: var(--gray-100);
+			}
+
+			.user-avatar {
+				width: 32px;
+				height: 32px;
+				border-radius: 50%;
+				background: linear-gradient(
+					135deg,
+					var(--primary-color),
+					var(--secondary-color)
+				);
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				color: white;
+				font-weight: 600;
+			}
+
+			/* Content area */
+			.content {
+				flex: 1;
+				padding: 24px;
+				overflow-y: auto;
+			}
+
+			.page-title {
+				font-size: 28px;
+				font-weight: 700;
+				color: var(--gray-900);
+				margin-bottom: 24px;
+				display: flex;
+				align-items: center;
+				gap: 12px;
+			}
+
+			/* Cards */
+			.card {
+				background: var(--white);
+				border-radius: var(--border-radius);
+				box-shadow: var(--shadow-sm);
+				border: 1px solid var(--gray-200);
+				overflow: hidden;
+			}
+
+			.card-header {
+				padding: 20px 24px;
+				border-bottom: 1px solid var(--gray-200);
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+			}
+
+			.card-title {
+				font-size: 18px;
+				font-weight: 600;
+				color: var(--gray-900);
+			}
+
+			.card-body {
+				padding: 24px;
+			}
+
+			/* Dashboard stats */
+			.stats-grid {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+				gap: 24px;
+				margin-bottom: 32px;
+			}
+
+			.stat-card {
+				background: linear-gradient(
+					135deg,
+					var(--white) 0%,
+					var(--gray-50) 100%
+				);
+				padding: 24px;
+				border-left: 4px solid var(--primary-color);
+			}
+
+			.stat-card.danger {
+				border-left-color: var(--accent-color);
+			}
+
+			.stat-card.warning {
+				border-left-color: var(--warning-color);
+			}
+
+			.stat-card.info {
+				border-left-color: var(--info-color);
+			}
+
+			.stat-number {
+				font-size: 32px;
+				font-weight: 700;
+				color: var(--gray-900);
+				margin-bottom: 4px;
+			}
+
+			.stat-label {
+				font-size: 14px;
+				color: var(--gray-600);
+				margin-bottom: 8px;
+			}
+
+			.stat-change {
+				font-size: 12px;
+				font-weight: 600;
+			}
+
+			.stat-change.positive {
+				color: var(--success-color);
+			}
+
+			.stat-change.negative {
+				color: var(--danger-color);
+			}
+
+			/* Tables */
+			.table-container {
+				overflow-x: auto;
+			}
+
+			.table {
+				width: 100%;
+				border-collapse: collapse;
+				background: var(--white);
+			}
+
+			.table th,
+			.table td {
+				padding: 12px 16px;
+				text-align: left;
+				border-bottom: 1px solid var(--gray-200);
+			}
+
+			.table th {
+				background-color: var(--gray-50);
+				font-weight: 600;
+				color: var(--gray-700);
+				font-size: 12px;
+				text-transform: uppercase;
+				letter-spacing: 0.5px;
+			}
+
+			.table tbody tr:hover {
+				background-color: var(--gray-50);
+			}
+
+			/* Buttons */
+			.btn {
+				display: inline-flex;
+				align-items: center;
+				gap: 8px;
+				padding: 10px 16px;
+				border-radius: var(--border-radius);
+				font-size: 14px;
+				font-weight: 500;
+				text-decoration: none;
+				cursor: pointer;
+				transition: all 0.3s ease;
+				border: 1px solid transparent;
+			}
+
+			.btn-primary {
+				background-color: var(--primary-color);
+				color: var(--white);
+			}
+
+			.btn-primary:hover {
+				background-color: #0d4017;
+				transform: translateY(-1px);
+				box-shadow: var(--shadow-md);
+			}
+
+			.btn-secondary {
+				background-color: var(--white);
+				color: var(--gray-700);
+				border-color: var(--gray-300);
+			}
+
+			.btn-secondary:hover {
+				background-color: var(--gray-50);
+				border-color: var(--gray-400);
+			}
+
+			.btn-danger {
+				background-color: var(--danger-color);
+				color: var(--white);
+			}
+
+			.btn-danger:hover {
+				background-color: #d32f2f;
+			}
+
+			.btn-sm {
+				padding: 6px 12px;
+				font-size: 12px;
+			}
+
+			/* Forms */
+			.form-group {
+				margin-bottom: 20px;
+			}
+
+			.form-label {
+				display: block;
+				font-weight: 600;
+				color: var(--gray-700);
+				margin-bottom: 6px;
+				font-size: 14px;
+			}
+
+			.form-input,
+			.form-select,
+			.form-textarea {
+				width: 100%;
+				padding: 12px 16px;
+				border: 1px solid var(--gray-300);
+				border-radius: var(--border-radius);
+				font-size: 14px;
+				transition: border-color 0.3s, box-shadow 0.3s;
+			}
+
+			.form-input:focus,
+			.form-select:focus,
+			.form-textarea:focus {
+				outline: none;
+				border-color: var(--primary-color);
+				box-shadow: 0 0 0 3px rgba(27, 94, 32, 0.1);
+			}
+
+			.form-textarea {
+				min-height: 100px;
+				resize: vertical;
+			}
+
+			/* Grid layouts */
+			.grid {
+				display: grid;
+				gap: 24px;
+			}
+
+			.grid-2 {
+				grid-template-columns: repeat(2, 1fr);
+			}
+
+			.grid-3 {
+				grid-template-columns: repeat(3, 1fr);
+			}
+
+			.grid-4 {
+				grid-template-columns: repeat(4, 1fr);
+			}
+
+			/* Status badges */
+			.badge {
+				display: inline-flex;
+				align-items: center;
+				padding: 4px 8px;
+				border-radius: 4px;
+				font-size: 12px;
+				font-weight: 600;
+				text-transform: uppercase;
+				letter-spacing: 0.5px;
+			}
+
+			.badge-success {
+				background-color: var(--light-green);
+				color: var(--primary-color);
+			}
+
+			.badge-danger {
+				background-color: #ffebee;
+				color: var(--danger-color);
+			}
+
+			.badge-warning {
+				background-color: #fff3e0;
+				color: var(--warning-color);
+			}
+
+			.badge-info {
+				background-color: #e3f2fd;
+				color: var(--info-color);
+			}
+
+			/* Modals */
+			.modal-overlay {
+				position: fixed;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				background-color: rgba(0, 0, 0, 0.5);
+				display: none;
+				align-items: center;
+				justify-content: center;
+				z-index: 2000;
+			}
+
+			.modal-overlay.active {
+				display: flex;
+			}
+
+			.modal {
+				background: var(--white);
+				border-radius: var(--border-radius);
+				box-shadow: var(--shadow-lg);
+				max-width: 500px;
+				width: 90%;
+				max-height: 90%;
+				overflow-y: auto;
+			}
+
+			.modal-header {
+				padding: 20px 24px;
+				border-bottom: 1px solid var(--gray-200);
+				display: flex;
+				align-items: center;
+				justify-content: between;
+			}
+
+			.modal-title {
+				font-size: 18px;
+				font-weight: 600;
+				color: var(--gray-900);
+			}
+
+			.modal-body {
+				padding: 24px;
+			}
+
+			.modal-footer {
+				padding: 20px 24px;
+				border-top: 1px solid var(--gray-200);
+				display: flex;
+				gap: 12px;
+				justify-content: flex-end;
+			}
+
+			/* Toggle switches */
+			.toggle {
+				position: relative;
+				display: inline-block;
+				width: 44px;
+				height: 24px;
+			}
+
+			.toggle input {
+				opacity: 0;
+				width: 0;
+				height: 0;
+			}
+
+			.toggle-slider {
+				position: absolute;
+				cursor: pointer;
+				top: 0;
+				left: 0;
+				right: 0;
+				bottom: 0;
+				background-color: var(--gray-300);
+				transition: 0.4s;
+				border-radius: 24px;
+			}
+
+			.toggle-slider:before {
+				position: absolute;
+				content: '';
+				height: 18px;
+				width: 18px;
+				left: 3px;
+				bottom: 3px;
+				background-color: white;
+				transition: 0.4s;
+				border-radius: 50%;
+			}
+
+			.toggle input:checked + .toggle-slider {
+				background-color: var(--primary-color);
+			}
+
+			.toggle input:checked + .toggle-slider:before {
+				transform: translateX(20px);
+			}
+
+			/* Charts placeholder */
+			.chart-container {
+				height: 300px;
+				background: var(--gray-50);
+				border-radius: var(--border-radius);
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				color: var(--gray-500);
+				font-size: 14px;
+			}
+
+			/* TinyMCE Editor styling */
+			.editor-container {
+				border: 2px dashed var(--primary-color);
+				border-radius: var(--border-radius);
+				background: var(--light-green);
+				padding: 20px;
+				margin: 20px 0;
+			}
+
+			.editor-placeholder {
+				height: 300px;
+				background: var(--white);
+				border: 1px solid var(--gray-300);
+				border-radius: var(--border-radius);
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				color: var(--gray-500);
+				font-size: 16px;
+			}
+
+			/* Responsive design */
+			@media (max-width: 768px) {
+				.sidebar {
+					transform: translateX(-100%);
+					position: fixed;
+					height: 100%;
+					transition: transform 0.3s ease;
+				}
+
+				.sidebar.open {
+					transform: translateX(0);
+				}
+
+				.main-content {
+					margin-left: 0;
+				}
+
+				.grid-2,
+				.grid-3,
+				.grid-4 {
+					grid-template-columns: 1fr;
+				}
+
+				.search-box {
+					width: 200px;
+				}
+			}
+
+			/* Page-specific styles */
+			.page-content {
+				display: none;
+			}
+
+			.page-content.active {
+				display: block;
+			}
+
+			/* File upload */
+			.file-upload {
+				border: 2px dashed var(--gray-300);
+				border-radius: var(--border-radius);
+				padding: 40px;
+				text-align: center;
+				cursor: pointer;
+				transition: border-color 0.3s;
+			}
+
+			.file-upload:hover {
+				border-color: var(--primary-color);
+			}
+
+			/* Calendar view */
+			.calendar-grid {
+				display: grid;
+				grid-template-columns: repeat(7, 1fr);
+				gap: 1px;
+				background: var(--gray-300);
+				border-radius: var(--border-radius);
+				overflow: hidden;
+			}
+
+			.calendar-day {
+				background: var(--white);
+				padding: 12px;
+				min-height: 80px;
+				position: relative;
+			}
+
+			.calendar-day.other-month {
+				background: var(--gray-50);
+				color: var(--gray-400);
+			}
+
+			.event-dot {
+				width: 6px;
+				height: 6px;
+				border-radius: 50%;
+				background: var(--primary-color);
+				position: absolute;
+				bottom: 4px;
+				right: 4px;
+			}
+
+			/* Data visualization */
+			.metric-card {
+				text-align: center;
+				padding: 24px;
+			}
+
+			.metric-icon {
+				font-size: 48px;
+				margin-bottom: 16px;
+				opacity: 0.8;
+			}
+
+			.metric-icon.domains {
+				color: var(--primary-color);
+			}
+			.metric-icon.registrars {
+				color: var(--info-color);
+			}
+			.metric-icon.orders {
+				color: var(--warning-color);
+			}
+			.metric-icon.users {
+				color: var(--accent-color);
+			}
+
+			/* Activity feed */
+			.activity-item {
+				display: flex;
+				gap: 12px;
+				padding: 16px 0;
+				border-bottom: 1px solid var(--gray-200);
+			}
+
+			.activity-icon {
+				width: 32px;
+				height: 32px;
+				border-radius: 50%;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-size: 14px;
+				flex-shrink: 0;
+			}
+
+			.activity-icon.success {
+				background: var(--light-green);
+				color: var(--primary-color);
+			}
+			.activity-icon.warning {
+				background: #fff3e0;
+				color: var(--warning-color);
+			}
+			.activity-icon.danger {
+				background: #ffebee;
+				color: var(--danger-color);
+			}
+
+			.activity-content {
+				flex: 1;
+			}
+
+			.activity-title {
+				font-weight: 600;
+				margin-bottom: 4px;
+			}
+
+			.activity-time {
+				font-size: 12px;
+				color: var(--gray-500);
+			}
+
+			/* Progress bars */
+			.progress {
+				height: 8px;
+				background: var(--gray-200);
+				border-radius: 4px;
+				overflow: hidden;
+			}
+
+			.progress-bar {
+				height: 100%;
+				background: var(--primary-color);
+				border-radius: 4px;
+				transition: width 0.3s ease;
+			}
+
+			/* Kenyan cultural pattern accent */
+			.cultural-accent {
+				position: relative;
+				overflow: hidden;
+			}
+
+			.cultural-accent::before {
+				content: '';
+				position: absolute;
+				top: 0;
+				left: 0;
+				right: 0;
+				height: 3px;
+				background: linear-gradient(
+					90deg,
+					var(--dark-color) 0%,
+					var(--accent-color) 50%,
+					var(--primary-color) 100%
+				);
+			}
+		</style>
+	</head>
+	<body>
+		<div class="app-container">
+			<!-- Sidebar -->
+			<div class="sidebar cultural-accent">
+				<div class="sidebar-header">
+					<div class="logo">
+						<i class="fas fa-globe-africa"></i>
+						<span>KENIC</span>
+					</div>
+				</div>
+				<nav class="nav-menu">
+					<div class="nav-section">
+						<div class="nav-section-title">Main</div>
+						<a
+							href="#"
+							class="nav-item active"
+							onclick="showPage('dashboard')"
+						>
+							<i class="fas fa-chart-line"></i> Dashboard
+						</a>
+					</div>
+
+					<div class="nav-section">
+						<div class="nav-section-title">Management</div>
+						<a
+							href="#"
+							class="nav-item"
+							onclick="showPage('users')"
+						>
+							<i class="fas fa-users"></i> User Management
+						</a>
+						<a
+							href="#"
+							class="nav-item"
+							onclick="showPage('departments')"
+						>
+							<i class="fas fa-building"></i> Departments
+						</a>
+						<a
+							href="#"
+							class="nav-item"
+							onclick="showPage('registrars')"
+						>
+							<i class="fas fa-store"></i> Registrars
+						</a>
+						<a
+							href="#"
+							class="nav-item"
+							onclick="showPage('products')"
+						>
+							<i class="fas fa-box"></i> Products
+						</a>
+					</div>
+
+					<div class="nav-section">
+						<div class="nav-section-title">Orders & Payments</div>
+						<a
+							href="#"
+							class="nav-item"
+							onclick="showPage('orders')"
+						>
+							<i class="fas fa-shopping-cart"></i> Orders
+						</a>
+						<a
+							href="#"
+							class="nav-item"
+							onclick="showPage('payments')"
+						>
+							<i class="fas fa-credit-card"></i> Payments
+						</a>
+					</div>
+
+					<div class="nav-section">
+						<div class="nav-section-title">Content</div>
+						<a
+							href="#"
+							class="nav-item"
+							onclick="showPage('blogs')"
+						>
+							<i class="fas fa-blog"></i> Blogs
+						</a>
+						<a href="#" class="nav-item" onclick="showPage('news')">
+							<i class="fas fa-newspaper"></i> News Updates
+						</a>
+						<a
+							href="#"
+							class="nav-item"
+							onclick="showPage('newsletters')"
+						>
+							<i class="fas fa-mail-bulk"></i> Newsletters
+						</a>
+						<a
+							href="#"
+							class="nav-item"
+							onclick="showPage('events')"
+						>
+							<i class="fas fa-calendar-alt"></i> Events
+						</a>
+					</div>
+
+					<div class="nav-section">
+						<div class="nav-section-title">HR & Jobs</div>
+						<a href="#" class="nav-item" onclick="showPage('jobs')">
+							<i class="fas fa-briefcase"></i> Job Postings
+						</a>
+						<a
+							href="#"
+							class="nav-item"
+							onclick="showPage('applications')"
+						>
+							<i class="fas fa-file-alt"></i> Applications
+						</a>
+					</div>
+
+					<div class="nav-section">
+						<div class="nav-section-title">System</div>
+						<a
+							href="#"
+							class="nav-item"
+							onclick="showPage('preferences')"
+						>
+							<i class="fas fa-cog"></i> Preferences
+						</a>
+						<a
+							href="#"
+							class="nav-item"
+							onclick="showPage('devices')"
+						>
+							<i class="fas fa-mobile-alt"></i> Devices
+						</a>
+						<a
+							href="#"
+							class="nav-item"
+							onclick="showPage('reports')"
+						>
+							<i class="fas fa-chart-bar"></i> Reports
+						</a>
+						<a
+							href="#"
+							class="nav-item"
+							onclick="showPage('documents')"
+						>
+							<i class="fas fa-folder"></i> Documents
+						</a>
+					</div>
+				</nav>
+			</div>
+
+			<!-- Main Content -->
+			<div class="main-content">
+				<!-- Header -->
+				<header class="header">
+					<div class="header-left">
+						<div class="breadcrumb">
+							<a href="#">KENIC Admin</a> /
+							<span id="current-page">Dashboard</span>
+						</div>
+						<div class="search-box">
+							<i class="fas fa-search search-icon"></i>
+							<input
+								type="text"
+								class="search-input"
+								placeholder="Search..."
+							/>
+						</div>
+					</div>
+					<div class="header-right">
+						<div class="notification-icon">
+							<i class="fas fa-bell"></i>
+							<div class="notification-badge"></div>
+						</div>
+						<div class="user-profile">
+							<div class="user-avatar">JM</div>
+							<div>
+								<div style="font-size: 14px; font-weight: 600">
+									John Mwangi
+								</div>
+								<div
+									style="
+										font-size: 12px;
+										color: var(--gray-500);
+									"
+								>
+									Administrator
+								</div>
+							</div>
+							<i
+								class="fas fa-chevron-down"
+								style="margin-left: 8px; font-size: 12px"
+							></i>
+						</div>
+					</div>
+				</header>
+
+				<!-- Content Area -->
+				<main class="content">
+					<!-- Dashboard Page -->
+					<div id="dashboard" class="page-content active">
+						<h1 class="page-title">
+							<i class="fas fa-chart-line"></i>
+							Dashboard
+						</h1>
+
+						<!-- Stats Grid -->
+						<div class="stats-grid">
+							<div class="card stat-card">
+								<div class="metric-card">
+									<div class="metric-icon domains">
+										<i class="fas fa-globe"></i>
+									</div>
+									<div class="stat-number">12,543</div>
+									<div class="stat-label">
+										Active .ke Domains
+									</div>
+									<div class="stat-change positive">
+										<i class="fas fa-arrow-up"></i> +8.5%
+										this
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</main>
+			</div>
+		</div>
+	</body>
+</html>
