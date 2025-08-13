@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"context"
 	"time"
 
 	"github.com/EmilioCliff/hack-a-milli/cms-backend/pkg"
@@ -40,13 +39,4 @@ type NewsLetterFilter struct {
 	StartDate  *time.Time
 	EndDate    *time.Time
 	Published  *bool
-}
-
-type NewsLetterRepository interface {
-	CreateNewsLetter(ctx context.Context, newsLetter *NewsLetter) (*NewsLetter, error)
-	GetNewsLetter(ctx context.Context, id int64) (*NewsLetter, error)
-	ListNewsLetters(ctx context.Context, filter *NewsLetterFilter) ([]*NewsLetter, error)
-	PublishNewsLetter(ctx context.Context, newsLetterID int64, userID int64) (*NewsLetter, error)
-	UpdateNewsLetter(ctx context.Context, newsLetter *UpdateNewsLetter) (*NewsLetter, error)
-	DeleteNewsLetter(ctx context.Context, newsLetterID int64, userID int64) error
 }

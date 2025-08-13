@@ -7,9 +7,12 @@ RETURNING id;
 SELECT * FROM product_categories
 WHERE id = $1;
 
+-- name: ProductCategoryExists :one
+SELECT EXISTS (SELECT 1 FROM product_categories WHERE id = $1 AND deleted_at IS NULL) AS exists;
+
 -- name: UpdateProductCategory :one
 UPDATE product_categories
-SET name = COALESCE(sqlc.arg('name'), name),
+SET name = COALESCE(sqlc.narg('name'), name),
     description = COALESCE(sqlc.narg('description'), description),
     updated_by = sqlc.arg('updated_by'),
     updated_at = NOW()
@@ -28,7 +31,7 @@ SELECT * FROM product_categories
 WHERE 
     deleted_at IS NULL
     AND (
-        COALESCE(sqlc.narg('search'), '') = '' 
+        COALESCE(sqlc.narg('search')::text, '') = '' 
         OR LOWER(name) LIKE sqlc.narg('search')
         OR LOWER(description) LIKE sqlc.narg('search')
     )
@@ -41,7 +44,7 @@ FROM product_categories
 WHERE 
     deleted_at IS NULL
     AND (
-        COALESCE(sqlc.narg('search'), '') = '' 
+        COALESCE(sqlc.narg('search')::text, '') = '' 
         OR LOWER(name) LIKE sqlc.narg('search')
         OR LOWER(description) LIKE sqlc.narg('search')
     );

@@ -6,20 +6,25 @@ package generated
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
-	ChangeVisibilityJobPosting(ctx context.Context, arg ChangeVisibilityJobPostingParams) (JobPosting, error)
+	ChangeVisibilityJobPosting(ctx context.Context, arg ChangeVisibilityJobPostingParams) error
+	CheckEventRegistrantExists(ctx context.Context, arg CheckEventRegistrantExistsParams) (bool, error)
 	CountBlogs(ctx context.Context, arg CountBlogsParams) (int64, error)
+	CountDepartments(ctx context.Context, search pgtype.Text) (int64, error)
 	CountDeviceTokens(ctx context.Context, arg CountDeviceTokensParams) (int64, error)
-	CountEvents(ctx context.Context, arg CountEventsParams) (Event, error)
-	CountJobApplications(ctx context.Context, arg CountJobApplicationsParams) (JobApplication, error)
+	CountEventRegistrants(ctx context.Context, eventID int64) (int64, error)
+	CountEvents(ctx context.Context, arg CountEventsParams) (int64, error)
+	CountJobApplications(ctx context.Context, arg CountJobApplicationsParams) (int64, error)
 	CountJobPostings(ctx context.Context, arg CountJobPostingsParams) (int64, error)
-	CountNewsLetters(ctx context.Context, arg CountNewsLettersParams) (NewsLetter, error)
-	CountNewsUpdate(ctx context.Context, arg CountNewsUpdateParams) (NewsUpdate, error)
+	CountNewsLetters(ctx context.Context, arg CountNewsLettersParams) (int64, error)
+	CountNewsUpdates(ctx context.Context, arg CountNewsUpdatesParams) (int64, error)
 	CountOrders(ctx context.Context, arg CountOrdersParams) (int64, error)
 	CountPayments(ctx context.Context, arg CountPaymentsParams) (int64, error)
-	CountProductCategories(ctx context.Context, search interface{}) (int64, error)
+	CountProductCategories(ctx context.Context, search pgtype.Text) (int64, error)
 	CountProducts(ctx context.Context, arg CountProductsParams) (int64, error)
 	CountRegistrars(ctx context.Context, arg CountRegistrarsParams) (int64, error)
 	CountUserPreferences(ctx context.Context) (int64, error)
@@ -34,6 +39,7 @@ type Querier interface {
 	CreateNewsLetter(ctx context.Context, arg CreateNewsLetterParams) (int64, error)
 	CreateNewsUpdate(ctx context.Context, arg CreateNewsUpdateParams) (int64, error)
 	CreateOrder(ctx context.Context, arg CreateOrderParams) (int64, error)
+	CreateOrderItem(ctx context.Context, arg CreateOrderItemParams) error
 	CreatePayment(ctx context.Context, arg CreatePaymentParams) (int64, error)
 	CreateProduct(ctx context.Context, arg CreateProductParams) (int64, error)
 	CreateProductCategory(ctx context.Context, arg CreateProductCategoryParams) (int64, error)
@@ -48,18 +54,20 @@ type Querier interface {
 	DeleteProduct(ctx context.Context, arg DeleteProductParams) error
 	DeleteProductCategory(ctx context.Context, arg DeleteProductCategoryParams) error
 	DeleteRegistrar(ctx context.Context, arg DeleteRegistrarParams) error
+	DeleteUser(ctx context.Context, arg DeleteUserParams) error
+	DepartmentExists(ctx context.Context, id int64) (bool, error)
+	EventExists(ctx context.Context, id int64) (bool, error)
 	GetBlog(ctx context.Context, id int64) (GetBlogRow, error)
 	GetDepartment(ctx context.Context, id int64) (Department, error)
 	GetDeviceTokenByID(ctx context.Context, id int64) (GetDeviceTokenByIDRow, error)
 	GetDeviceTokenByUserID(ctx context.Context, userID int64) ([]GetDeviceTokenByUserIDRow, error)
 	GetEvent(ctx context.Context, id int64) (Event, error)
-	GetFullOrderDetails(ctx context.Context, id int64) (GetFullOrderDetailsRow, error)
 	GetJobApplication(ctx context.Context, id int64) (GetJobApplicationRow, error)
 	GetJobApplicationsByJobID(ctx context.Context, arg GetJobApplicationsByJobIDParams) ([]JobApplication, error)
 	GetJobPosting(ctx context.Context, id int64) (GetJobPostingRow, error)
 	GetNewsLetter(ctx context.Context, id int64) (NewsLetter, error)
 	GetNewsUpdate(ctx context.Context, id int64) (NewsUpdate, error)
-	GetOrder(ctx context.Context, id int64) (Order, error)
+	GetOrder(ctx context.Context, id int64) (GetOrderRow, error)
 	GetPayment(ctx context.Context, id int64) (Payment, error)
 	GetProduct(ctx context.Context, id int64) (GetProductRow, error)
 	GetProductCategory(ctx context.Context, id int64) (ProductCategory, error)
@@ -75,7 +83,7 @@ type Querier interface {
 	ListJobApplications(ctx context.Context, arg ListJobApplicationsParams) ([]JobApplication, error)
 	ListJobPostings(ctx context.Context, arg ListJobPostingsParams) ([]ListJobPostingsRow, error)
 	ListNewsLetters(ctx context.Context, arg ListNewsLettersParams) ([]NewsLetter, error)
-	ListNewsUpdate(ctx context.Context, arg ListNewsUpdateParams) ([]NewsUpdate, error)
+	ListNewsUpdates(ctx context.Context, arg ListNewsUpdatesParams) ([]NewsUpdate, error)
 	ListOrders(ctx context.Context, arg ListOrdersParams) ([]Order, error)
 	ListPayments(ctx context.Context, arg ListPaymentsParams) ([]ListPaymentsRow, error)
 	ListProductCategories(ctx context.Context, arg ListProductCategoriesParams) ([]ProductCategory, error)
@@ -83,25 +91,30 @@ type Querier interface {
 	ListRegistrars(ctx context.Context, arg ListRegistrarsParams) ([]Registrar, error)
 	ListUserPreferences(ctx context.Context, arg ListUserPreferencesParams) ([]ListUserPreferencesRow, error)
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]ListUsersRow, error)
-	PublishBlog(ctx context.Context, arg PublishBlogParams) (Blog, error)
-	PublishEvent(ctx context.Context, arg PublishEventParams) (Event, error)
-	PublishJobPosting(ctx context.Context, arg PublishJobPostingParams) (JobPosting, error)
+	ProductCategoryExists(ctx context.Context, id int64) (bool, error)
+	ProductExists(ctx context.Context, id int64) (bool, error)
+	PublishBlog(ctx context.Context, arg PublishBlogParams) error
+	PublishEvent(ctx context.Context, arg PublishEventParams) error
+	PublishJobPosting(ctx context.Context, arg PublishJobPostingParams) error
+	PublishNewsLetter(ctx context.Context, arg PublishNewsLetterParams) error
 	PublishNewsUpdate(ctx context.Context, arg PublishNewsUpdateParams) (NewsUpdate, error)
-	UpdateBlog(ctx context.Context, arg UpdateBlogParams) (Blog, error)
-	UpdateDepartment(ctx context.Context, arg UpdateDepartmentParams) (Department, error)
-	UpdateDeviceToken(ctx context.Context, active bool) error
-	UpdateEvent(ctx context.Context, arg UpdateEventParams) (Event, error)
+	UpdateBlog(ctx context.Context, arg UpdateBlogParams) error
+	UpdateDepartment(ctx context.Context, arg UpdateDepartmentParams) error
+	UpdateDeviceToken(ctx context.Context, arg UpdateDeviceTokenParams) error
+	UpdateEvent(ctx context.Context, arg UpdateEventParams) error
 	UpdateJobApplication(ctx context.Context, arg UpdateJobApplicationParams) (JobApplication, error)
-	UpdateJobPosting(ctx context.Context, arg UpdateJobPostingParams) (JobPosting, error)
-	UpdateNewsLetter(ctx context.Context, arg UpdateNewsLetterParams) (NewsLetter, error)
-	UpdateNewsUpdate(ctx context.Context, arg UpdateNewsUpdateParams) (NewsUpdate, error)
+	UpdateJobPosting(ctx context.Context, arg UpdateJobPostingParams) error
+	UpdateNewsLetter(ctx context.Context, arg UpdateNewsLetterParams) error
+	UpdateNewsUpdate(ctx context.Context, arg UpdateNewsUpdateParams) error
 	UpdateOrder(ctx context.Context, arg UpdateOrderParams) (Order, error)
 	UpdatePayment(ctx context.Context, arg UpdatePaymentParams) (Payment, error)
 	UpdateProduct(ctx context.Context, arg UpdateProductParams) (Product, error)
 	UpdateProductCategory(ctx context.Context, arg UpdateProductCategoryParams) (ProductCategory, error)
+	UpdateProductItemSold(ctx context.Context, arg UpdateProductItemSoldParams) (int64, error)
 	UpdateRegistrar(ctx context.Context, arg UpdateRegistrarParams) (Registrar, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
 	UpdateUserPreferences(ctx context.Context, arg UpdateUserPreferencesParams) (UserPreference, error)
+	UserExists(ctx context.Context, id int64) (bool, error)
 }
 
 var _ Querier = (*Queries)(nil)

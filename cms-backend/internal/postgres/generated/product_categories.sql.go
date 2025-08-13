@@ -17,13 +17,13 @@ FROM product_categories
 WHERE 
     deleted_at IS NULL
     AND (
-        COALESCE($1, '') = '' 
+        COALESCE($1::text, '') = '' 
         OR LOWER(name) LIKE $1
         OR LOWER(description) LIKE $1
     )
 `
 
-func (q *Queries) CountProductCategories(ctx context.Context, search interface{}) (int64, error) {
+func (q *Queries) CountProductCategories(ctx context.Context, search pgtype.Text) (int64, error) {
 	row := q.db.QueryRow(ctx, countProductCategories, search)
 	var total_product_categories int64
 	err := row.Scan(&total_product_categories)
@@ -100,7 +100,7 @@ SELECT id, name, description, created_by, updated_by, deleted_by, deleted_at, up
 WHERE 
     deleted_at IS NULL
     AND (
-        COALESCE($1, '') = '' 
+        COALESCE($1::text, '') = '' 
         OR LOWER(name) LIKE $1
         OR LOWER(description) LIKE $1
     )
@@ -109,7 +109,7 @@ LIMIT $3 OFFSET $2
 `
 
 type ListProductCategoriesParams struct {
-	Search interface{} `json:"search"`
+	Search pgtype.Text `json:"search"`
 	Offset int32       `json:"offset"`
 	Limit  int32       `json:"limit"`
 }
@@ -144,6 +144,17 @@ func (q *Queries) ListProductCategories(ctx context.Context, arg ListProductCate
 	return items, nil
 }
 
+const productCategoryExists = `-- name: ProductCategoryExists :one
+SELECT EXISTS (SELECT 1 FROM product_categories WHERE id = $1 AND deleted_at IS NULL) AS exists
+`
+
+func (q *Queries) ProductCategoryExists(ctx context.Context, id int64) (bool, error) {
+	row := q.db.QueryRow(ctx, productCategoryExists, id)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const updateProductCategory = `-- name: UpdateProductCategory :one
 UPDATE product_categories
 SET name = COALESCE($1, name),
@@ -155,7 +166,7 @@ RETURNING id, name, description, created_by, updated_by, deleted_by, deleted_at,
 `
 
 type UpdateProductCategoryParams struct {
-	Name        string      `json:"name"`
+	Name        pgtype.Text `json:"name"`
 	Description pgtype.Text `json:"description"`
 	UpdatedBy   int64       `json:"updated_by"`
 	ID          int64       `json:"id"`

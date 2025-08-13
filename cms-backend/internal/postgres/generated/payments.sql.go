@@ -25,7 +25,7 @@ WHERE
         OR user_id = $2
     )
     AND (
-        COALESCE($3, '') = '' 
+        COALESCE($3::text, '') = '' 
         OR LOWER(payment_method) LIKE $3
     )
     AND (
@@ -33,17 +33,17 @@ WHERE
         OR status = $4
     )
     AND (
-        $5 IS NULL 
-        OR created_at BETWEEN $5 AND $6
+        $5::timestamptz IS NULL 
+        OR created_at BETWEEN $5 AND $6::timestamptz
     )
 `
 
 type CountPaymentsParams struct {
 	OrderID       pgtype.Int8        `json:"order_id"`
 	UserID        pgtype.Int8        `json:"user_id"`
-	PaymentMethod interface{}        `json:"payment_method"`
+	PaymentMethod pgtype.Text        `json:"payment_method"`
 	Status        pgtype.Bool        `json:"status"`
-	StartDate     interface{}        `json:"start_date"`
+	StartDate     pgtype.Timestamptz `json:"start_date"`
 	EndDate       pgtype.Timestamptz `json:"end_date"`
 }
 
@@ -122,7 +122,8 @@ SELECT
     o.status AS order_status,
     o.payment_status AS order_payment_status,
     u.id AS user_id,
-    u.email AS user_email
+    u.email AS user_email,
+    u.full_name AS user_full_name
 FROM payments p
 JOIN orders o ON p.order_id = o.id
 LEFT JOIN users u ON p.user_id = u.id
@@ -136,7 +137,7 @@ WHERE
         OR p.user_id = $2
     )
     AND (
-        COALESCE($3, '') = '' 
+        COALESCE($3::text, '') = '' 
         OR LOWER(p.payment_method) LIKE $3
     )
     AND (
@@ -144,8 +145,8 @@ WHERE
         OR p.status = $4
     )
     AND (
-        $5 IS NULL 
-        OR p.created_at BETWEEN $5 AND $6
+        $5::timestamptz IS NULL 
+        OR p.created_at BETWEEN $5 AND $6::timestamptz
     )
 ORDER BY p.created_at DESC
 LIMIT $8 OFFSET $7
@@ -154,9 +155,9 @@ LIMIT $8 OFFSET $7
 type ListPaymentsParams struct {
 	OrderID       pgtype.Int8        `json:"order_id"`
 	UserID        pgtype.Int8        `json:"user_id"`
-	PaymentMethod interface{}        `json:"payment_method"`
+	PaymentMethod pgtype.Text        `json:"payment_method"`
 	Status        pgtype.Bool        `json:"status"`
-	StartDate     interface{}        `json:"start_date"`
+	StartDate     pgtype.Timestamptz `json:"start_date"`
 	EndDate       pgtype.Timestamptz `json:"end_date"`
 	Offset        int32              `json:"offset"`
 	Limit         int32              `json:"limit"`
@@ -178,6 +179,7 @@ type ListPaymentsRow struct {
 	OrderPaymentStatus bool           `json:"order_payment_status"`
 	UserID_2           pgtype.Int8    `json:"user_id_2"`
 	UserEmail          pgtype.Text    `json:"user_email"`
+	UserFullName       pgtype.Text    `json:"user_full_name"`
 }
 
 func (q *Queries) ListPayments(ctx context.Context, arg ListPaymentsParams) ([]ListPaymentsRow, error) {
@@ -214,6 +216,7 @@ func (q *Queries) ListPayments(ctx context.Context, arg ListPaymentsParams) ([]L
 			&i.OrderPaymentStatus,
 			&i.UserID_2,
 			&i.UserEmail,
+			&i.UserFullName,
 		); err != nil {
 			return nil, err
 		}
@@ -237,7 +240,7 @@ RETURNING id, order_id, user_id, payment_method, amount, status, updated_by, cre
 
 type UpdatePaymentParams struct {
 	UserID    pgtype.Int8 `json:"user_id"`
-	Status    bool        `json:"status"`
+	Status    pgtype.Bool `json:"status"`
 	UpdatedBy pgtype.Int8 `json:"updated_by"`
 	ID        int64       `json:"id"`
 }

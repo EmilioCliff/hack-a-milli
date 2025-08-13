@@ -7,7 +7,25 @@ package generated
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const countDepartments = `-- name: CountDepartments :one
+SELECT COUNT(*) FROM departments
+WHERE
+    (
+        COALESCE($1::text, '') = ''
+        OR LOWER(name) LIKE $1
+    )
+`
+
+func (q *Queries) CountDepartments(ctx context.Context, search pgtype.Text) (int64, error) {
+	row := q.db.QueryRow(ctx, countDepartments, search)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
 
 const createDepartment = `-- name: CreateDepartment :one
 INSERT INTO departments (name)
@@ -20,6 +38,17 @@ func (q *Queries) CreateDepartment(ctx context.Context, name string) (int64, err
 	var id int64
 	err := row.Scan(&id)
 	return id, err
+}
+
+const departmentExists = `-- name: DepartmentExists :one
+SELECT EXISTS (SELECT 1 FROM departments WHERE id = $1) AS exists
+`
+
+func (q *Queries) DepartmentExists(ctx context.Context, id int64) (bool, error) {
+	row := q.db.QueryRow(ctx, departmentExists, id)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }
 
 const getDepartment = `-- name: GetDepartment :one
@@ -36,16 +65,23 @@ func (q *Queries) GetDepartment(ctx context.Context, id int64) (Department, erro
 
 const listDepartments = `-- name: ListDepartments :many
 SELECT id, name FROM departments
-LIMIT $1 OFFSET $2
+WHERE
+    (
+        COALESCE($1::text, '') = ''
+        OR LOWER(name) LIKE $1
+    )
+ORDER BY name DESC
+LIMIT $3 OFFSET $2
 `
 
 type ListDepartmentsParams struct {
-	Limit  int32 `json:"limit"`
-	Offset int32 `json:"offset"`
+	Search pgtype.Text `json:"search"`
+	Offset int32       `json:"offset"`
+	Limit  int32       `json:"limit"`
 }
 
 func (q *Queries) ListDepartments(ctx context.Context, arg ListDepartmentsParams) ([]Department, error) {
-	rows, err := q.db.Query(ctx, listDepartments, arg.Limit, arg.Offset)
+	rows, err := q.db.Query(ctx, listDepartments, arg.Search, arg.Offset, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -64,11 +100,10 @@ func (q *Queries) ListDepartments(ctx context.Context, arg ListDepartmentsParams
 	return items, nil
 }
 
-const updateDepartment = `-- name: UpdateDepartment :one
+const updateDepartment = `-- name: UpdateDepartment :exec
 UPDATE departments
 SET name = $1
 WHERE id = $2
-RETURNING id, name
 `
 
 type UpdateDepartmentParams struct {
@@ -76,9 +111,7 @@ type UpdateDepartmentParams struct {
 	ID   int64  `json:"id"`
 }
 
-func (q *Queries) UpdateDepartment(ctx context.Context, arg UpdateDepartmentParams) (Department, error) {
-	row := q.db.QueryRow(ctx, updateDepartment, arg.Name, arg.ID)
-	var i Department
-	err := row.Scan(&i.ID, &i.Name)
-	return i, err
+func (q *Queries) UpdateDepartment(ctx context.Context, arg UpdateDepartmentParams) error {
+	_, err := q.db.Exec(ctx, updateDepartment, arg.Name, arg.ID)
+	return err
 }

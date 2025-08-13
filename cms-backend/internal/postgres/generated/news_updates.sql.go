@@ -12,12 +12,12 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const countNewsUpdate = `-- name: CountNewsUpdate :one
-SELECT id, title, topic, date, min_read, content, cover_img, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at FROM news_updates
+const countNewsUpdates = `-- name: CountNewsUpdates :one
+SELECT COUNT(*) FROM news_updates
 WHERE 
     deleted_at IS NULL
     AND (
-        COALESCE($1, '') = '' 
+        COALESCE($1::text, '') = '' 
         OR LOWER(title) LIKE $1
         OR LOWER(topic) LIKE $1
     )
@@ -26,63 +26,49 @@ WHERE
         OR published = $2
     )
     AND (
-        slqc.narg('start_date')::date IS NULL 
+        slqc.narg('start_date')::timestamptz IS NULL 
         OR date >= $3
     )
     AND (
-        $4::date IS NULL 
+        $4::timestamptz IS NULL 
         OR date <= $4
     )
 `
 
-type CountNewsUpdateParams struct {
-	Search    interface{}        `json:"search"`
+type CountNewsUpdatesParams struct {
+	Search    pgtype.Text        `json:"search"`
 	Published pgtype.Bool        `json:"published"`
 	StartDate pgtype.Timestamptz `json:"start_date"`
-	EndDate   pgtype.Date        `json:"end_date"`
+	EndDate   pgtype.Timestamptz `json:"end_date"`
 }
 
-func (q *Queries) CountNewsUpdate(ctx context.Context, arg CountNewsUpdateParams) (NewsUpdate, error) {
-	row := q.db.QueryRow(ctx, countNewsUpdate,
+func (q *Queries) CountNewsUpdates(ctx context.Context, arg CountNewsUpdatesParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countNewsUpdates,
 		arg.Search,
 		arg.Published,
 		arg.StartDate,
 		arg.EndDate,
 	)
-	var i NewsUpdate
-	err := row.Scan(
-		&i.ID,
-		&i.Title,
-		&i.Topic,
-		&i.Date,
-		&i.MinRead,
-		&i.Content,
-		&i.CoverImg,
-		&i.Published,
-		&i.PublishedAt,
-		&i.UpdatedBy,
-		&i.CreatedBy,
-		&i.DeletedBy,
-		&i.DeletedAt,
-		&i.UpdatedAt,
-		&i.CreatedAt,
-	)
-	return i, err
+	var count int64
+	err := row.Scan(&count)
+	return count, err
 }
 
 const createNewsUpdate = `-- name: CreateNewsUpdate :one
-INSERT INTO news_updates (title, topic, date, min_read, content, cover_img)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO news_updates (title, topic, date, min_read, content, cover_img, updated_by, created_by)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 RETURNING id
 `
 
 type CreateNewsUpdateParams struct {
-	Title    string    `json:"title"`
-	Topic    string    `json:"topic"`
-	Date     time.Time `json:"date"`
-	MinRead  int32     `json:"min_read"`
-	Content  string    `json:"content"`
-	CoverImg string    `json:"cover_img"`
+	Title     string    `json:"title"`
+	Topic     string    `json:"topic"`
+	Date      time.Time `json:"date"`
+	MinRead   int32     `json:"min_read"`
+	Content   string    `json:"content"`
+	CoverImg  string    `json:"cover_img"`
+	UpdatedBy int64     `json:"updated_by"`
+	CreatedBy int64     `json:"created_by"`
 }
 
 func (q *Queries) CreateNewsUpdate(ctx context.Context, arg CreateNewsUpdateParams) (int64, error) {
@@ -93,6 +79,8 @@ func (q *Queries) CreateNewsUpdate(ctx context.Context, arg CreateNewsUpdatePara
 		arg.MinRead,
 		arg.Content,
 		arg.CoverImg,
+		arg.UpdatedBy,
+		arg.CreatedBy,
 	)
 	var id int64
 	err := row.Scan(&id)
@@ -144,12 +132,12 @@ func (q *Queries) GetNewsUpdate(ctx context.Context, id int64) (NewsUpdate, erro
 	return i, err
 }
 
-const listNewsUpdate = `-- name: ListNewsUpdate :many
+const listNewsUpdates = `-- name: ListNewsUpdates :many
 SELECT id, title, topic, date, min_read, content, cover_img, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at FROM news_updates
 WHERE 
     deleted_at IS NULL
     AND (
-        COALESCE($1, '') = '' 
+        COALESCE($1::text, '') = '' 
         OR LOWER(title) LIKE $1
         OR LOWER(topic) LIKE $1
     )
@@ -158,28 +146,28 @@ WHERE
         OR published = $2
     )
     AND (
-        slqc.narg('start_date')::date IS NULL 
+        slqc.narg('start_date')::timestamptz IS NULL 
         OR date >= $3
     )
     AND (
-        $4::date IS NULL 
+        $4::timestamptz IS NULL 
         OR date <= $4
     )
 ORDER BY created_at DESC
 LIMIT $6 OFFSET $5
 `
 
-type ListNewsUpdateParams struct {
-	Search    interface{}        `json:"search"`
+type ListNewsUpdatesParams struct {
+	Search    pgtype.Text        `json:"search"`
 	Published pgtype.Bool        `json:"published"`
 	StartDate pgtype.Timestamptz `json:"start_date"`
-	EndDate   pgtype.Date        `json:"end_date"`
+	EndDate   pgtype.Timestamptz `json:"end_date"`
 	Offset    int32              `json:"offset"`
 	Limit     int32              `json:"limit"`
 }
 
-func (q *Queries) ListNewsUpdate(ctx context.Context, arg ListNewsUpdateParams) ([]NewsUpdate, error) {
-	rows, err := q.db.Query(ctx, listNewsUpdate,
+func (q *Queries) ListNewsUpdates(ctx context.Context, arg ListNewsUpdatesParams) ([]NewsUpdate, error) {
+	rows, err := q.db.Query(ctx, listNewsUpdates,
 		arg.Search,
 		arg.Published,
 		arg.StartDate,
@@ -259,7 +247,7 @@ func (q *Queries) PublishNewsUpdate(ctx context.Context, arg PublishNewsUpdatePa
 	return i, err
 }
 
-const updateNewsUpdate = `-- name: UpdateNewsUpdate :one
+const updateNewsUpdate = `-- name: UpdateNewsUpdate :exec
 UPDATE news_updates
 SET title = COALESCE($1, title),
     topic = COALESCE($2, topic),
@@ -270,22 +258,21 @@ SET title = COALESCE($1, title),
     updated_by = $7,
     updated_at = NOW()
 WHERE id = $8
-RETURNING id, title, topic, date, min_read, content, cover_img, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at
 `
 
 type UpdateNewsUpdateParams struct {
-	Title     string    `json:"title"`
-	Topic     string    `json:"topic"`
-	Date      time.Time `json:"date"`
-	MinRead   int32     `json:"min_read"`
-	Content   string    `json:"content"`
-	CoverImg  string    `json:"cover_img"`
-	UpdatedBy int64     `json:"updated_by"`
-	ID        int64     `json:"id"`
+	Title     pgtype.Text        `json:"title"`
+	Topic     pgtype.Text        `json:"topic"`
+	Date      pgtype.Timestamptz `json:"date"`
+	MinRead   pgtype.Int4        `json:"min_read"`
+	Content   pgtype.Text        `json:"content"`
+	CoverImg  pgtype.Text        `json:"cover_img"`
+	UpdatedBy int64              `json:"updated_by"`
+	ID        int64              `json:"id"`
 }
 
-func (q *Queries) UpdateNewsUpdate(ctx context.Context, arg UpdateNewsUpdateParams) (NewsUpdate, error) {
-	row := q.db.QueryRow(ctx, updateNewsUpdate,
+func (q *Queries) UpdateNewsUpdate(ctx context.Context, arg UpdateNewsUpdateParams) error {
+	_, err := q.db.Exec(ctx, updateNewsUpdate,
 		arg.Title,
 		arg.Topic,
 		arg.Date,
@@ -295,23 +282,5 @@ func (q *Queries) UpdateNewsUpdate(ctx context.Context, arg UpdateNewsUpdatePara
 		arg.UpdatedBy,
 		arg.ID,
 	)
-	var i NewsUpdate
-	err := row.Scan(
-		&i.ID,
-		&i.Title,
-		&i.Topic,
-		&i.Date,
-		&i.MinRead,
-		&i.Content,
-		&i.CoverImg,
-		&i.Published,
-		&i.PublishedAt,
-		&i.UpdatedBy,
-		&i.CreatedBy,
-		&i.DeletedBy,
-		&i.DeletedAt,
-		&i.UpdatedAt,
-		&i.CreatedAt,
-	)
-	return i, err
+	return err
 }

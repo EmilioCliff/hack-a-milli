@@ -9,13 +9,13 @@ WHERE id = $1;
 
 -- name: UpdateRegistrar :one
 UPDATE registrars
-SET email = COALESCE(sqlc.arg('email'), email),
-    name = COALESCE(sqlc.arg('name'), name),
-    logo_url = COALESCE(sqlc.arg('logo_url'), logo_url),
-    address = COALESCE(sqlc.arg('address'), address),
+SET email = COALESCE(sqlc.narg('email'), email),
+    name = COALESCE(sqlc.narg('name'), name),
+    logo_url = COALESCE(sqlc.narg('logo_url'), logo_url),
+    address = COALESCE(sqlc.narg('address'), address),
     specialities = COALESCE(sqlc.narg('specialities'), specialities),
-    phone_number = COALESCE(sqlc.arg('phone_number'), phone_number),
-    website_url = COALESCE(sqlc.arg('website_url'), website_url),
+    phone_number = COALESCE(sqlc.narg('phone_number'), phone_number),
+    website_url = COALESCE(sqlc.narg('website_url'), website_url),
     updated_by = sqlc.arg('updated_by'),
     updated_at = NOW()
 WHERE id = sqlc.arg('id')

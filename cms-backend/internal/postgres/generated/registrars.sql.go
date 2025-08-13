@@ -203,15 +203,15 @@ RETURNING id, email, name, logo_url, address, specialities, phone_number, websit
 `
 
 type UpdateRegistrarParams struct {
-	Email        string   `json:"email"`
-	Name         string   `json:"name"`
-	LogoUrl      string   `json:"logo_url"`
-	Address      string   `json:"address"`
-	Specialities []string `json:"specialities"`
-	PhoneNumber  string   `json:"phone_number"`
-	WebsiteUrl   string   `json:"website_url"`
-	UpdatedBy    int64    `json:"updated_by"`
-	ID           int64    `json:"id"`
+	Email        pgtype.Text `json:"email"`
+	Name         pgtype.Text `json:"name"`
+	LogoUrl      pgtype.Text `json:"logo_url"`
+	Address      pgtype.Text `json:"address"`
+	Specialities []string    `json:"specialities"`
+	PhoneNumber  pgtype.Text `json:"phone_number"`
+	WebsiteUrl   pgtype.Text `json:"website_url"`
+	UpdatedBy    int64       `json:"updated_by"`
+	ID           int64       `json:"id"`
 }
 
 func (q *Queries) UpdateRegistrar(ctx context.Context, arg UpdateRegistrarParams) (Registrar, error) {

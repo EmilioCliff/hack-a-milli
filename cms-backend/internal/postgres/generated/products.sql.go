@@ -31,7 +31,7 @@ WHERE
 
 type CountProductsParams struct {
 	Search     interface{} `json:"search"`
-	CategoryID int64       `json:"category_id"`
+	CategoryID pgtype.Int8 `json:"category_id"`
 }
 
 func (q *Queries) CountProducts(ctx context.Context, arg CountProductsParams) (int64, error) {
@@ -141,7 +141,7 @@ JOIN product_categories c ON p.category_id = c.id
 WHERE 
     p.deleted_at IS NULL
     AND (
-        COALESCE($1, '') = '' 
+        COALESCE($1::text, '') = '' 
         OR LOWER(p.name) LIKE $1
         OR LOWER(c.name) LIKE $1
     )
@@ -154,8 +154,8 @@ LIMIT $4 OFFSET $3
 `
 
 type ListProductsParams struct {
-	Search     interface{} `json:"search"`
-	CategoryID int64       `json:"category_id"`
+	Search     pgtype.Text `json:"search"`
+	CategoryID pgtype.Int8 `json:"category_id"`
 	Offset     int32       `json:"offset"`
 	Limit      int32       `json:"limit"`
 }
@@ -217,6 +217,17 @@ func (q *Queries) ListProducts(ctx context.Context, arg ListProductsParams) ([]L
 	return items, nil
 }
 
+const productExists = `-- name: ProductExists :one
+SELECT EXISTS (SELECT 1 FROM products WHERE id = $1 AND deleted_at IS NULL)
+`
+
+func (q *Queries) ProductExists(ctx context.Context, id int64) (bool, error) {
+	row := q.db.QueryRow(ctx, productExists, id)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const updateProduct = `-- name: UpdateProduct :one
 UPDATE products
 SET category_id = COALESCE($1, category_id),
@@ -232,12 +243,12 @@ RETURNING id, category_id, name, price, image_url, description, items_sold, upda
 `
 
 type UpdateProductParams struct {
-	CategoryID  int64          `json:"category_id"`
-	Name        string         `json:"name"`
+	CategoryID  pgtype.Int8    `json:"category_id"`
+	Name        pgtype.Text    `json:"name"`
 	Price       pgtype.Numeric `json:"price"`
 	ImageUrl    []string       `json:"image_url"`
 	Description pgtype.Text    `json:"description"`
-	ItemsSold   int32          `json:"items_sold"`
+	ItemsSold   pgtype.Int4    `json:"items_sold"`
 	UpdatedBy   int64          `json:"updated_by"`
 	ID          int64          `json:"id"`
 }
@@ -270,4 +281,23 @@ func (q *Queries) UpdateProduct(ctx context.Context, arg UpdateProductParams) (P
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const updateProductItemSold = `-- name: UpdateProductItemSold :one
+UPDATE products
+SET items_sold = $1
+WHERE id = $2
+RETURNING id
+`
+
+type UpdateProductItemSoldParams struct {
+	ItemsSold int32 `json:"items_sold"`
+	ID        int64 `json:"id"`
+}
+
+func (q *Queries) UpdateProductItemSold(ctx context.Context, arg UpdateProductItemSoldParams) (int64, error) {
+	row := q.db.QueryRow(ctx, updateProductItemSold, arg.ItemsSold, arg.ID)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
 }

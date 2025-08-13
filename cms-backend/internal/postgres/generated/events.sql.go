@@ -12,11 +12,11 @@ import (
 )
 
 const countEvents = `-- name: CountEvents :one
-SELECT id, title, topic, content, cover_img, start_time, end_time, status, venue, price, agenda, tags, organizers, partners, speakers, max_attendees, registered_attendees, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at FROM events
+SELECT COUNT(*) FROM events
 WHERE 
     deleted_at IS NULL
     AND (
-        COALESCE($1, '') = '' 
+        COALESCE($1::text, '') = '' 
         OR LOWER(title) LIKE $1
         OR LOWER(topic) LIKE $1
     )
@@ -33,25 +33,25 @@ WHERE
         OR tags = ANY($4::text[])
     )
     AND (
-        $5::timestamp IS NULL 
+        $5::timestamptz IS NULL 
         OR start_time >= $5
     )
     AND (
-        $6::timestamp IS NULL 
+        $6::timestamptz IS NULL 
         OR end_time <= $6
     )
 `
 
 type CountEventsParams struct {
-	Search    interface{}      `json:"search"`
-	Status    pgtype.Text      `json:"status"`
-	Published pgtype.Bool      `json:"published"`
-	Tags      []string         `json:"tags"`
-	StartTime pgtype.Timestamp `json:"start_time"`
-	EndTime   pgtype.Timestamp `json:"end_time"`
+	Search    pgtype.Text        `json:"search"`
+	Status    pgtype.Text        `json:"status"`
+	Published pgtype.Bool        `json:"published"`
+	Tags      []string           `json:"tags"`
+	StartTime pgtype.Timestamptz `json:"start_time"`
+	EndTime   pgtype.Timestamptz `json:"end_time"`
 }
 
-func (q *Queries) CountEvents(ctx context.Context, arg CountEventsParams) (Event, error) {
+func (q *Queries) CountEvents(ctx context.Context, arg CountEventsParams) (int64, error) {
 	row := q.db.QueryRow(ctx, countEvents,
 		arg.Search,
 		arg.Status,
@@ -60,40 +60,28 @@ func (q *Queries) CountEvents(ctx context.Context, arg CountEventsParams) (Event
 		arg.StartTime,
 		arg.EndTime,
 	)
-	var i Event
-	err := row.Scan(
-		&i.ID,
-		&i.Title,
-		&i.Topic,
-		&i.Content,
-		&i.CoverImg,
-		&i.StartTime,
-		&i.EndTime,
-		&i.Status,
-		&i.Venue,
-		&i.Price,
-		&i.Agenda,
-		&i.Tags,
-		&i.Organizers,
-		&i.Partners,
-		&i.Speakers,
-		&i.MaxAttendees,
-		&i.RegisteredAttendees,
-		&i.Published,
-		&i.PublishedAt,
-		&i.UpdatedBy,
-		&i.CreatedBy,
-		&i.DeletedBy,
-		&i.DeletedAt,
-		&i.UpdatedAt,
-		&i.CreatedAt,
-	)
-	return i, err
+	var count int64
+	err := row.Scan(&count)
+	return count, err
 }
 
 const createEvent = `-- name: CreateEvent :one
-INSERT INTO events (title, topic, content, cover_img, start_time, end_time, status, venue, price, agenda, tags, organizers, partners, speakers, max_attendees)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+INSERT INTO events (
+    title, topic, content, 
+    cover_img, start_time, end_time, 
+    status, venue, price, 
+    agenda, tags, organizers, 
+    partners, speakers, max_attendees, 
+    updated_by, created_by
+)
+VALUES (
+    $1, $2, $3, 
+    $4, $5, $6, 
+    $7, $8, $9, 
+    $10, $11, $12, 
+    $13, $14, $15, 
+    $16, $17
+)
 RETURNING id
 `
 
@@ -113,6 +101,8 @@ type CreateEventParams struct {
 	Partners     []byte      `json:"partners"`
 	Speakers     []byte      `json:"speakers"`
 	MaxAttendees pgtype.Int4 `json:"max_attendees"`
+	UpdatedBy    int64       `json:"updated_by"`
+	CreatedBy    int64       `json:"created_by"`
 }
 
 func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) (int64, error) {
@@ -132,6 +122,8 @@ func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) (int64
 		arg.Partners,
 		arg.Speakers,
 		arg.MaxAttendees,
+		arg.UpdatedBy,
+		arg.CreatedBy,
 	)
 	var id int64
 	err := row.Scan(&id)
@@ -153,6 +145,17 @@ type DeleteEventParams struct {
 func (q *Queries) DeleteEvent(ctx context.Context, arg DeleteEventParams) error {
 	_, err := q.db.Exec(ctx, deleteEvent, arg.DeletedBy, arg.ID)
 	return err
+}
+
+const eventExists = `-- name: EventExists :one
+SELECT EXISTS(SELECT 1 FROM events WHERE id = $1) AS exists
+`
+
+func (q *Queries) EventExists(ctx context.Context, id int64) (bool, error) {
+	row := q.db.QueryRow(ctx, eventExists, id)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }
 
 const getEvent = `-- name: GetEvent :one
@@ -198,7 +201,7 @@ SELECT id, title, topic, content, cover_img, start_time, end_time, status, venue
 WHERE 
     deleted_at IS NULL
     AND (
-        COALESCE($1, '') = '' 
+        COALESCE($1::text, '') = '' 
         OR LOWER(title) LIKE $1
         OR LOWER(topic) LIKE $1
     )
@@ -215,11 +218,11 @@ WHERE
         OR tags = ANY($4::text[])
     )
     AND (
-        $5::timestamp IS NULL 
+        $5::timestamptz IS NULL 
         OR start_time >= $5
     )
     AND (
-        $6::timestamp IS NULL 
+        $6::timestamptz IS NULL 
         OR end_time <= $6
     )
 ORDER BY created_at DESC
@@ -227,14 +230,14 @@ LIMIT $8 OFFSET $7
 `
 
 type ListEventsParams struct {
-	Search    interface{}      `json:"search"`
-	Status    pgtype.Text      `json:"status"`
-	Published pgtype.Bool      `json:"published"`
-	Tags      []string         `json:"tags"`
-	StartTime pgtype.Timestamp `json:"start_time"`
-	EndTime   pgtype.Timestamp `json:"end_time"`
-	Offset    int32            `json:"offset"`
-	Limit     int32            `json:"limit"`
+	Search    pgtype.Text        `json:"search"`
+	Status    pgtype.Text        `json:"status"`
+	Published pgtype.Bool        `json:"published"`
+	Tags      []string           `json:"tags"`
+	StartTime pgtype.Timestamptz `json:"start_time"`
+	EndTime   pgtype.Timestamptz `json:"end_time"`
+	Offset    int32              `json:"offset"`
+	Limit     int32              `json:"limit"`
 }
 
 func (q *Queries) ListEvents(ctx context.Context, arg ListEventsParams) ([]Event, error) {
@@ -292,14 +295,13 @@ func (q *Queries) ListEvents(ctx context.Context, arg ListEventsParams) ([]Event
 	return items, nil
 }
 
-const publishEvent = `-- name: PublishEvent :one
+const publishEvent = `-- name: PublishEvent :exec
 UPDATE events
 SET published = TRUE,
     published_at = NOW(),
     updated_by = $1,
     updated_at = NOW()
 WHERE id = $2
-RETURNING id, title, topic, content, cover_img, start_time, end_time, status, venue, price, agenda, tags, organizers, partners, speakers, max_attendees, registered_attendees, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at
 `
 
 type PublishEventParams struct {
@@ -307,40 +309,12 @@ type PublishEventParams struct {
 	ID        int64 `json:"id"`
 }
 
-func (q *Queries) PublishEvent(ctx context.Context, arg PublishEventParams) (Event, error) {
-	row := q.db.QueryRow(ctx, publishEvent, arg.UpdatedBy, arg.ID)
-	var i Event
-	err := row.Scan(
-		&i.ID,
-		&i.Title,
-		&i.Topic,
-		&i.Content,
-		&i.CoverImg,
-		&i.StartTime,
-		&i.EndTime,
-		&i.Status,
-		&i.Venue,
-		&i.Price,
-		&i.Agenda,
-		&i.Tags,
-		&i.Organizers,
-		&i.Partners,
-		&i.Speakers,
-		&i.MaxAttendees,
-		&i.RegisteredAttendees,
-		&i.Published,
-		&i.PublishedAt,
-		&i.UpdatedBy,
-		&i.CreatedBy,
-		&i.DeletedBy,
-		&i.DeletedAt,
-		&i.UpdatedAt,
-		&i.CreatedAt,
-	)
-	return i, err
+func (q *Queries) PublishEvent(ctx context.Context, arg PublishEventParams) error {
+	_, err := q.db.Exec(ctx, publishEvent, arg.UpdatedBy, arg.ID)
+	return err
 }
 
-const updateEvent = `-- name: UpdateEvent :one
+const updateEvent = `-- name: UpdateEvent :exec
 UPDATE events
 SET title = COALESCE($1, title),
     topic = COALESCE($2, topic),
@@ -361,17 +335,16 @@ SET title = COALESCE($1, title),
     updated_by = $17,
     updated_at = NOW()
 WHERE id = $18
-RETURNING id, title, topic, content, cover_img, start_time, end_time, status, venue, price, agenda, tags, organizers, partners, speakers, max_attendees, registered_attendees, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at
 `
 
 type UpdateEventParams struct {
-	Title               string      `json:"title"`
-	Topic               string      `json:"topic"`
-	Content             string      `json:"content"`
-	CoverImg            string      `json:"cover_img"`
-	StartTime           string      `json:"start_time"`
-	EndTime             string      `json:"end_time"`
-	Status              string      `json:"status"`
+	Title               pgtype.Text `json:"title"`
+	Topic               pgtype.Text `json:"topic"`
+	Content             pgtype.Text `json:"content"`
+	CoverImg            pgtype.Text `json:"cover_img"`
+	StartTime           pgtype.Text `json:"start_time"`
+	EndTime             pgtype.Text `json:"end_time"`
+	Status              pgtype.Text `json:"status"`
 	Venue               []byte      `json:"venue"`
 	Price               pgtype.Text `json:"price"`
 	Agenda              []byte      `json:"agenda"`
@@ -385,8 +358,8 @@ type UpdateEventParams struct {
 	ID                  int64       `json:"id"`
 }
 
-func (q *Queries) UpdateEvent(ctx context.Context, arg UpdateEventParams) (Event, error) {
-	row := q.db.QueryRow(ctx, updateEvent,
+func (q *Queries) UpdateEvent(ctx context.Context, arg UpdateEventParams) error {
+	_, err := q.db.Exec(ctx, updateEvent,
 		arg.Title,
 		arg.Topic,
 		arg.Content,
@@ -406,33 +379,5 @@ func (q *Queries) UpdateEvent(ctx context.Context, arg UpdateEventParams) (Event
 		arg.UpdatedBy,
 		arg.ID,
 	)
-	var i Event
-	err := row.Scan(
-		&i.ID,
-		&i.Title,
-		&i.Topic,
-		&i.Content,
-		&i.CoverImg,
-		&i.StartTime,
-		&i.EndTime,
-		&i.Status,
-		&i.Venue,
-		&i.Price,
-		&i.Agenda,
-		&i.Tags,
-		&i.Organizers,
-		&i.Partners,
-		&i.Speakers,
-		&i.MaxAttendees,
-		&i.RegisteredAttendees,
-		&i.Published,
-		&i.PublishedAt,
-		&i.UpdatedBy,
-		&i.CreatedBy,
-		&i.DeletedBy,
-		&i.DeletedAt,
-		&i.UpdatedAt,
-		&i.CreatedAt,
-	)
-	return i, err
+	return err
 }

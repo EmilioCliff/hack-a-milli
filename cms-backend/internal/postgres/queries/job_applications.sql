@@ -1,6 +1,6 @@
 -- name: CreateJobApplication :one
 INSERT INTO job_applications (job_id, full_name, email, phone_number, cover_letter, resume_url, submitted_at)
-VALUES (sqlc.arg('job_id'), sqlc.arg('full_name'), sqlc.arg('email'), sqlc.arg('phone_number'), sqlc.narg('cover_letter'), sqlc.arg('resume_url'), NOW())
+VALUES (sqlc.arg('job_id'), sqlc.arg('full_name'), sqlc.arg('email'), sqlc.arg('phone_number'), sqlc.arg('cover_letter'), sqlc.arg('resume_url'), NOW())
 RETURNING id;
 
 -- name: GetJobApplication :one
@@ -32,7 +32,7 @@ LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 
 -- name: UpdateJobApplication :one
 UPDATE job_applications
-SET status = COALESCE(sqlc.arg('status'), status),
+SET status = COALESCE(sqlc.narg('status'), status),
     comment = COALESCE(sqlc.narg('comment'), comment),
     updated_by = sqlc.arg('updated_by'),
     updated_at = NOW()
@@ -43,7 +43,7 @@ RETURNING *;
 SELECT * FROM job_applications
 WHERE 
     (
-        COALESCE(sqlc.narg('search'), '') = ''
+        COALESCE(sqlc.narg('search')::text, '') = ''
         OR LOWER(full_name) LIKE sqlc.narg('search')
         OR LOWER(email) LIKE sqlc.narg('search')
         OR LOWER(phone_number) LIKE sqlc.narg('search')
@@ -53,17 +53,17 @@ WHERE
         OR status = sqlc.narg('status')
     )
     AND (
-        COALESCE(sqlc.narg('job_id'), 0) = 0
+        COALESCE(sqlc.narg('job_id')::bigint, 0) = 0
         OR job_id = sqlc.narg('job_id')
     )
 ORDER BY submitted_at DESC
 LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 
 -- name: CountJobApplications :one
-SELECT * FROM job_applications
+SELECT COUNT(*) FROM job_applications
 WHERE 
     (
-        COALESCE(sqlc.narg('search'), '') = ''
+        COALESCE(sqlc.narg('search')::text, '') = ''
         OR LOWER(full_name) LIKE sqlc.narg('search')
         OR LOWER(email) LIKE sqlc.narg('search')
         OR LOWER(phone_number) LIKE sqlc.narg('search')
@@ -73,6 +73,6 @@ WHERE
         OR status = sqlc.narg('status')
     )
     AND (
-        COALESCE(sqlc.narg('job_id'), 0) = 0
+        COALESCE(sqlc.narg('job_id')::bigint, 0) = 0
         OR job_id = sqlc.narg('job_id')
     );

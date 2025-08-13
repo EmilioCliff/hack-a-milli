@@ -13,11 +13,11 @@ import (
 )
 
 const countNewsLetters = `-- name: CountNewsLetters :one
-SELECT id, title, description, pdf_url, date, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at FROM news_letters
+SELECT COUNT(*) FROM news_letters
 WHERE 
     deleted_at IS NULL
     AND (
-        COALESCE($1, '') = ''
+        COALESCE($1::text, '') = ''
         OR LOWER(title) LIKE $1
         OR LOWER(description) LIKE $1
     )
@@ -26,51 +26,37 @@ WHERE
         OR published = $2
     )
     AND (
-        $3::date IS NULL 
+        $3::timestamptz IS NULL 
         OR date >= $3
     )
     AND (
-        $4::date IS NULL 
+        $4::timestamptz IS NULL 
         OR date <= $4
     )
 `
 
 type CountNewsLettersParams struct {
-	Search    interface{} `json:"search"`
-	Published pgtype.Bool `json:"published"`
-	StartDate pgtype.Date `json:"start_date"`
-	EndDate   pgtype.Date `json:"end_date"`
+	Search    pgtype.Text        `json:"search"`
+	Published pgtype.Bool        `json:"published"`
+	StartDate pgtype.Timestamptz `json:"start_date"`
+	EndDate   pgtype.Timestamptz `json:"end_date"`
 }
 
-func (q *Queries) CountNewsLetters(ctx context.Context, arg CountNewsLettersParams) (NewsLetter, error) {
+func (q *Queries) CountNewsLetters(ctx context.Context, arg CountNewsLettersParams) (int64, error) {
 	row := q.db.QueryRow(ctx, countNewsLetters,
 		arg.Search,
 		arg.Published,
 		arg.StartDate,
 		arg.EndDate,
 	)
-	var i NewsLetter
-	err := row.Scan(
-		&i.ID,
-		&i.Title,
-		&i.Description,
-		&i.PdfUrl,
-		&i.Date,
-		&i.Published,
-		&i.PublishedAt,
-		&i.UpdatedBy,
-		&i.CreatedBy,
-		&i.DeletedBy,
-		&i.DeletedAt,
-		&i.UpdatedAt,
-		&i.CreatedAt,
-	)
-	return i, err
+	var count int64
+	err := row.Scan(&count)
+	return count, err
 }
 
 const createNewsLetter = `-- name: CreateNewsLetter :one
-INSERT INTO news_letters (title, description, pdf_url, date)
-VALUES ($1, $2, $3, $4)
+INSERT INTO news_letters (title, description, pdf_url, date, updated_by, created_by)
+VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING id
 `
 
@@ -79,6 +65,8 @@ type CreateNewsLetterParams struct {
 	Description string    `json:"description"`
 	PdfUrl      string    `json:"pdf_url"`
 	Date        time.Time `json:"date"`
+	UpdatedBy   int64     `json:"updated_by"`
+	CreatedBy   int64     `json:"created_by"`
 }
 
 func (q *Queries) CreateNewsLetter(ctx context.Context, arg CreateNewsLetterParams) (int64, error) {
@@ -87,6 +75,8 @@ func (q *Queries) CreateNewsLetter(ctx context.Context, arg CreateNewsLetterPara
 		arg.Description,
 		arg.PdfUrl,
 		arg.Date,
+		arg.UpdatedBy,
+		arg.CreatedBy,
 	)
 	var id int64
 	err := row.Scan(&id)
@@ -141,7 +131,7 @@ SELECT id, title, description, pdf_url, date, published, published_at, updated_b
 WHERE 
     deleted_at IS NULL
     AND (
-        COALESCE($1, '') = ''
+        COALESCE($1::text, '') = ''
         OR LOWER(title) LIKE $1
         OR LOWER(description) LIKE $1
     )
@@ -150,11 +140,11 @@ WHERE
         OR published = $2
     )
     AND (
-        $3::date IS NULL 
+        $3::timestamptz IS NULL 
         OR date >= $3
     )
     AND (
-        $4::date IS NULL 
+        $4::timestamptz IS NULL 
         OR date <= $4
     )
 ORDER BY created_at DESC
@@ -162,12 +152,12 @@ LIMIT $6 OFFSET $5
 `
 
 type ListNewsLettersParams struct {
-	Search    interface{} `json:"search"`
-	Published pgtype.Bool `json:"published"`
-	StartDate pgtype.Date `json:"start_date"`
-	EndDate   pgtype.Date `json:"end_date"`
-	Offset    int32       `json:"offset"`
-	Limit     int32       `json:"limit"`
+	Search    pgtype.Text        `json:"search"`
+	Published pgtype.Bool        `json:"published"`
+	StartDate pgtype.Timestamptz `json:"start_date"`
+	EndDate   pgtype.Timestamptz `json:"end_date"`
+	Offset    int32              `json:"offset"`
+	Limit     int32              `json:"limit"`
 }
 
 func (q *Queries) ListNewsLetters(ctx context.Context, arg ListNewsLettersParams) ([]NewsLetter, error) {
@@ -211,7 +201,26 @@ func (q *Queries) ListNewsLetters(ctx context.Context, arg ListNewsLettersParams
 	return items, nil
 }
 
-const updateNewsLetter = `-- name: UpdateNewsLetter :one
+const publishNewsLetter = `-- name: PublishNewsLetter :exec
+UPDATE news_letters
+SET published = TRUE,
+    published_at = NOW(),
+    updated_by = $1,
+    updated_at = NOW()
+WHERE id = $2
+`
+
+type PublishNewsLetterParams struct {
+	UpdatedBy int64 `json:"updated_by"`
+	ID        int64 `json:"id"`
+}
+
+func (q *Queries) PublishNewsLetter(ctx context.Context, arg PublishNewsLetterParams) error {
+	_, err := q.db.Exec(ctx, publishNewsLetter, arg.UpdatedBy, arg.ID)
+	return err
+}
+
+const updateNewsLetter = `-- name: UpdateNewsLetter :exec
 UPDATE news_letters
 SET title = COALESCE($1, title),
     description = COALESCE($2, description),
@@ -220,20 +229,19 @@ SET title = COALESCE($1, title),
     updated_by = $5,
     updated_at = NOW()
 WHERE id = $6
-RETURNING id, title, description, pdf_url, date, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at
 `
 
 type UpdateNewsLetterParams struct {
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	PdfUrl      string    `json:"pdf_url"`
-	Date        time.Time `json:"date"`
-	UpdatedBy   int64     `json:"updated_by"`
-	ID          int64     `json:"id"`
+	Title       pgtype.Text        `json:"title"`
+	Description pgtype.Text        `json:"description"`
+	PdfUrl      pgtype.Text        `json:"pdf_url"`
+	Date        pgtype.Timestamptz `json:"date"`
+	UpdatedBy   int64              `json:"updated_by"`
+	ID          int64              `json:"id"`
 }
 
-func (q *Queries) UpdateNewsLetter(ctx context.Context, arg UpdateNewsLetterParams) (NewsLetter, error) {
-	row := q.db.QueryRow(ctx, updateNewsLetter,
+func (q *Queries) UpdateNewsLetter(ctx context.Context, arg UpdateNewsLetterParams) error {
+	_, err := q.db.Exec(ctx, updateNewsLetter,
 		arg.Title,
 		arg.Description,
 		arg.PdfUrl,
@@ -241,21 +249,5 @@ func (q *Queries) UpdateNewsLetter(ctx context.Context, arg UpdateNewsLetterPara
 		arg.UpdatedBy,
 		arg.ID,
 	)
-	var i NewsLetter
-	err := row.Scan(
-		&i.ID,
-		&i.Title,
-		&i.Description,
-		&i.PdfUrl,
-		&i.Date,
-		&i.Published,
-		&i.PublishedAt,
-		&i.UpdatedBy,
-		&i.CreatedBy,
-		&i.DeletedBy,
-		&i.DeletedAt,
-		&i.UpdatedAt,
-		&i.CreatedAt,
-	)
-	return i, err
+	return err
 }

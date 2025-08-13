@@ -9,6 +9,35 @@ import (
 	"context"
 )
 
+const checkEventRegistrantExists = `-- name: CheckEventRegistrantExists :one
+SELECT EXISTS(SELECT 1 FROM event_registrants WHERE event_id = $1 AND email = $2) AS exists
+`
+
+type CheckEventRegistrantExistsParams struct {
+	EventID int64  `json:"event_id"`
+	Email   string `json:"email"`
+}
+
+func (q *Queries) CheckEventRegistrantExists(ctx context.Context, arg CheckEventRegistrantExistsParams) (bool, error) {
+	row := q.db.QueryRow(ctx, checkEventRegistrantExists, arg.EventID, arg.Email)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const countEventRegistrants = `-- name: CountEventRegistrants :one
+SELECT COUNT(*) 
+FROM event_registrants
+WHERE event_id = $1
+`
+
+func (q *Queries) CountEventRegistrants(ctx context.Context, eventID int64) (int64, error) {
+	row := q.db.QueryRow(ctx, countEventRegistrants, eventID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createEventRegistrant = `-- name: CreateEventRegistrant :one
 INSERT INTO event_registrants (event_id, name, email)
 VALUES ($1, $2, $3)

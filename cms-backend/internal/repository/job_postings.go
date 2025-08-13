@@ -53,7 +53,7 @@ type JobPostingFilter struct {
 	Published      *bool
 }
 
-type JopPostingRepository interface {
+type CareerRepository interface {
 	CreateJobPosting(ctx context.Context, jobPosting *JobPosting) (*JobPosting, error)
 	GetJobPosting(ctx context.Context, id int64) (*JobPosting, error)
 	UpdateJobPosting(ctx context.Context, jobPosting *UpdateJobPosting) (*JobPosting, error)
@@ -61,4 +61,9 @@ type JopPostingRepository interface {
 	ChangeJobPostingVisibility(ctx context.Context, jobPostingID int64, userID int64, showCase bool) (*JobPosting, error)
 	ListJobPosting(ctx context.Context, filter *JobPostingFilter) ([]*JobPosting, *pkg.Pagination, error)
 	DeleteJobPosting(ctx context.Context, jobPostingID int64, userID int64) error
+
+	CreateJobApplication(ctx context.Context, jobApplication *JobApplication) (*JobApplication, error)
+	GetJobApplication(ctx context.Context, id int64) (*JobApplication, error)
+	UpdateJobApplication(ctx context.Context, jobApplication *UpdateJobApplication) (*JobApplication, error)
+	ListJobApplications(ctx context.Context, filter *JobApplicationFilter) ([]*JobApplication, *pkg.Pagination, error)
 }

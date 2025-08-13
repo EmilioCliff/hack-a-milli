@@ -70,7 +70,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (int64
 	return id, err
 }
 
-const getFullOrderDetails = `-- name: GetFullOrderDetails :one
+const getOrder = `-- name: GetOrder :one
 SELECT 
     o.id, o.user_id, o.amount, o.status, o.payment_status, o.order_details, o.updated_by, o.updated_at, o.created_at,
     COALESCE(p1.order_items_json, '[]') as order_items,
@@ -107,7 +107,7 @@ LEFT JOIN LATERAL (
 WHERE o.id = $1
 `
 
-type GetFullOrderDetailsRow struct {
+type GetOrderRow struct {
 	ID            int64          `json:"id"`
 	UserID        pgtype.Int8    `json:"user_id"`
 	Amount        pgtype.Numeric `json:"amount"`
@@ -121,9 +121,9 @@ type GetFullOrderDetailsRow struct {
 	User          []byte         `json:"user"`
 }
 
-func (q *Queries) GetFullOrderDetails(ctx context.Context, id int64) (GetFullOrderDetailsRow, error) {
-	row := q.db.QueryRow(ctx, getFullOrderDetails, id)
-	var i GetFullOrderDetailsRow
+func (q *Queries) GetOrder(ctx context.Context, id int64) (GetOrderRow, error) {
+	row := q.db.QueryRow(ctx, getOrder, id)
+	var i GetOrderRow
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
@@ -136,28 +136,6 @@ func (q *Queries) GetFullOrderDetails(ctx context.Context, id int64) (GetFullOrd
 		&i.CreatedAt,
 		&i.OrderItems,
 		&i.User,
-	)
-	return i, err
-}
-
-const getOrder = `-- name: GetOrder :one
-SELECT id, user_id, amount, status, payment_status, order_details, updated_by, updated_at, created_at FROM orders
-WHERE id = $1
-`
-
-func (q *Queries) GetOrder(ctx context.Context, id int64) (Order, error) {
-	row := q.db.QueryRow(ctx, getOrder, id)
-	var i Order
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.Amount,
-		&i.Status,
-		&i.PaymentStatus,
-		&i.OrderDetails,
-		&i.UpdatedBy,
-		&i.UpdatedAt,
-		&i.CreatedAt,
 	)
 	return i, err
 }
@@ -238,8 +216,8 @@ RETURNING id, user_id, amount, status, payment_status, order_details, updated_by
 
 type UpdateOrderParams struct {
 	UserID        pgtype.Int8 `json:"user_id"`
-	Status        string      `json:"status"`
-	PaymentStatus bool        `json:"payment_status"`
+	Status        pgtype.Text `json:"status"`
+	PaymentStatus pgtype.Bool `json:"payment_status"`
 	UpdatedBy     pgtype.Int8 `json:"updated_by"`
 	ID            int64       `json:"id"`
 }

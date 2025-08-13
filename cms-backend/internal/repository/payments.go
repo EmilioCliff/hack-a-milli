@@ -46,5 +46,4 @@ type PaymentRepository interface {
 	GetPayment(ctx context.Context, id int64) (*Payment, error)
 	UpdatePayment(ctx context.Context, payment *UpdatePayment) (*Payment, error)
 	ListPayment(ctx context.Context, filter *PaymentFilter) ([]*Payment, *pkg.Pagination, error)
-	DeletePayment(ctx context.Context, paymentID int64, userID int64) error
 }

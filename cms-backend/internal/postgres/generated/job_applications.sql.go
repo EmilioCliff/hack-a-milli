@@ -13,10 +13,10 @@ import (
 )
 
 const countJobApplications = `-- name: CountJobApplications :one
-SELECT id, job_id, full_name, email, phone_number, cover_letter, resume_url, status, comment, submitted_at, updated_by, updated_at, created_at FROM job_applications
+SELECT COUNT(*) FROM job_applications
 WHERE 
     (
-        COALESCE($1, '') = ''
+        COALESCE($1::text, '') = ''
         OR LOWER(full_name) LIKE $1
         OR LOWER(email) LIKE $1
         OR LOWER(phone_number) LIKE $1
@@ -26,36 +26,22 @@ WHERE
         OR status = $2
     )
     AND (
-        COALESCE($3, 0) = 0
+        COALESCE($3::bigint, 0) = 0
         OR job_id = $3
     )
 `
 
 type CountJobApplicationsParams struct {
-	Search interface{} `json:"search"`
+	Search pgtype.Text `json:"search"`
 	Status pgtype.Text `json:"status"`
-	JobID  interface{} `json:"job_id"`
+	JobID  pgtype.Int8 `json:"job_id"`
 }
 
-func (q *Queries) CountJobApplications(ctx context.Context, arg CountJobApplicationsParams) (JobApplication, error) {
+func (q *Queries) CountJobApplications(ctx context.Context, arg CountJobApplicationsParams) (int64, error) {
 	row := q.db.QueryRow(ctx, countJobApplications, arg.Search, arg.Status, arg.JobID)
-	var i JobApplication
-	err := row.Scan(
-		&i.ID,
-		&i.JobID,
-		&i.FullName,
-		&i.Email,
-		&i.PhoneNumber,
-		&i.CoverLetter,
-		&i.ResumeUrl,
-		&i.Status,
-		&i.Comment,
-		&i.SubmittedAt,
-		&i.UpdatedBy,
-		&i.UpdatedAt,
-		&i.CreatedAt,
-	)
-	return i, err
+	var count int64
+	err := row.Scan(&count)
+	return count, err
 }
 
 const createJobApplication = `-- name: CreateJobApplication :one
@@ -65,12 +51,12 @@ RETURNING id
 `
 
 type CreateJobApplicationParams struct {
-	JobID       int64       `json:"job_id"`
-	FullName    string      `json:"full_name"`
-	Email       string      `json:"email"`
-	PhoneNumber string      `json:"phone_number"`
-	CoverLetter pgtype.Text `json:"cover_letter"`
-	ResumeUrl   string      `json:"resume_url"`
+	JobID       int64  `json:"job_id"`
+	FullName    string `json:"full_name"`
+	Email       string `json:"email"`
+	PhoneNumber string `json:"phone_number"`
+	CoverLetter string `json:"cover_letter"`
+	ResumeUrl   string `json:"resume_url"`
 }
 
 func (q *Queries) CreateJobApplication(ctx context.Context, arg CreateJobApplicationParams) (int64, error) {
@@ -199,7 +185,7 @@ const listJobApplications = `-- name: ListJobApplications :many
 SELECT id, job_id, full_name, email, phone_number, cover_letter, resume_url, status, comment, submitted_at, updated_by, updated_at, created_at FROM job_applications
 WHERE 
     (
-        COALESCE($1, '') = ''
+        COALESCE($1::text, '') = ''
         OR LOWER(full_name) LIKE $1
         OR LOWER(email) LIKE $1
         OR LOWER(phone_number) LIKE $1
@@ -209,7 +195,7 @@ WHERE
         OR status = $2
     )
     AND (
-        COALESCE($3, 0) = 0
+        COALESCE($3::bigint, 0) = 0
         OR job_id = $3
     )
 ORDER BY submitted_at DESC
@@ -217,9 +203,9 @@ LIMIT $5 OFFSET $4
 `
 
 type ListJobApplicationsParams struct {
-	Search interface{} `json:"search"`
+	Search pgtype.Text `json:"search"`
 	Status pgtype.Text `json:"status"`
-	JobID  interface{} `json:"job_id"`
+	JobID  pgtype.Int8 `json:"job_id"`
 	Offset int32       `json:"offset"`
 	Limit  int32       `json:"limit"`
 }
@@ -275,7 +261,7 @@ RETURNING id, job_id, full_name, email, phone_number, cover_letter, resume_url, 
 `
 
 type UpdateJobApplicationParams struct {
-	Status    string      `json:"status"`
+	Status    pgtype.Text `json:"status"`
 	Comment   pgtype.Text `json:"comment"`
 	UpdatedBy pgtype.Int8 `json:"updated_by"`
 	ID        int64       `json:"id"`

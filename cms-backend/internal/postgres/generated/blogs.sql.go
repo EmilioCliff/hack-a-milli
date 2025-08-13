@@ -22,7 +22,7 @@ WHERE
         OR b.author = $1
     ) 
     AND (
-        COALESCE($2, '') = '' 
+        COALESCE($2::text, '') = '' 
         OR LOWER(b.title) LIKE $2
         OR LOWER(b.topic) LIKE $2
     )
@@ -34,7 +34,7 @@ WHERE
 
 type CountBlogsParams struct {
 	Author    pgtype.Int8 `json:"author"`
-	Search    interface{} `json:"search"`
+	Search    pgtype.Text `json:"search"`
 	Published pgtype.Bool `json:"published"`
 }
 
@@ -52,15 +52,15 @@ RETURNING id
 `
 
 type CreateBlogParams struct {
-	Title       string      `json:"title"`
-	Author      int64       `json:"author"`
-	CoverImg    pgtype.Text `json:"cover_img"`
-	Topic       string      `json:"topic"`
-	Description pgtype.Text `json:"description"`
-	Content     pgtype.Text `json:"content"`
-	MinRead     int32       `json:"min_read"`
-	UpdatedBy   int64       `json:"updated_by"`
-	CreatedBy   int64       `json:"created_by"`
+	Title       string `json:"title"`
+	Author      int64  `json:"author"`
+	CoverImg    string `json:"cover_img"`
+	Topic       string `json:"topic"`
+	Description string `json:"description"`
+	Content     string `json:"content"`
+	MinRead     int32  `json:"min_read"`
+	UpdatedBy   int64  `json:"updated_by"`
+	CreatedBy   int64  `json:"created_by"`
 }
 
 func (q *Queries) CreateBlog(ctx context.Context, arg CreateBlogParams) (int64, error) {
@@ -182,7 +182,7 @@ WHERE
         OR b.author = $1
     ) 
     AND (
-        COALESCE($2, '') = '' 
+        COALESCE($2::text, '') = '' 
         OR LOWER(b.title) LIKE $2
         OR LOWER(b.topic) LIKE $2
     )
@@ -196,7 +196,7 @@ LIMIT $5 OFFSET $4
 
 type ListBlogsParams struct {
 	Author    pgtype.Int8 `json:"author"`
-	Search    interface{} `json:"search"`
+	Search    pgtype.Text `json:"search"`
 	Published pgtype.Bool `json:"published"`
 	Offset    int32       `json:"offset"`
 	Limit     int32       `json:"limit"`
@@ -268,14 +268,13 @@ func (q *Queries) ListBlogs(ctx context.Context, arg ListBlogsParams) ([]ListBlo
 	return items, nil
 }
 
-const publishBlog = `-- name: PublishBlog :one
+const publishBlog = `-- name: PublishBlog :exec
 UPDATE blogs
 SET published = TRUE,
     published_at = NOW(),
     updated_by = $1,
     updated_at = NOW()
 WHERE id = $2
-RETURNING id, title, author, cover_img, topic, description, content, views, min_read, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at
 `
 
 type PublishBlogParams struct {
@@ -283,32 +282,12 @@ type PublishBlogParams struct {
 	ID        int64 `json:"id"`
 }
 
-func (q *Queries) PublishBlog(ctx context.Context, arg PublishBlogParams) (Blog, error) {
-	row := q.db.QueryRow(ctx, publishBlog, arg.UpdatedBy, arg.ID)
-	var i Blog
-	err := row.Scan(
-		&i.ID,
-		&i.Title,
-		&i.Author,
-		&i.CoverImg,
-		&i.Topic,
-		&i.Description,
-		&i.Content,
-		&i.Views,
-		&i.MinRead,
-		&i.Published,
-		&i.PublishedAt,
-		&i.UpdatedBy,
-		&i.CreatedBy,
-		&i.DeletedBy,
-		&i.DeletedAt,
-		&i.UpdatedAt,
-		&i.CreatedAt,
-	)
-	return i, err
+func (q *Queries) PublishBlog(ctx context.Context, arg PublishBlogParams) error {
+	_, err := q.db.Exec(ctx, publishBlog, arg.UpdatedBy, arg.ID)
+	return err
 }
 
-const updateBlog = `-- name: UpdateBlog :one
+const updateBlog = `-- name: UpdateBlog :exec
 UPDATE blogs
 SET title = COALESCE($1, title),
     cover_img = COALESCE($2, cover_img),
@@ -320,23 +299,22 @@ SET title = COALESCE($1, title),
     updated_by = $8,
     updated_at = NOW()
 WHERE id = $9
-RETURNING id, title, author, cover_img, topic, description, content, views, min_read, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at
 `
 
 type UpdateBlogParams struct {
-	Title       string      `json:"title"`
+	Title       pgtype.Text `json:"title"`
 	CoverImg    pgtype.Text `json:"cover_img"`
-	Topic       string      `json:"topic"`
+	Topic       pgtype.Text `json:"topic"`
 	Description pgtype.Text `json:"description"`
 	Content     pgtype.Text `json:"content"`
-	MinRead     int32       `json:"min_read"`
-	Views       int32       `json:"views"`
+	MinRead     pgtype.Int4 `json:"min_read"`
+	Views       pgtype.Int4 `json:"views"`
 	UpdatedBy   int64       `json:"updated_by"`
 	ID          int64       `json:"id"`
 }
 
-func (q *Queries) UpdateBlog(ctx context.Context, arg UpdateBlogParams) (Blog, error) {
-	row := q.db.QueryRow(ctx, updateBlog,
+func (q *Queries) UpdateBlog(ctx context.Context, arg UpdateBlogParams) error {
+	_, err := q.db.Exec(ctx, updateBlog,
 		arg.Title,
 		arg.CoverImg,
 		arg.Topic,
@@ -347,25 +325,5 @@ func (q *Queries) UpdateBlog(ctx context.Context, arg UpdateBlogParams) (Blog, e
 		arg.UpdatedBy,
 		arg.ID,
 	)
-	var i Blog
-	err := row.Scan(
-		&i.ID,
-		&i.Title,
-		&i.Author,
-		&i.CoverImg,
-		&i.Topic,
-		&i.Description,
-		&i.Content,
-		&i.Views,
-		&i.MinRead,
-		&i.Published,
-		&i.PublishedAt,
-		&i.UpdatedBy,
-		&i.CreatedBy,
-		&i.DeletedBy,
-		&i.DeletedAt,
-		&i.UpdatedAt,
-		&i.CreatedAt,
-	)
-	return i, err
+	return err
 }

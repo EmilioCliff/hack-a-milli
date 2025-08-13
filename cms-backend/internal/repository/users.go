@@ -12,7 +12,7 @@ type User struct {
 	Email                     string    `json:"email"`
 	FullName                  string    `json:"full_name"`
 	PhoneNumber               string    `json:"phone_number"`
-	Address                   string    `json:"address"`
+	Address                   *string   `json:"address"`
 	PasswordHash              *string   `json:"password_hash,omitempty"`
 	RefreshToken              *string   `json:"refresh_token,omitempty"`
 	Role                      []string  `json:"role"`
@@ -51,9 +51,23 @@ type UserFilter struct {
 }
 
 type UserRepositort interface {
+	// User Methods
 	CreateUser(ctx context.Context, user *User) (*User, error)
 	GetUser(ctx context.Context, id int64) (*User, error)
 	UpdateUser(ctx context.Context, user *UpdateUser) (*User, error)
 	ListUser(ctx context.Context, filter *UserFilter) ([]*User, *pkg.Pagination, error)
 	DeleteUser(ctx context.Context, userToDeleteID int64, userID int64) error
+
+	// User Preferences Methods
+	CreateUserPreferences(ctx context.Context, userPreferences *UserPreferences) (*UserPreferences, error)
+	GetUserPreference(ctx context.Context, userID int64) (*UserPreferences, error)
+	ListUserPreferences(ctx context.Context, filter *UserPreferencesFilter) ([]*UserPreferences, *pkg.Pagination, error)
+	UpdateUserPreference(ctx context.Context, userPreferences *UpdateUserPreferences) (*UserPreferences, error)
+
+	// Device Token Methods
+	CreateDeviceToken(ctx context.Context, deviceToken *DeviceToken) (*DeviceToken, error)
+	GetDeviceTokenByID(ctx context.Context, id int64) (*DeviceToken, error)
+	GetDeviceTokenByUserID(ctx context.Context, id int64) (*DeviceToken, error)
+	ListDeviceToken(ctx context.Context, filter *DeviceTokenFilter) ([]*DeviceToken, *pkg.Pagination, error)
+	UpdateDeviceToken(ctx context.Context, active bool, userID int64) error
 }

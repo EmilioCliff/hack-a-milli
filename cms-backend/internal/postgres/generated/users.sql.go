@@ -86,10 +86,28 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (int64, 
 	return id, err
 }
 
+const deleteUser = `-- name: DeleteUser :exec
+UPDATE users
+SET active = FALSE, 
+    updated_by = $1, 
+    updated_at = NOW()
+WHERE id = $2
+`
+
+type DeleteUserParams struct {
+	DeletedBy pgtype.Int8 `json:"deleted_by"`
+	ID        int64       `json:"id"`
+}
+
+func (q *Queries) DeleteUser(ctx context.Context, arg DeleteUserParams) error {
+	_, err := q.db.Exec(ctx, deleteUser, arg.DeletedBy, arg.ID)
+	return err
+}
+
 const getUser = `-- name: GetUser :one
 SELECT 
     u.id, u.email, u.full_name, u.phone_number, u.address, u.password_hash, u.role, u.department_id, u.active, u.account_verified, u.multifactor_authentication, u.refresh_token, u.updated_by, u.created_by, u.updated_at, u.created_at,
-    d.name
+    d.name AS department_name
 FROM users u
 LEFT JOIN departments d ON u.department_id = d.id
 WHERE u.id = $1
@@ -112,7 +130,7 @@ type GetUserRow struct {
 	CreatedBy                 pgtype.Int8 `json:"created_by"`
 	UpdatedAt                 time.Time   `json:"updated_at"`
 	CreatedAt                 time.Time   `json:"created_at"`
-	Name                      pgtype.Text `json:"name"`
+	DepartmentName            pgtype.Text `json:"department_name"`
 }
 
 func (q *Queries) GetUser(ctx context.Context, id int64) (GetUserRow, error) {
@@ -135,7 +153,7 @@ func (q *Queries) GetUser(ctx context.Context, id int64) (GetUserRow, error) {
 		&i.CreatedBy,
 		&i.UpdatedAt,
 		&i.CreatedAt,
-		&i.Name,
+		&i.DepartmentName,
 	)
 	return i, err
 }
@@ -281,10 +299,10 @@ RETURNING id, email, full_name, phone_number, address, password_hash, role, depa
 `
 
 type UpdateUserParams struct {
-	FullName                  string      `json:"full_name"`
-	PhoneNumber               string      `json:"phone_number"`
+	FullName                  pgtype.Text `json:"full_name"`
+	PhoneNumber               pgtype.Text `json:"phone_number"`
 	Address                   pgtype.Text `json:"address"`
-	PasswordHash              string      `json:"password_hash"`
+	PasswordHash              pgtype.Text `json:"password_hash"`
 	Role                      []string    `json:"role"`
 	DepartmentID              pgtype.Int8 `json:"department_id"`
 	Active                    pgtype.Bool `json:"active"`
@@ -330,4 +348,15 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const userExists = `-- name: UserExists :one
+SELECT EXISTS (SELECT 1 FROM users WHERE id = $1) AS exists
+`
+
+func (q *Queries) UserExists(ctx context.Context, id int64) (bool, error) {
+	row := q.db.QueryRow(ctx, userExists, id)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }

@@ -104,6 +104,7 @@ type EventFilter struct {
 	Published  *bool
 	StartTime  *time.Time
 	EndTime    *time.Time
+	Tags       []string
 }
 
 type EventRepository interface {

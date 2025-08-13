@@ -24,22 +24,16 @@ WHERE dt.active IS TRUE AND dt.user_id = $1;
 -- name: UpdateDeviceToken :exec
 UPDATE device_tokens
 SET active = $1
-WHERE user_id = $1 AND active IS TRUE;
+WHERE user_id = $2 AND active IS TRUE;
 
 -- name: ListDeviceTokens :many
 SELECT 
     dt.*,
-    COALESCE(p1.user_json, '{}') AS user
+    u.email AS user_email,
+    u.full_name AS user_full_name,
+    u.role AS user_role
 FROM device_tokens dt
-LEFT JOIN LATERAL (
-    SELECT json_build_object(
-        'email', u.email,
-        'full_name', u.full_name,
-        'role', u.role
-    ) AS user_json
-    FROM users u
-    WHERE u.id = dt.user_id
-) p1 ON true
+JOIN users u ON dt.user_id = u.id
 WHERE
     dt.active IS TRUE
     AND (

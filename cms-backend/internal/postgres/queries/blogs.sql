@@ -1,6 +1,6 @@
 -- name: CreateBlog :one
 INSERT INTO blogs (title, author, cover_img, topic, description, content, min_read, updated_by, created_by)
-VALUES (sqlc.arg('title'), sqlc.arg('author'), sqlc.narg('cover_img'), sqlc.arg('topic'), sqlc.narg('description'), sqlc.narg('content'), sqlc.arg('min_read'), sqlc.arg('updated_by'), sqlc.arg('created_by'))
+VALUES (sqlc.arg('title'), sqlc.arg('author'), sqlc.arg('cover_img'), sqlc.arg('topic'), sqlc.arg('description'), sqlc.arg('content'), sqlc.arg('min_read'), sqlc.arg('updated_by'), sqlc.arg('created_by'))
 RETURNING id;
 
 -- name: GetBlog :one
@@ -19,28 +19,26 @@ LEFT JOIN LATERAL (
 ) p1 ON true
 WHERE b.id = $1;
 
--- name: UpdateBlog :one
+-- name: UpdateBlog :exec
 UPDATE blogs
-SET title = COALESCE(sqlc.arg('title'), title),
+SET title = COALESCE(sqlc.narg('title'), title),
     cover_img = COALESCE(sqlc.narg('cover_img'), cover_img),
-    topic = COALESCE(sqlc.arg('topic'), topic),
+    topic = COALESCE(sqlc.narg('topic'), topic),
     description = COALESCE(sqlc.narg('description'), description),
     content = COALESCE(sqlc.narg('content'), content),
-    min_read = COALESCE(sqlc.arg('min_read'), min_read),
-    views = COALESCE(sqlc.arg('views'), views),
+    min_read = COALESCE(sqlc.narg('min_read'), min_read),
+    views = COALESCE(sqlc.narg('views'), views),
     updated_by = sqlc.arg('updated_by'),
     updated_at = NOW()
-WHERE id = sqlc.arg('id')
-RETURNING *;
+WHERE id = sqlc.arg('id');
 
--- name: PublishBlog :one
+-- name: PublishBlog :exec
 UPDATE blogs
 SET published = TRUE,
     published_at = NOW(),
     updated_by = sqlc.arg('updated_by'),
     updated_at = NOW()
-WHERE id = sqlc.arg('id')
-RETURNING *;
+WHERE id = sqlc.arg('id');
 
 -- name: DeleteBlog :exec
 UPDATE blogs
@@ -69,7 +67,7 @@ WHERE
         OR b.author = sqlc.narg('author')
     ) 
     AND (
-        COALESCE(sqlc.narg('search'), '') = '' 
+        COALESCE(sqlc.narg('search')::text, '') = '' 
         OR LOWER(b.title) LIKE sqlc.narg('search')
         OR LOWER(b.topic) LIKE sqlc.narg('search')
     )
@@ -90,7 +88,7 @@ WHERE
         OR b.author = sqlc.narg('author')
     ) 
     AND (
-        COALESCE(sqlc.narg('search'), '') = '' 
+        COALESCE(sqlc.narg('search')::text, '') = '' 
         OR LOWER(b.title) LIKE sqlc.narg('search')
         OR LOWER(b.topic) LIKE sqlc.narg('search')
     )

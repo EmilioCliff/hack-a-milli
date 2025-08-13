@@ -12,13 +12,12 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const changeVisibilityJobPosting = `-- name: ChangeVisibilityJobPosting :one
+const changeVisibilityJobPosting = `-- name: ChangeVisibilityJobPosting :exec
 UPDATE job_postings
 SET show_case = $1,
     updated_by = $2,
     updated_at = NOW()
 WHERE id = $3
-RETURNING id, title, department_id, location, employment_type, content, salary_range, start_date, end_date, show_case, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at
 `
 
 type ChangeVisibilityJobPostingParams struct {
@@ -27,30 +26,9 @@ type ChangeVisibilityJobPostingParams struct {
 	ID        int64 `json:"id"`
 }
 
-func (q *Queries) ChangeVisibilityJobPosting(ctx context.Context, arg ChangeVisibilityJobPostingParams) (JobPosting, error) {
-	row := q.db.QueryRow(ctx, changeVisibilityJobPosting, arg.ShowCase, arg.UpdatedBy, arg.ID)
-	var i JobPosting
-	err := row.Scan(
-		&i.ID,
-		&i.Title,
-		&i.DepartmentID,
-		&i.Location,
-		&i.EmploymentType,
-		&i.Content,
-		&i.SalaryRange,
-		&i.StartDate,
-		&i.EndDate,
-		&i.ShowCase,
-		&i.Published,
-		&i.PublishedAt,
-		&i.UpdatedBy,
-		&i.CreatedBy,
-		&i.DeletedBy,
-		&i.DeletedAt,
-		&i.UpdatedAt,
-		&i.CreatedAt,
-	)
-	return i, err
+func (q *Queries) ChangeVisibilityJobPosting(ctx context.Context, arg ChangeVisibilityJobPostingParams) error {
+	_, err := q.db.Exec(ctx, changeVisibilityJobPosting, arg.ShowCase, arg.UpdatedBy, arg.ID)
+	return err
 }
 
 const countJobPostings = `-- name: CountJobPostings :one
@@ -58,7 +36,7 @@ SELECT COUNT(*) FROM job_postings
 WHERE 
     deleted_at IS NULL
     AND (
-        COALESCE($1, '') = '' 
+        COALESCE($1::text, '') = '' 
         OR LOWER(title) LIKE $1
         OR LOWER(d.name) LIKE $1
     )
@@ -77,7 +55,7 @@ WHERE
 `
 
 type CountJobPostingsParams struct {
-	Search         interface{} `json:"search"`
+	Search         pgtype.Text `json:"search"`
 	Published      pgtype.Bool `json:"published"`
 	EmploymentType pgtype.Text `json:"employment_type"`
 	ShowCase       pgtype.Bool `json:"show_case"`
@@ -96,8 +74,8 @@ func (q *Queries) CountJobPostings(ctx context.Context, arg CountJobPostingsPara
 }
 
 const createJobPosting = `-- name: CreateJobPosting :one
-INSERT INTO job_postings (title, department_id, location, employment_type, content, salary_range, start_date, end_date)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+INSERT INTO job_postings (title, department_id, location, employment_type, content, salary_range, start_date, end_date, updated_by, created_by)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 RETURNING id
 `
 
@@ -110,6 +88,8 @@ type CreateJobPostingParams struct {
 	SalaryRange    pgtype.Text `json:"salary_range"`
 	StartDate      time.Time   `json:"start_date"`
 	EndDate        time.Time   `json:"end_date"`
+	UpdatedBy      int64       `json:"updated_by"`
+	CreatedBy      int64       `json:"created_by"`
 }
 
 func (q *Queries) CreateJobPosting(ctx context.Context, arg CreateJobPostingParams) (int64, error) {
@@ -122,6 +102,8 @@ func (q *Queries) CreateJobPosting(ctx context.Context, arg CreateJobPostingPara
 		arg.SalaryRange,
 		arg.StartDate,
 		arg.EndDate,
+		arg.UpdatedBy,
+		arg.CreatedBy,
 	)
 	var id int64
 	err := row.Scan(&id)
@@ -148,7 +130,7 @@ func (q *Queries) DeleteJobPosting(ctx context.Context, arg DeleteJobPostingPara
 const getJobPosting = `-- name: GetJobPosting :one
 SELECT 
     jp.id, jp.title, jp.department_id, jp.location, jp.employment_type, jp.content, jp.salary_range, jp.start_date, jp.end_date, jp.show_case, jp.published, jp.published_at, jp.updated_by, jp.created_by, jp.deleted_by, jp.deleted_at, jp.updated_at, jp.created_at,
-    d.name
+    d.name AS department_name
 FROM job_postings jp
 JOIN departments d ON jp.department_id = d.id
 WHERE jp.id = $1
@@ -173,7 +155,7 @@ type GetJobPostingRow struct {
 	DeletedAt      pgtype.Timestamptz `json:"deleted_at"`
 	UpdatedAt      time.Time          `json:"updated_at"`
 	CreatedAt      time.Time          `json:"created_at"`
-	Name           string             `json:"name"`
+	DepartmentName string             `json:"department_name"`
 }
 
 func (q *Queries) GetJobPosting(ctx context.Context, id int64) (GetJobPostingRow, error) {
@@ -198,7 +180,7 @@ func (q *Queries) GetJobPosting(ctx context.Context, id int64) (GetJobPostingRow
 		&i.DeletedAt,
 		&i.UpdatedAt,
 		&i.CreatedAt,
-		&i.Name,
+		&i.DepartmentName,
 	)
 	return i, err
 }
@@ -212,7 +194,7 @@ JOIN departments d ON jp.department_id = d.id
 WHERE 
     jp.deleted_at IS NULL
     AND (
-        COALESCE($1, '') = '' 
+        COALESCE($1::text, '') = '' 
         OR LOWER(jp.title) LIKE $1
         OR LOWER(d.name) LIKE $1
     )
@@ -233,7 +215,7 @@ LIMIT $6 OFFSET $5
 `
 
 type ListJobPostingsParams struct {
-	Search         interface{} `json:"search"`
+	Search         pgtype.Text `json:"search"`
 	Published      pgtype.Bool `json:"published"`
 	EmploymentType pgtype.Text `json:"employment_type"`
 	ShowCase       pgtype.Bool `json:"show_case"`
@@ -310,14 +292,13 @@ func (q *Queries) ListJobPostings(ctx context.Context, arg ListJobPostingsParams
 	return items, nil
 }
 
-const publishJobPosting = `-- name: PublishJobPosting :one
+const publishJobPosting = `-- name: PublishJobPosting :exec
 UPDATE job_postings
 SET published = TRUE,
     published_at = NOW(),
     updated_by = $1,
     updated_at = NOW()
 WHERE id = $2
-RETURNING id, title, department_id, location, employment_type, content, salary_range, start_date, end_date, show_case, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at
 `
 
 type PublishJobPostingParams struct {
@@ -325,33 +306,12 @@ type PublishJobPostingParams struct {
 	ID        int64 `json:"id"`
 }
 
-func (q *Queries) PublishJobPosting(ctx context.Context, arg PublishJobPostingParams) (JobPosting, error) {
-	row := q.db.QueryRow(ctx, publishJobPosting, arg.UpdatedBy, arg.ID)
-	var i JobPosting
-	err := row.Scan(
-		&i.ID,
-		&i.Title,
-		&i.DepartmentID,
-		&i.Location,
-		&i.EmploymentType,
-		&i.Content,
-		&i.SalaryRange,
-		&i.StartDate,
-		&i.EndDate,
-		&i.ShowCase,
-		&i.Published,
-		&i.PublishedAt,
-		&i.UpdatedBy,
-		&i.CreatedBy,
-		&i.DeletedBy,
-		&i.DeletedAt,
-		&i.UpdatedAt,
-		&i.CreatedAt,
-	)
-	return i, err
+func (q *Queries) PublishJobPosting(ctx context.Context, arg PublishJobPostingParams) error {
+	_, err := q.db.Exec(ctx, publishJobPosting, arg.UpdatedBy, arg.ID)
+	return err
 }
 
-const updateJobPosting = `-- name: UpdateJobPosting :one
+const updateJobPosting = `-- name: UpdateJobPosting :exec
 UPDATE job_postings
 SET title = COALESCE($1, title),
     department_id = COALESCE($2, department_id),
@@ -364,24 +324,23 @@ SET title = COALESCE($1, title),
     updated_by = $9,
     updated_at = NOW()
 WHERE id = $10
-RETURNING id, title, department_id, location, employment_type, content, salary_range, start_date, end_date, show_case, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at
 `
 
 type UpdateJobPostingParams struct {
-	Title          string      `json:"title"`
-	DepartmentID   int64       `json:"department_id"`
-	Location       string      `json:"location"`
-	EmploymentType string      `json:"employment_type"`
-	Content        string      `json:"content"`
-	SalaryRange    pgtype.Text `json:"salary_range"`
-	StartDate      time.Time   `json:"start_date"`
-	EndDate        time.Time   `json:"end_date"`
-	UpdatedBy      int64       `json:"updated_by"`
-	ID             int64       `json:"id"`
+	Title          pgtype.Text        `json:"title"`
+	DepartmentID   pgtype.Int8        `json:"department_id"`
+	Location       pgtype.Text        `json:"location"`
+	EmploymentType pgtype.Text        `json:"employment_type"`
+	Content        pgtype.Text        `json:"content"`
+	SalaryRange    pgtype.Text        `json:"salary_range"`
+	StartDate      pgtype.Timestamptz `json:"start_date"`
+	EndDate        pgtype.Timestamptz `json:"end_date"`
+	UpdatedBy      int64              `json:"updated_by"`
+	ID             int64              `json:"id"`
 }
 
-func (q *Queries) UpdateJobPosting(ctx context.Context, arg UpdateJobPostingParams) (JobPosting, error) {
-	row := q.db.QueryRow(ctx, updateJobPosting,
+func (q *Queries) UpdateJobPosting(ctx context.Context, arg UpdateJobPostingParams) error {
+	_, err := q.db.Exec(ctx, updateJobPosting,
 		arg.Title,
 		arg.DepartmentID,
 		arg.Location,
@@ -393,26 +352,5 @@ func (q *Queries) UpdateJobPosting(ctx context.Context, arg UpdateJobPostingPara
 		arg.UpdatedBy,
 		arg.ID,
 	)
-	var i JobPosting
-	err := row.Scan(
-		&i.ID,
-		&i.Title,
-		&i.DepartmentID,
-		&i.Location,
-		&i.EmploymentType,
-		&i.Content,
-		&i.SalaryRange,
-		&i.StartDate,
-		&i.EndDate,
-		&i.ShowCase,
-		&i.Published,
-		&i.PublishedAt,
-		&i.UpdatedBy,
-		&i.CreatedBy,
-		&i.DeletedBy,
-		&i.DeletedAt,
-		&i.UpdatedAt,
-		&i.CreatedAt,
-	)
-	return i, err
+	return err
 }

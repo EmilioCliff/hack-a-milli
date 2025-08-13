@@ -6,10 +6,13 @@ RETURNING id;
 -- name: GetUser :one
 SELECT 
     u.*,
-    d.name
+    d.name AS department_name
 FROM users u
 LEFT JOIN departments d ON u.department_id = d.id
 WHERE u.id = sqlc.arg('id');
+
+-- name: UserExists :one
+SELECT EXISTS (SELECT 1 FROM users WHERE id = sqlc.arg('id')) AS exists;
 
 -- name: GetUserInternal :one
 SELECT id, password_hash
@@ -19,11 +22,11 @@ WHERE email = sqlc.arg('email');
 -- name: UpdateUser :one
 UPDATE users
 SET
-    full_name = COALESCE(sqlc.arg('full_name'), full_name),
-    phone_number = COALESCE(sqlc.arg('phone_number'), phone_number),
+    full_name = COALESCE(sqlc.narg('full_name'), full_name),
+    phone_number = COALESCE(sqlc.narg('phone_number'), phone_number),
     address = COALESCE(sqlc.narg('address'), address),
-    password_hash = COALESCE(sqlc.arg('password_hash'), password_hash),
-    role = COALESCE(sqlc.arg('role'), role),
+    password_hash = COALESCE(sqlc.narg('password_hash'), password_hash),
+    role = COALESCE(sqlc.narg('role'), role),
     department_id = COALESCE(sqlc.narg('department_id'), department_id),
     active = COALESCE(sqlc.narg('active'), active),
     account_verified = COALESCE(sqlc.narg('account_verified'), account_verified),
@@ -33,6 +36,13 @@ SET
     updated_at = NOW()
 WHERE id = sqlc.arg('id')
 RETURNING *;
+
+-- name: DeleteUser :exec
+UPDATE users
+SET active = FALSE, 
+    updated_by = sqlc.arg('deleted_by'), 
+    updated_at = NOW()
+WHERE id = sqlc.arg('id');
 
 -- name: ListUsers :many
 SELECT 

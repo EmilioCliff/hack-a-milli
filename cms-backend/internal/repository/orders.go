@@ -63,7 +63,7 @@ type OrderItem struct {
 }
 
 type OrderRepository interface {
-	CreateOrder(ctx context.Context, order *Order) (*Order, error)
+	CreateOrder(ctx context.Context, order *Order, orderItems []OrderItem) (*Order, error)
 	GetOrder(ctx context.Context, id int64) (*Order, error)
 	UpdateOrder(ctx context.Context, order *UpdateOrder) (*Order, error)
 	ListOrders(ctx context.Context, filter *OrderFilter) ([]*Order, *pkg.Pagination, error)

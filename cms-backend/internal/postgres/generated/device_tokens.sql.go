@@ -152,17 +152,11 @@ func (q *Queries) GetDeviceTokenByUserID(ctx context.Context, userID int64) ([]G
 const listDeviceTokens = `-- name: ListDeviceTokens :many
 SELECT 
     dt.id, dt.user_id, dt.device_token, dt.platform, dt.active, dt.created_at,
-    COALESCE(p1.user_json, '{}') AS user
+    u.email AS user_email,
+    u.full_name AS user_full_name,
+    u.role AS user_role
 FROM device_tokens dt
-LEFT JOIN LATERAL (
-    SELECT json_build_object(
-        'email', u.email,
-        'full_name', u.full_name,
-        'role', u.role
-    ) AS user_json
-    FROM users u
-    WHERE u.id = dt.user_id
-) p1 ON true
+JOIN users u ON dt.user_id = u.id
 WHERE
     dt.active IS TRUE
     AND (
@@ -185,13 +179,15 @@ type ListDeviceTokensParams struct {
 }
 
 type ListDeviceTokensRow struct {
-	ID          int64     `json:"id"`
-	UserID      int64     `json:"user_id"`
-	DeviceToken string    `json:"device_token"`
-	Platform    string    `json:"platform"`
-	Active      bool      `json:"active"`
-	CreatedAt   time.Time `json:"created_at"`
-	User        []byte    `json:"user"`
+	ID           int64     `json:"id"`
+	UserID       int64     `json:"user_id"`
+	DeviceToken  string    `json:"device_token"`
+	Platform     string    `json:"platform"`
+	Active       bool      `json:"active"`
+	CreatedAt    time.Time `json:"created_at"`
+	UserEmail    string    `json:"user_email"`
+	UserFullName string    `json:"user_full_name"`
+	UserRole     []string  `json:"user_role"`
 }
 
 func (q *Queries) ListDeviceTokens(ctx context.Context, arg ListDeviceTokensParams) ([]ListDeviceTokensRow, error) {
@@ -215,7 +211,9 @@ func (q *Queries) ListDeviceTokens(ctx context.Context, arg ListDeviceTokensPara
 			&i.Platform,
 			&i.Active,
 			&i.CreatedAt,
-			&i.User,
+			&i.UserEmail,
+			&i.UserFullName,
+			&i.UserRole,
 		); err != nil {
 			return nil, err
 		}
@@ -230,10 +228,15 @@ func (q *Queries) ListDeviceTokens(ctx context.Context, arg ListDeviceTokensPara
 const updateDeviceToken = `-- name: UpdateDeviceToken :exec
 UPDATE device_tokens
 SET active = $1
-WHERE user_id = $1 AND active IS TRUE
+WHERE user_id = $2 AND active IS TRUE
 `
 
-func (q *Queries) UpdateDeviceToken(ctx context.Context, active bool) error {
-	_, err := q.db.Exec(ctx, updateDeviceToken, active)
+type UpdateDeviceTokenParams struct {
+	Active bool  `json:"active"`
+	UserID int64 `json:"user_id"`
+}
+
+func (q *Queries) UpdateDeviceToken(ctx context.Context, arg UpdateDeviceTokenParams) error {
+	_, err := q.db.Exec(ctx, updateDeviceToken, arg.Active, arg.UserID)
 	return err
 }

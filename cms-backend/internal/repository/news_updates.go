@@ -41,16 +41,25 @@ type UpdateNewsUpdate struct {
 type NewsUpdateFilter struct {
 	Pagination *pkg.Pagination
 	Search     *string
+	Published  *bool
 	StartDate  *time.Time
 	EndDate    *time.Time
-	Published  *bool
 }
 
 type NewsUpdateRepository interface {
+	// News Update methods
 	CreateNewsUpdate(ctx context.Context, newsUpdate *NewsUpdate) (*NewsUpdate, error)
 	GetNewsUpdate(ctx context.Context, id int64) (*NewsUpdate, error)
-	ListNewsUpdate(ctx context.Context, filter *NewsUpdateFilter) ([]*NewsUpdate, error)
+	ListNewsUpdate(ctx context.Context, filter *NewsUpdateFilter) ([]*NewsUpdate, *pkg.Pagination, error)
 	PublishNewsUpdate(ctx context.Context, newsUpdateID int64, userID int64) (*NewsUpdate, error)
 	UpdateNewsUpdate(ctx context.Context, newsUpdate *UpdateNewsUpdate) (*NewsUpdate, error)
 	DeleteNewsUpdate(ctx context.Context, newsUpdateID int64, userID int64) error
+
+	// News Letter methods
+	CreateNewsLetter(ctx context.Context, newsLetter *NewsLetter) (*NewsLetter, error)
+	GetNewsLetter(ctx context.Context, id int64) (*NewsLetter, error)
+	ListNewsLetters(ctx context.Context, filter *NewsLetterFilter) ([]*NewsLetter, *pkg.Pagination, error)
+	PublishNewsLetter(ctx context.Context, newsLetterID int64, userID int64) (*NewsLetter, error)
+	UpdateNewsLetter(ctx context.Context, newsLetter *UpdateNewsLetter) (*NewsLetter, error)
+	DeleteNewsLetter(ctx context.Context, newsLetterID int64, userID int64) error
 }

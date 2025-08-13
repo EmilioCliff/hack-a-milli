@@ -4,10 +4,6 @@ VALUES (sqlc.narg('user_id'), sqlc.arg('amount'), sqlc.arg('status'), sqlc.arg('
 RETURNING id;
 
 -- name: GetOrder :one
-SELECT * FROM orders
-WHERE id = $1;
-
--- name: GetFullOrderDetails :one
 SELECT 
     o.*,
     COALESCE(p1.order_items_json, '[]') as order_items,
@@ -46,8 +42,8 @@ WHERE o.id = $1;
 -- name: UpdateOrder :one
 UPDATE orders
 SET user_id = COALESCE(sqlc.narg('user_id'), user_id),
-    status = COALESCE(sqlc.arg('status'), status),
-    payment_status = COALESCE(sqlc.arg('payment_status'), payment_status),
+    status = COALESCE(sqlc.narg('status'), status),
+    payment_status = COALESCE(sqlc.narg('payment_status'), payment_status),
     updated_by = sqlc.arg('updated_by'),
     updated_at = NOW()
 WHERE id = sqlc.arg('id')
