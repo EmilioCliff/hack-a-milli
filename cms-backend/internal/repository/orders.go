@@ -17,6 +17,10 @@ type Order struct {
 	UpdatedBy     *int64       `json:"updated_by"`
 	UpdatedAt     time.Time    `json:"updated_at"`
 	CreatedAt     time.Time    `json:"created_at"`
+
+	// Expandable
+	User       *User       `json:"user,omitempty"`
+	OrderItems []OrderItem `json:"order_items,omitempty"`
 }
 
 type OrderDetails struct {
@@ -39,8 +43,9 @@ type UpdateOrder struct {
 }
 
 type OrderFilter struct {
-	Pagination    *pkg.Pagination
-	Search        *string
+	Pagination *pkg.Pagination
+	// Search        *string
+	UserID        *int64
 	PaymentStatus *bool
 	Status        *string
 }
@@ -52,6 +57,9 @@ type OrderItem struct {
 	Color     string  `json:"color"`
 	Quantity  int32   `json:"quantity"`
 	Amount    float64 `json:"amount"`
+
+	// Expandable
+	Product *Product `json:"product,omitempty"`
 }
 
 type OrderRepository interface {
@@ -59,5 +67,4 @@ type OrderRepository interface {
 	GetOrder(ctx context.Context, id int64) (*Order, error)
 	UpdateOrder(ctx context.Context, order *UpdateOrder) (*Order, error)
 	ListOrders(ctx context.Context, filter *OrderFilter) ([]*Order, *pkg.Pagination, error)
-	DeleteOrder(ctx context.Context, orderID int64, userID int64) error
 }

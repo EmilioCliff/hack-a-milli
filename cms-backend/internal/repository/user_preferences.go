@@ -15,6 +15,9 @@ type UserPreferences struct {
 	NotifyPolicy   bool      `json:"notify_policy"`
 	UpdatedAt      time.Time `json:"updated_at"`
 	CreatedAt      time.Time `json:"created_at"`
+
+	// Expandable
+	User *User `json:"user,omitempty"`
 }
 
 type UpdateUserPreferences struct {
@@ -32,7 +35,7 @@ type UserPreferencesFilter struct {
 
 type UserPreferencesRepository interface {
 	CreateUserPreferences(ctx context.Context, userPreferences *UserPreferences) (*UserPreferences, error)
-	GetUserPreference(ctx context.Context, id int64) (*UserPreferences, error)
+	GetUserPreference(ctx context.Context, userID int64) (*UserPreferences, error)
 	ListUserPreferences(ctx context.Context, filter *UserPreferencesFilter) ([]*UserPreferences, error)
 	UpdateUserPreference(ctx context.Context, userPreferences *UpdateUserPreferences) (*UserPreferences, error)
 }

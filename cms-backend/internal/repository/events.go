@@ -13,8 +13,8 @@ type Event struct {
 	Topic               string     `json:"topic"`
 	Content             string     `json:"content"`
 	CoverImg            string     `json:"cover_img"`
-	StartTime           time.Time  `json:"start_time"`
-	EndTime             time.Time  `json:"end_time"`
+	StartTime           string     `json:"start_time"`
+	EndTime             string     `json:"end_time"`
 	Status              string     `json:"status"`
 	Price               string     `json:"price"`
 	Tags                []string   `json:"tags"`
@@ -66,6 +66,14 @@ type Venue struct {
 	Address   string `json:"address,omitempty"`
 }
 
+type EventRegistrant struct {
+	ID           int64     `json:"id"`
+	EventID      int64     `json:"event_id"`
+	Name         string    `json:"name"`
+	Email        string    `json:"email"`
+	RegisteredAt time.Time `json:"registered_at"`
+}
+
 type UpdateEvent struct {
 	ID                  int64      `json:"id"`
 	UpdatedBy           int64      `json:"updated_by"`
@@ -73,8 +81,8 @@ type UpdateEvent struct {
 	Topic               *string    `json:"topic"`
 	Content             *string    `json:"content"`
 	CoverImg            *string    `json:"cover_img"`
-	StartTime           *time.Time `json:"start_time"`
-	EndTime             *time.Time `json:"end_time"`
+	StartTime           *string    `json:"start_time"`
+	EndTime             *string    `json:"end_time"`
 	Status              *string    `json:"status"`
 	Price               *string    `json:"price"`
 	Tags                []string   `json:"tags"`
@@ -99,9 +107,15 @@ type EventFilter struct {
 }
 
 type EventRepository interface {
+	// Event methods
 	CreateEvent(ctx context.Context, event *Event) (*Event, error)
 	GetEvent(ctx context.Context, id int64) (*Event, error)
 	UpdateEvent(ctx context.Context, event *UpdateEvent) (*Event, error)
+	PublishEvent(ctx context.Context, eventID int64, userID int64) (*Event, error)
 	ListEvent(ctx context.Context, filter *EventFilter) ([]*Event, *pkg.Pagination, error)
 	DeleteEvent(ctx context.Context, eventID int64, userID int64) error
+
+	// Event Registrant methods
+	CreateEventRegistrant(ctx context.Context, registrant *EventRegistrant) (*EventRegistrant, error)
+	ListEventRegistrants(ctx context.Context, eventID int64, pagination *pkg.Pagination) ([]*EventRegistrant, *pkg.Pagination, error)
 }

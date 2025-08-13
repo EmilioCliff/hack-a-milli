@@ -57,6 +57,8 @@ type JopPostingRepository interface {
 	CreateJobPosting(ctx context.Context, jobPosting *JobPosting) (*JobPosting, error)
 	GetJobPosting(ctx context.Context, id int64) (*JobPosting, error)
 	UpdateJobPosting(ctx context.Context, jobPosting *UpdateJobPosting) (*JobPosting, error)
+	PublishJobPosting(ctx context.Context, jobPostingID int64, userID int64) (*JobPosting, error)
+	ChangeJobPostingVisibility(ctx context.Context, jobPostingID int64, userID int64, showCase bool) (*JobPosting, error)
 	ListJobPosting(ctx context.Context, filter *JobPostingFilter) ([]*JobPosting, *pkg.Pagination, error)
 	DeleteJobPosting(ctx context.Context, jobPostingID int64, userID int64) error
 }

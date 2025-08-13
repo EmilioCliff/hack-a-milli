@@ -20,6 +20,9 @@ type JobApplication struct {
 	SubmittedAt time.Time `json:"submitted_at"`
 	UpdatedBy   *int64    `json:"updated_by"`
 	UpdatedAt   time.Time `json:"updated_at"`
+
+	// Expandable
+	Job *JobPosting `json:"job,omitempty"`
 }
 
 type UpdateJobApplication struct {

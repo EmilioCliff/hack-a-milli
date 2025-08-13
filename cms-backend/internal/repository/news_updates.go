@@ -50,6 +50,7 @@ type NewsUpdateRepository interface {
 	CreateNewsUpdate(ctx context.Context, newsUpdate *NewsUpdate) (*NewsUpdate, error)
 	GetNewsUpdate(ctx context.Context, id int64) (*NewsUpdate, error)
 	ListNewsUpdate(ctx context.Context, filter *NewsUpdateFilter) ([]*NewsUpdate, error)
+	PublishNewsUpdate(ctx context.Context, newsUpdateID int64, userID int64) (*NewsUpdate, error)
 	UpdateNewsUpdate(ctx context.Context, newsUpdate *UpdateNewsUpdate) (*NewsUpdate, error)
 	DeleteNewsUpdate(ctx context.Context, newsUpdateID int64, userID int64) error
 }

@@ -13,7 +13,8 @@ type User struct {
 	FullName                  string    `json:"full_name"`
 	PhoneNumber               string    `json:"phone_number"`
 	Address                   string    `json:"address"`
-	PasswordHash              string    `json:"password_hash"`
+	PasswordHash              *string   `json:"password_hash,omitempty"`
+	RefreshToken              *string   `json:"refresh_token,omitempty"`
 	Role                      []string  `json:"role"`
 	DepartmentID              *int64    `json:"department_id,omitempty"`
 	DepartmentName            *string   `json:"department_name,omitempty"`
@@ -33,9 +34,10 @@ type UpdateUser struct {
 	PhoneNumber               *string  `json:"phone_number"`
 	Address                   *string  `json:"address"`
 	PasswordHash              *string  `json:"password_hash"`
+	RefreshToken              *string  `json:"refresh_token"`
+	AccountVerified           *bool    `json:"account_verified"`
 	Role                      []string `json:"role"`
-	DepartmentID              *int64   `json:"department_id,omitempty"`
-	DepartmentName            *string  `json:"department_name,omitempty"`
+	DepartmentID              *int64   `json:"department_id"`
 	Active                    *bool    `json:"active"`
 	MultifactorAuthentication *bool    `json:"multifactor_authentication"`
 }

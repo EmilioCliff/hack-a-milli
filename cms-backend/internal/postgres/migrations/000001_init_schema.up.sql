@@ -10,13 +10,14 @@ CREATE TABLE "users" (
   "email" varchar(50) UNIQUE NOT NULL,
   "full_name" varchar(100) NOT NULL,
   "phone_number" varchar(50) NOT NULL,
-  "address" text NOT NULL,
+  "address" varchar(100) NULL,
   "password_hash" text NOT NULL,
   "role" text[] NOT NULL, -- ('guest, 'staff', 'admin')
   "department_id" bigint NULL,
   "active" boolean NOT NULL DEFAULT true,
   "account_verified" boolean NOT NULL DEFAULT false,
   "multifactor_authentication" bool NOT NULL DEFAULT false,
+  "refresh_token" text NOT NULL DEFAULT '',
   "updated_by" bigint NULL,
   "created_by" bigint NULL,
   "updated_at" timestamptz NOT NULL DEFAULT (now()),
@@ -31,7 +32,7 @@ CREATE TABLE "device_tokens" (
   "id" bigserial PRIMARY KEY,
   "user_id" bigint NOT NULL,
   "device_token" text NOT NULL,
-  "platform" text NOT NULL,
+  "platform" varchar(100) NOT NULL,
   "active" boolean NOT NULL DEFAULT true, -- change to inactive after logout
   "created_at" timestamptz NOT NULL DEFAULT (now()),
 
@@ -71,11 +72,28 @@ CREATE TABLE "registrars" (
   CONSTRAINT "registrars_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "users" ("id")
 );
 
+CREATE TABLE "product_categories" (
+  "id" bigserial PRIMARY KEY,
+  "name" varchar(100) NOT NULL,
+  "description" text,
+  "created_by" bigint NOT NULL,
+  "updated_by" bigint NOT NULL,
+  "deleted_by" bigint,
+  "deleted_at" timestamptz,
+  "updated_at" timestamptz NOT NULL DEFAULT (now()),
+  "created_at" timestamptz NOT NULL DEFAULT (now()),
+
+  CONSTRAINT "product_categories_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "users" ("id"),
+  CONSTRAINT "product_categories_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "users" ("id"),
+  CONSTRAINT "product_categories_deleted_by_fkey" FOREIGN KEY ("deleted_by") REFERENCES "users" ("id")
+);
+
 CREATE TABLE "products" (
   "id" bigserial PRIMARY KEY,
+  "category_id" bigint NOT NULL,
   "name" varchar(255) NOT NULL,
   "price" decimal(10,2) NOT NULL DEFAULT 0,
-  "image_url" text[] NOT NULL,
+  "image_url" text[] NOT NULL DEFAULT '{}',
   "description" text,
   "items_sold" int NOT NULL DEFAULT 0,
   "updated_by" bigint NOT NULL,
@@ -85,6 +103,7 @@ CREATE TABLE "products" (
   "updated_at" timestamptz NOT NULL DEFAULT (now()),
   "created_at" timestamptz NOT NULL DEFAULT (now()),
 
+  CONSTRAINT "products_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "product_categories" ("id"),
   CONSTRAINT "products_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "users" ("id"),
   CONSTRAINT "products_deleted_by_fkey" FOREIGN KEY ("deleted_by") REFERENCES "users" ("id"),
   CONSTRAINT "products_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "users" ("id")
@@ -120,6 +139,7 @@ CREATE TABLE "order_items" (
 CREATE TABLE "payments" (
   "id" bigserial PRIMARY KEY,
   "order_id" bigint NOT NULL,
+  "user_id" bigint,
   "payment_method" varchar(50) NOT NULL CHECK (payment_method IN ('mpesa', 'card', 'bank')),
   "amount" decimal(10,2) NOT NULL DEFAULT 0,
   "status" boolean NOT NULL DEFAULT false,
@@ -129,6 +149,7 @@ CREATE TABLE "payments" (
   "created_at" timestamptz NOT NULL DEFAULT (now()),
 
   CONSTRAINT "payments_order_id_fkey" FOREIGN KEY ("order_id") REFERENCES "orders" ("id"),
+  CONSTRAINT "payments_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users" ("id"),
   CONSTRAINT "payments_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "users" ("id"),
   CONSTRAINT "payments_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "users" ("id")
 );
@@ -164,22 +185,22 @@ CREATE TABLE "events" (
   "topic" varchar(255) NOT NULL,
   "content" text NOT NULL,
   "cover_img" text NOT NULL,
-  "start_time" timestamptz NOT NULL,
-  "end_time" timestamptz NOT NULL,
+  "start_time" varchar(100) NOT NULL,
+  "end_time" varchar(100) NOT NULL,
   "status" varchar(255) NOT NULL CHECK (status IN ('upcoming', 'live', 'completed')),
-  "venue" jsonb NOT NULL,
+  "venue" jsonb NOT NULL DEFAULT '{}',
   "price" varchar(255) NOT NULL DEFAULT 'free',
   "agenda" jsonb NOT NULL,
   "tags" text[] NOT NULL DEFAULT '{}',
-  "organizers" jsonb NOT NULL,
-  "partners" jsonb NOT NULL,
-  "speakers" jsonb NOT NULL,
+  "organizers" jsonb NOT NULL DEFAULT '{}',
+  "partners" jsonb NOT NULL DEFAULT '{}',
+  "speakers" jsonb NOT NULL DEFAULT '{}',
+  "max_attendees" int NOT NULL DEFAULT 500,
+  "registered_attendees" int NOT NULL DEFAULT 0,
   "published" boolean NOT NULL DEFAULT false,
   "published_at" timestamptz,
   "updated_by" bigint NOT NULL,
   "created_by" bigint NOT NULL,
-  "max_attendees" int NOT NULL DEFAULT 500,
-  "registered_attendees" int NOT NULL DEFAULT 0,
   "deleted_by" bigint,
   "deleted_at" timestamptz,
   "updated_at" timestamptz NOT NULL DEFAULT (now()),

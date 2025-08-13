@@ -25,6 +25,9 @@ type Blog struct {
 	DeletedAt   *time.Time `json:"deleted_at,omitempty"`
 	CreatedBy   int64      `json:"created_by"`
 	CreatedAt   time.Time  `json:"created_at"`
+
+	// Expandable
+	AuthorDetails *User `json:"author_details,omitempty"`
 }
 
 type UpdateBlog struct {
@@ -44,15 +47,16 @@ type UpdateBlog struct {
 type BlogFilter struct {
 	Pagination *pkg.Pagination
 	Search     *string
-	Topic      *string
-	Published  *bool
-	Author     *int64
+	// Topic      *string
+	Published *bool
+	Author    *int64
 }
 
 type BlogRepository interface {
 	CreateBlog(ctx context.Context, blog *Blog) (*Blog, error)
 	GetBlog(ctx context.Context, id int64) (*Blog, error)
 	UpdateBlog(ctx context.Context, blog *UpdateBlog) (*Blog, error)
+	PublishBlog(ctx context.Context, blogID int64, userID int64) (*Blog, error)
 	ListBlogs(ctx context.Context, filter *BlogFilter) ([]*Blog, *pkg.Pagination, error)
 	DeleteBlog(ctx context.Context, blogID int64, userID int64) error
 }

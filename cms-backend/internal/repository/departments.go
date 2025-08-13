@@ -14,6 +14,6 @@ type Department struct {
 type DepartmentRepository interface {
 	CreateDepartment(ctx context.Context, name string) (*Department, error)
 	GetDepartment(ctx context.Context, id int64) (*Department, error)
-	UpdateDeparment(ctx context.Context, id int64, name string) (*Department, error)
+	UpdateDeparment(ctx context.Context, id int64, name string, pagination *pkg.Pagination) (*Department, *pkg.Pagination, error)
 	ListDepartment(ctx context.Context, pagination *pkg.Pagination) ([]*Department, *pkg.Pagination, error)
 }

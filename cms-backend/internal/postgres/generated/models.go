@@ -50,8 +50,8 @@ type Event struct {
 	Topic               string             `json:"topic"`
 	Content             string             `json:"content"`
 	CoverImg            string             `json:"cover_img"`
-	StartTime           time.Time          `json:"start_time"`
-	EndTime             time.Time          `json:"end_time"`
+	StartTime           string             `json:"start_time"`
+	EndTime             string             `json:"end_time"`
 	Status              string             `json:"status"`
 	Venue               []byte             `json:"venue"`
 	Price               string             `json:"price"`
@@ -60,12 +60,12 @@ type Event struct {
 	Organizers          []byte             `json:"organizers"`
 	Partners            []byte             `json:"partners"`
 	Speakers            []byte             `json:"speakers"`
+	MaxAttendees        int32              `json:"max_attendees"`
+	RegisteredAttendees int32              `json:"registered_attendees"`
 	Published           bool               `json:"published"`
 	PublishedAt         pgtype.Timestamptz `json:"published_at"`
 	UpdatedBy           int64              `json:"updated_by"`
 	CreatedBy           int64              `json:"created_by"`
-	MaxAttendees        int32              `json:"max_attendees"`
-	RegisteredAttendees int32              `json:"registered_attendees"`
 	DeletedBy           pgtype.Int8        `json:"deleted_by"`
 	DeletedAt           pgtype.Timestamptz `json:"deleted_at"`
 	UpdatedAt           time.Time          `json:"updated_at"`
@@ -175,6 +175,7 @@ type OrderItem struct {
 type Payment struct {
 	ID            int64          `json:"id"`
 	OrderID       int64          `json:"order_id"`
+	UserID        pgtype.Int8    `json:"user_id"`
 	PaymentMethod string         `json:"payment_method"`
 	Amount        pgtype.Numeric `json:"amount"`
 	Status        bool           `json:"status"`
@@ -186,6 +187,7 @@ type Payment struct {
 
 type Product struct {
 	ID          int64              `json:"id"`
+	CategoryID  int64              `json:"category_id"`
 	Name        string             `json:"name"`
 	Price       pgtype.Numeric     `json:"price"`
 	ImageUrl    []string           `json:"image_url"`
@@ -193,6 +195,18 @@ type Product struct {
 	ItemsSold   int32              `json:"items_sold"`
 	UpdatedBy   int64              `json:"updated_by"`
 	CreatedBy   int64              `json:"created_by"`
+	DeletedBy   pgtype.Int8        `json:"deleted_by"`
+	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
+	UpdatedAt   time.Time          `json:"updated_at"`
+	CreatedAt   time.Time          `json:"created_at"`
+}
+
+type ProductCategory struct {
+	ID          int64              `json:"id"`
+	Name        string             `json:"name"`
+	Description pgtype.Text        `json:"description"`
+	CreatedBy   int64              `json:"created_by"`
+	UpdatedBy   int64              `json:"updated_by"`
 	DeletedBy   pgtype.Int8        `json:"deleted_by"`
 	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
 	UpdatedAt   time.Time          `json:"updated_at"`
@@ -221,13 +235,14 @@ type User struct {
 	Email                     string      `json:"email"`
 	FullName                  string      `json:"full_name"`
 	PhoneNumber               string      `json:"phone_number"`
-	Address                   string      `json:"address"`
+	Address                   pgtype.Text `json:"address"`
 	PasswordHash              string      `json:"password_hash"`
 	Role                      []string    `json:"role"`
 	DepartmentID              pgtype.Int8 `json:"department_id"`
 	Active                    bool        `json:"active"`
 	AccountVerified           bool        `json:"account_verified"`
 	MultifactorAuthentication bool        `json:"multifactor_authentication"`
+	RefreshToken              string      `json:"refresh_token"`
 	UpdatedBy                 pgtype.Int8 `json:"updated_by"`
 	CreatedBy                 pgtype.Int8 `json:"created_by"`
 	UpdatedAt                 time.Time   `json:"updated_at"`

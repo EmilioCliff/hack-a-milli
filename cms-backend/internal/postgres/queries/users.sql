@@ -1,4 +1,86 @@
 -- name: CreateUser :one
-INSERT INTO users (full_name)
-VALUES ($1)
+INSERT INTO users (email, full_name, phone_number, address, password_hash, role, department_id)
+VALUES (sqlc.arg('email'), sqlc.arg('full_name'), sqlc.arg('phone_number'), sqlc.narg('address'), sqlc.arg('password_hash'), sqlc.arg('role'), sqlc.narg('department_id'))
+RETURNING id;
+
+-- name: GetUser :one
+SELECT 
+    u.*,
+    d.name
+FROM users u
+LEFT JOIN departments d ON u.department_id = d.id
+WHERE u.id = sqlc.arg('id');
+
+-- name: GetUserInternal :one
+SELECT id, password_hash
+FROM users
+WHERE email = sqlc.arg('email');
+
+-- name: UpdateUser :one
+UPDATE users
+SET
+    full_name = COALESCE(sqlc.arg('full_name'), full_name),
+    phone_number = COALESCE(sqlc.arg('phone_number'), phone_number),
+    address = COALESCE(sqlc.narg('address'), address),
+    password_hash = COALESCE(sqlc.arg('password_hash'), password_hash),
+    role = COALESCE(sqlc.arg('role'), role),
+    department_id = COALESCE(sqlc.narg('department_id'), department_id),
+    active = COALESCE(sqlc.narg('active'), active),
+    account_verified = COALESCE(sqlc.narg('account_verified'), account_verified),
+    multifactor_authentication = COALESCE(sqlc.narg('multifactor_authentication'), multifactor_authentication),
+    refresh_token = COALESCE(sqlc.narg('refresh_token'), refresh_token),
+    updated_by = sqlc.arg('updated_by'),
+    updated_at = NOW()
+WHERE id = sqlc.arg('id')
 RETURNING *;
+
+-- name: ListUsers :many
+SELECT 
+    u.*,
+    d.name AS department_name
+FROM users u
+LEFT JOIN departments d ON u.department_id = d.id
+WHERE
+    (
+        sqlc.narg('search')::text IS NULL 
+        OR LOWER(u.email) LIKE sqlc.narg('search')
+        OR LOWER(u.full_name) LIKE sqlc.narg('search')
+        OR LOWER(u.phone_number) LIKE sqlc.narg('search')
+    )
+    AND (
+        sqlc.narg('role')::text[] IS NULL 
+        OR u.role = ANY(sqlc.narg('role')::text[])
+    )
+    AND (
+        sqlc.narg('department_id')::bigint IS NULL 
+        OR u.department_id = sqlc.narg('department_id')
+    )
+    AND (
+        sqlc.narg('active')::boolean IS NULL 
+        OR u.active = sqlc.narg('active')
+    )
+ORDER BY u.created_at DESC
+LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
+
+-- name: CountUsers :one
+SELECT COUNT(*) AS total_users
+FROM users
+WHERE
+    (
+        sqlc.narg('search')::text IS NULL 
+        OR LOWER(email) LIKE sqlc.narg('search')
+        OR LOWER(full_name) LIKE sqlc.narg('search')
+        OR LOWER(phone_number) LIKE sqlc.narg('search')
+    )
+    AND (
+        sqlc.narg('role')::text[] IS NULL 
+        OR role = ANY(sqlc.narg('role')::text[])
+    )
+    AND (
+        sqlc.narg('department_id')::bigint IS NULL 
+        OR department_id = sqlc.narg('department_id')
+    )
+    AND (
+        sqlc.narg('active')::boolean IS NULL 
+        OR active = sqlc.narg('active')
+    );

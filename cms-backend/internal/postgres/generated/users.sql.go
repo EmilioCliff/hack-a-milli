@@ -7,16 +7,309 @@ package generated
 
 import (
 	"context"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const createUser = `-- name: CreateUser :one
-INSERT INTO users (full_name)
-VALUES ($1)
-RETURNING id, email, full_name, phone_number, address, password_hash, role, department_id, active, account_verified, multifactor_authentication, updated_by, created_by, updated_at, created_at
+const countUsers = `-- name: CountUsers :one
+SELECT COUNT(*) AS total_users
+FROM users
+WHERE
+    (
+        $1::text IS NULL 
+        OR LOWER(email) LIKE $1
+        OR LOWER(full_name) LIKE $1
+        OR LOWER(phone_number) LIKE $1
+    )
+    AND (
+        $2::text[] IS NULL 
+        OR role = ANY($2::text[])
+    )
+    AND (
+        $3::bigint IS NULL 
+        OR department_id = $3
+    )
+    AND (
+        $4::boolean IS NULL 
+        OR active = $4
+    )
 `
 
-func (q *Queries) CreateUser(ctx context.Context, fullName string) (User, error) {
-	row := q.db.QueryRow(ctx, createUser, fullName)
+type CountUsersParams struct {
+	Search       pgtype.Text `json:"search"`
+	Role         []string    `json:"role"`
+	DepartmentID pgtype.Int8 `json:"department_id"`
+	Active       pgtype.Bool `json:"active"`
+}
+
+func (q *Queries) CountUsers(ctx context.Context, arg CountUsersParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countUsers,
+		arg.Search,
+		arg.Role,
+		arg.DepartmentID,
+		arg.Active,
+	)
+	var total_users int64
+	err := row.Scan(&total_users)
+	return total_users, err
+}
+
+const createUser = `-- name: CreateUser :one
+INSERT INTO users (email, full_name, phone_number, address, password_hash, role, department_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id
+`
+
+type CreateUserParams struct {
+	Email        string      `json:"email"`
+	FullName     string      `json:"full_name"`
+	PhoneNumber  string      `json:"phone_number"`
+	Address      pgtype.Text `json:"address"`
+	PasswordHash string      `json:"password_hash"`
+	Role         []string    `json:"role"`
+	DepartmentID pgtype.Int8 `json:"department_id"`
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (int64, error) {
+	row := q.db.QueryRow(ctx, createUser,
+		arg.Email,
+		arg.FullName,
+		arg.PhoneNumber,
+		arg.Address,
+		arg.PasswordHash,
+		arg.Role,
+		arg.DepartmentID,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const getUser = `-- name: GetUser :one
+SELECT 
+    u.id, u.email, u.full_name, u.phone_number, u.address, u.password_hash, u.role, u.department_id, u.active, u.account_verified, u.multifactor_authentication, u.refresh_token, u.updated_by, u.created_by, u.updated_at, u.created_at,
+    d.name
+FROM users u
+LEFT JOIN departments d ON u.department_id = d.id
+WHERE u.id = $1
+`
+
+type GetUserRow struct {
+	ID                        int64       `json:"id"`
+	Email                     string      `json:"email"`
+	FullName                  string      `json:"full_name"`
+	PhoneNumber               string      `json:"phone_number"`
+	Address                   pgtype.Text `json:"address"`
+	PasswordHash              string      `json:"password_hash"`
+	Role                      []string    `json:"role"`
+	DepartmentID              pgtype.Int8 `json:"department_id"`
+	Active                    bool        `json:"active"`
+	AccountVerified           bool        `json:"account_verified"`
+	MultifactorAuthentication bool        `json:"multifactor_authentication"`
+	RefreshToken              string      `json:"refresh_token"`
+	UpdatedBy                 pgtype.Int8 `json:"updated_by"`
+	CreatedBy                 pgtype.Int8 `json:"created_by"`
+	UpdatedAt                 time.Time   `json:"updated_at"`
+	CreatedAt                 time.Time   `json:"created_at"`
+	Name                      pgtype.Text `json:"name"`
+}
+
+func (q *Queries) GetUser(ctx context.Context, id int64) (GetUserRow, error) {
+	row := q.db.QueryRow(ctx, getUser, id)
+	var i GetUserRow
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.FullName,
+		&i.PhoneNumber,
+		&i.Address,
+		&i.PasswordHash,
+		&i.Role,
+		&i.DepartmentID,
+		&i.Active,
+		&i.AccountVerified,
+		&i.MultifactorAuthentication,
+		&i.RefreshToken,
+		&i.UpdatedBy,
+		&i.CreatedBy,
+		&i.UpdatedAt,
+		&i.CreatedAt,
+		&i.Name,
+	)
+	return i, err
+}
+
+const getUserInternal = `-- name: GetUserInternal :one
+SELECT id, password_hash
+FROM users
+WHERE email = $1
+`
+
+type GetUserInternalRow struct {
+	ID           int64  `json:"id"`
+	PasswordHash string `json:"password_hash"`
+}
+
+func (q *Queries) GetUserInternal(ctx context.Context, email string) (GetUserInternalRow, error) {
+	row := q.db.QueryRow(ctx, getUserInternal, email)
+	var i GetUserInternalRow
+	err := row.Scan(&i.ID, &i.PasswordHash)
+	return i, err
+}
+
+const listUsers = `-- name: ListUsers :many
+SELECT 
+    u.id, u.email, u.full_name, u.phone_number, u.address, u.password_hash, u.role, u.department_id, u.active, u.account_verified, u.multifactor_authentication, u.refresh_token, u.updated_by, u.created_by, u.updated_at, u.created_at,
+    d.name AS department_name
+FROM users u
+LEFT JOIN departments d ON u.department_id = d.id
+WHERE
+    (
+        $1::text IS NULL 
+        OR LOWER(u.email) LIKE $1
+        OR LOWER(u.full_name) LIKE $1
+        OR LOWER(u.phone_number) LIKE $1
+    )
+    AND (
+        $2::text[] IS NULL 
+        OR u.role = ANY($2::text[])
+    )
+    AND (
+        $3::bigint IS NULL 
+        OR u.department_id = $3
+    )
+    AND (
+        $4::boolean IS NULL 
+        OR u.active = $4
+    )
+ORDER BY u.created_at DESC
+LIMIT $6 OFFSET $5
+`
+
+type ListUsersParams struct {
+	Search       pgtype.Text `json:"search"`
+	Role         []string    `json:"role"`
+	DepartmentID pgtype.Int8 `json:"department_id"`
+	Active       pgtype.Bool `json:"active"`
+	Offset       int32       `json:"offset"`
+	Limit        int32       `json:"limit"`
+}
+
+type ListUsersRow struct {
+	ID                        int64       `json:"id"`
+	Email                     string      `json:"email"`
+	FullName                  string      `json:"full_name"`
+	PhoneNumber               string      `json:"phone_number"`
+	Address                   pgtype.Text `json:"address"`
+	PasswordHash              string      `json:"password_hash"`
+	Role                      []string    `json:"role"`
+	DepartmentID              pgtype.Int8 `json:"department_id"`
+	Active                    bool        `json:"active"`
+	AccountVerified           bool        `json:"account_verified"`
+	MultifactorAuthentication bool        `json:"multifactor_authentication"`
+	RefreshToken              string      `json:"refresh_token"`
+	UpdatedBy                 pgtype.Int8 `json:"updated_by"`
+	CreatedBy                 pgtype.Int8 `json:"created_by"`
+	UpdatedAt                 time.Time   `json:"updated_at"`
+	CreatedAt                 time.Time   `json:"created_at"`
+	DepartmentName            pgtype.Text `json:"department_name"`
+}
+
+func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]ListUsersRow, error) {
+	rows, err := q.db.Query(ctx, listUsers,
+		arg.Search,
+		arg.Role,
+		arg.DepartmentID,
+		arg.Active,
+		arg.Offset,
+		arg.Limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListUsersRow{}
+	for rows.Next() {
+		var i ListUsersRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Email,
+			&i.FullName,
+			&i.PhoneNumber,
+			&i.Address,
+			&i.PasswordHash,
+			&i.Role,
+			&i.DepartmentID,
+			&i.Active,
+			&i.AccountVerified,
+			&i.MultifactorAuthentication,
+			&i.RefreshToken,
+			&i.UpdatedBy,
+			&i.CreatedBy,
+			&i.UpdatedAt,
+			&i.CreatedAt,
+			&i.DepartmentName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateUser = `-- name: UpdateUser :one
+UPDATE users
+SET
+    full_name = COALESCE($1, full_name),
+    phone_number = COALESCE($2, phone_number),
+    address = COALESCE($3, address),
+    password_hash = COALESCE($4, password_hash),
+    role = COALESCE($5, role),
+    department_id = COALESCE($6, department_id),
+    active = COALESCE($7, active),
+    account_verified = COALESCE($8, account_verified),
+    multifactor_authentication = COALESCE($9, multifactor_authentication),
+    refresh_token = COALESCE($10, refresh_token),
+    updated_by = $11,
+    updated_at = NOW()
+WHERE id = $12
+RETURNING id, email, full_name, phone_number, address, password_hash, role, department_id, active, account_verified, multifactor_authentication, refresh_token, updated_by, created_by, updated_at, created_at
+`
+
+type UpdateUserParams struct {
+	FullName                  string      `json:"full_name"`
+	PhoneNumber               string      `json:"phone_number"`
+	Address                   pgtype.Text `json:"address"`
+	PasswordHash              string      `json:"password_hash"`
+	Role                      []string    `json:"role"`
+	DepartmentID              pgtype.Int8 `json:"department_id"`
+	Active                    pgtype.Bool `json:"active"`
+	AccountVerified           pgtype.Bool `json:"account_verified"`
+	MultifactorAuthentication pgtype.Bool `json:"multifactor_authentication"`
+	RefreshToken              pgtype.Text `json:"refresh_token"`
+	UpdatedBy                 pgtype.Int8 `json:"updated_by"`
+	ID                        int64       `json:"id"`
+}
+
+func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUser,
+		arg.FullName,
+		arg.PhoneNumber,
+		arg.Address,
+		arg.PasswordHash,
+		arg.Role,
+		arg.DepartmentID,
+		arg.Active,
+		arg.AccountVerified,
+		arg.MultifactorAuthentication,
+		arg.RefreshToken,
+		arg.UpdatedBy,
+		arg.ID,
+	)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -30,6 +323,7 @@ func (q *Queries) CreateUser(ctx context.Context, fullName string) (User, error)
 		&i.Active,
 		&i.AccountVerified,
 		&i.MultifactorAuthentication,
+		&i.RefreshToken,
 		&i.UpdatedBy,
 		&i.CreatedBy,
 		&i.UpdatedAt,
