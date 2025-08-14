@@ -240,3 +240,14 @@ func (q *Queries) UpdateDeviceToken(ctx context.Context, arg UpdateDeviceTokenPa
 	_, err := q.db.Exec(ctx, updateDeviceToken, arg.Active, arg.UserID)
 	return err
 }
+
+const userHasActiveDeviceToken = `-- name: UserHasActiveDeviceToken :one
+SELECT EXISTS (SELECT 1 FROM device_tokens WHERE user_id = $1 AND active IS TRUE)
+`
+
+func (q *Queries) UserHasActiveDeviceToken(ctx context.Context, userID int64) (bool, error) {
+	row := q.db.QueryRow(ctx, userHasActiveDeviceToken, userID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"log"
 
 	"github.com/EmilioCliff/hack-a-milli/cms-backend/internal/postgres/generated"
 	"github.com/EmilioCliff/hack-a-milli/cms-backend/internal/repository"
@@ -12,6 +13,12 @@ import (
 )
 
 func (ur *UserRepository) CreateDeviceToken(ctx context.Context, deviceToken *repository.DeviceToken) (*repository.DeviceToken, error) {
+	if exists, _ := ur.queries.UserHasActiveDeviceToken(ctx, deviceToken.UserID); exists {
+		if err := ur.UpdateDeviceToken(ctx, false, deviceToken.UserID); err != nil {
+			return nil, err
+		}
+	}
+
 	deviceTokenID, err := ur.queries.CreateDeviceToken(ctx, generated.CreateDeviceTokenParams{
 		UserID:      deviceToken.UserID,
 		DeviceToken: deviceToken.DeviceToken,
@@ -53,28 +60,32 @@ func (ur *UserRepository) GetDeviceTokenByID(ctx context.Context, id int64) (*re
 	}, nil
 }
 
-func (ur *UserRepository) GetDeviceTokenByUserID(ctx context.Context, id int64) (*repository.DeviceToken, error) {
+func (ur *UserRepository) GetDeviceTokenByUserID(ctx context.Context, id int64) ([]repository.DeviceToken, error) {
 	deviceTokens, err := ur.queries.GetDeviceTokenByUserID(ctx, id)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, pkg.Errorf(pkg.NOT_FOUND_ERROR, "device token for user with ID %d not found", id)
+		}
 		return nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error retrieving device token: %s", err.Error())
 	}
 
-	if len(deviceTokens) == 0 {
-		return nil, pkg.Errorf(pkg.NOT_FOUND_ERROR, "device token for user with ID %d not found", id)
-	}
+	log.Println("user has multiple active device_tokens:", len(deviceTokens))
 
-	rslt := &repository.DeviceToken{
-		ID:          deviceTokens[0].ID,
-		UserID:      deviceTokens[0].UserID,
-		DeviceToken: deviceTokens[0].DeviceToken,
-		Platform:    deviceTokens[0].Platform,
-		Active:      deviceTokens[0].Active,
-		CreatedAt:   deviceTokens[0].CreatedAt,
-		User: &repository.User{
-			Email:    deviceTokens[0].UserEmail,
-			FullName: deviceTokens[0].UserFullName,
-			Role:     deviceTokens[0].UserRole,
-		},
+	rslt := make([]repository.DeviceToken, len(deviceTokens))
+	for i, token := range deviceTokens {
+		rslt[i] = repository.DeviceToken{
+			ID:          token.ID,
+			UserID:      token.UserID,
+			DeviceToken: token.DeviceToken,
+			Platform:    token.Platform,
+			Active:      token.Active,
+			CreatedAt:   token.CreatedAt,
+			User: &repository.User{
+				Email:    token.UserEmail,
+				FullName: token.UserFullName,
+				Role:     token.UserRole,
+			},
+		}
 	}
 
 	return rslt, nil

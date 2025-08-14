@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-func (nr *NewsUpdateRepository) CreateNewsLetter(ctx context.Context, newsLetter *repository.NewsLetter) (*repository.NewsLetter, error) {
+func (nr *NewsRepository) CreateNewsLetter(ctx context.Context, newsLetter *repository.NewsLetter) (*repository.NewsLetter, error) {
 	createParams := generated.CreateNewsLetterParams{
 		Title:       newsLetter.Title,
 		Description: newsLetter.Description,
@@ -32,7 +32,7 @@ func (nr *NewsUpdateRepository) CreateNewsLetter(ctx context.Context, newsLetter
 	return nr.GetNewsLetter(ctx, newsLetterID)
 }
 
-func (nr *NewsUpdateRepository) GetNewsLetter(ctx context.Context, id int64) (*repository.NewsLetter, error) {
+func (nr *NewsRepository) GetNewsLetter(ctx context.Context, id int64) (*repository.NewsLetter, error) {
 	newsLetter, err := nr.queries.GetNewsLetter(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -70,7 +70,7 @@ func (nr *NewsUpdateRepository) GetNewsLetter(ctx context.Context, id int64) (*r
 	return rslt, nil
 }
 
-func (nr *NewsUpdateRepository) ListNewsLetters(ctx context.Context, filter *repository.NewsLetterFilter) ([]*repository.NewsLetter, *pkg.Pagination, error) {
+func (nr *NewsRepository) ListNewsLetters(ctx context.Context, filter *repository.NewsLetterFilter) ([]*repository.NewsLetter, *pkg.Pagination, error) {
 	listParams := generated.ListNewsLettersParams{
 		Limit:     int32(filter.Pagination.PageSize),
 		Offset:    pkg.Offset(filter.Pagination.Page, filter.Pagination.PageSize),
@@ -144,7 +144,7 @@ func (nr *NewsUpdateRepository) ListNewsLetters(ctx context.Context, filter *rep
 	return cmsNewsLetters, pkg.CalculatePagination(uint32(count), filter.Pagination.PageSize, filter.Pagination.Page), nil
 }
 
-func (nr *NewsUpdateRepository) PublishNewsLetter(ctx context.Context, newsLetterID int64, userID int64) (*repository.NewsLetter, error) {
+func (nr *NewsRepository) PublishNewsLetter(ctx context.Context, newsLetterID int64, userID int64) (*repository.NewsLetter, error) {
 	if err := nr.queries.PublishNewsLetter(ctx, generated.PublishNewsLetterParams{
 		ID:        newsLetterID,
 		UpdatedBy: userID,
@@ -158,7 +158,7 @@ func (nr *NewsUpdateRepository) PublishNewsLetter(ctx context.Context, newsLette
 	return nr.GetNewsLetter(ctx, newsLetterID)
 }
 
-func (nr *NewsUpdateRepository) UpdateNewsLetter(ctx context.Context, newsLetter *repository.UpdateNewsLetter) (*repository.NewsLetter, error) {
+func (nr *NewsRepository) UpdateNewsLetter(ctx context.Context, newsLetter *repository.UpdateNewsLetter) (*repository.NewsLetter, error) {
 	updateParams := generated.UpdateNewsLetterParams{
 		ID:          newsLetter.ID,
 		UpdatedBy:   newsLetter.UpdatedBy,
@@ -191,7 +191,7 @@ func (nr *NewsUpdateRepository) UpdateNewsLetter(ctx context.Context, newsLetter
 	return nr.GetNewsLetter(ctx, newsLetter.ID)
 }
 
-func (nr *NewsUpdateRepository) DeleteNewsLetter(ctx context.Context, newsLetterID int64, userID int64) error {
+func (nr *NewsRepository) DeleteNewsLetter(ctx context.Context, newsLetterID int64, userID int64) error {
 	if err := nr.queries.DeleteNewsLetter(ctx, generated.DeleteNewsLetterParams{
 		ID:        newsLetterID,
 		DeletedBy: pgtype.Int8{Int64: userID, Valid: true},

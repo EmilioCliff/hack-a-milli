@@ -15,6 +15,11 @@ func (ur *UserRepository) CreateUserPreferences(ctx context.Context, userPrefere
 	if exists, _ := ur.queries.UserExists(ctx, userPreferences.UserID); !exists {
 		return nil, pkg.Errorf(pkg.NOT_FOUND_ERROR, "user with ID %d not found", userPreferences.UserID)
 	}
+
+	if exists, _ := ur.queries.UserHasPreferences(ctx, userPreferences.UserID); exists {
+		return nil, pkg.Errorf(pkg.ALREADY_EXISTS_ERROR, "user preferences for user with ID %d already exist", userPreferences.UserID)
+	}
+
 	userPreferenceID, err := ur.queries.CreateUserPreferences(ctx, generated.CreateUserPreferencesParams{
 		UserID:         userPreferences.UserID,
 		NotifyNews:     userPreferences.NotifyNews,
@@ -99,6 +104,16 @@ func (ur *UserRepository) ListUserPreferences(ctx context.Context, filter *repos
 }
 
 func (ur *UserRepository) UpdateUserPreference(ctx context.Context, userPreferences *repository.UpdateUserPreferences) (*repository.UserPreferences, error) {
+	if exists, _ := ur.queries.UserHasPreferences(ctx, userPreferences.UserID); !exists {
+		return ur.CreateUserPreferences(ctx, &repository.UserPreferences{
+			UserID:         userPreferences.UserID,
+			NotifyNews:     *userPreferences.NotifyNews,
+			NotifyEvents:   *userPreferences.NotifyEvents,
+			NotifyTraining: *userPreferences.NotifyTraining,
+			NotifyPolicy:   *userPreferences.NotifyPolicy,
+		})
+	}
+
 	updateParams := generated.UpdateUserPreferencesParams{
 		UserID:         userPreferences.UserID,
 		NotifyNews:     pgtype.Bool{Valid: false},

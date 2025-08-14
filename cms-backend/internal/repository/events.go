@@ -36,29 +36,29 @@ type Event struct {
 }
 
 type Company struct {
-	Name        string `json:"name"`
-	LogoURL     string `json:"logo_url"`
-	Website     string `json:"website"`
-	Email       string `json:"email"`
-	PhoneNumber string `json:"phone_number"`
+	Name        string `json:"name" binding:"required"`
+	LogoURL     string `json:"logo_url" binding:"required"`
+	Website     string `json:"website" binding:"required"`
+	Email       string `json:"email" binding:"required"`
+	PhoneNumber string `json:"phone_number" binding:"required"`
 }
 
 type Speakers struct {
-	Title        string `json:"title"`
-	Organization string `json:"organization"`
-	Bio          string `json:"bio"`
-	AvatarURL    string `json:"avatar_url"`
-	LinkedInURL  string `json:"linked_in_url"`
+	Title        string `json:"title" binding:"required"`
+	Organization string `json:"organization" binding:"required"`
+	Bio          string `json:"bio" binding:"required"`
+	AvatarURL    string `json:"avatar_url" binding:"required"`
+	LinkedInURL  string `json:"linked_in_url" binding:"required"`
 }
 
 type Agenda struct {
-	Time    string `json:"time"`
-	Title   string `json:"title"`
-	Speaker string `json:"speaker"`
+	Time    string `json:"time" binding:"required"`
+	Title   string `json:"title" binding:"required"`
+	Speaker string `json:"speaker" binding:"required"`
 }
 
 type Venue struct {
-	Type      string `json:"type"` // virtual or physical
+	Type      string `json:"type" binding:"required,oneof=virtual,physical"` // virtual or physical
 	Platform  string `json:"platform,omitempty"`
 	MeetingID string `json:"meeting_id,omitempty"`
 	Passcode  string `json:"passcode,omitempty"`
@@ -104,7 +104,7 @@ type EventFilter struct {
 	Published  *bool
 	StartTime  *time.Time
 	EndTime    *time.Time
-	Tags       []string
+	Tags       *[]string
 }
 
 type EventRepository interface {

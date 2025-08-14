@@ -155,9 +155,9 @@ func (rr *RegistrarRepository) ListRegistrars(ctx context.Context, filter *repos
 		countParams.Search = pgtype.Text{String: "%" + search + "%", Valid: true}
 	}
 
-	if len(filter.Specialities) > 0 {
-		listParams.Specialities = filter.Specialities
-		countParams.Specialities = filter.Specialities
+	if filter.Specialities != nil {
+		listParams.Specialities = *filter.Specialities
+		countParams.Specialities = *filter.Specialities
 	}
 
 	registrars, err := rr.queries.ListRegistrars(ctx, listParams)

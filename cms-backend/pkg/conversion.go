@@ -3,6 +3,7 @@ package pkg
 import (
 	"log"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -48,6 +49,14 @@ func StringToTime(s string) time.Time {
 	return t
 }
 
+func StringToArray(s string, sep string) []string {
+	if s == "" {
+		return nil
+	}
+
+	return strings.Split(s, sep)
+}
+
 func StringToUint32(s string) (uint32, error) {
 	if s == "" {
 		return 0, nil
@@ -58,6 +67,18 @@ func StringToUint32(s string) (uint32, error) {
 	}
 
 	return uint32(id), nil
+}
+
+func StringToInt64(s string) (int64, error) {
+	if s == "" {
+		return 0, nil
+	}
+	id, err := strconv.ParseUint(s, 10, 32)
+	if err != nil {
+		return 0, Errorf(INVALID_ERROR, "invalid id/page: %s", err.Error())
+	}
+
+	return int64(id), nil
 }
 
 func StringToBool(s string) (bool, error) {

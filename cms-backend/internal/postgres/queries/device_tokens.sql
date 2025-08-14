@@ -3,6 +3,9 @@ INSERT INTO device_tokens (user_id, device_token, platform)
 VALUES ($1, $2, $3)
 RETURNING id;
 
+-- name: UserHasActiveDeviceToken :one
+SELECT EXISTS (SELECT 1 FROM device_tokens WHERE user_id = $1 AND active IS TRUE);
+
 -- name: GetDeviceTokenByID :one
 SELECT dt.*,
        u.email AS user_email,

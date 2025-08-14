@@ -54,6 +54,7 @@ type JobPostingFilter struct {
 }
 
 type CareerRepository interface {
+	// Job Postings Methods
 	CreateJobPosting(ctx context.Context, jobPosting *JobPosting) (*JobPosting, error)
 	GetJobPosting(ctx context.Context, id int64) (*JobPosting, error)
 	UpdateJobPosting(ctx context.Context, jobPosting *UpdateJobPosting) (*JobPosting, error)
@@ -62,6 +63,7 @@ type CareerRepository interface {
 	ListJobPosting(ctx context.Context, filter *JobPostingFilter) ([]*JobPosting, *pkg.Pagination, error)
 	DeleteJobPosting(ctx context.Context, jobPostingID int64, userID int64) error
 
+	// Job Applications Methods
 	CreateJobApplication(ctx context.Context, jobApplication *JobApplication) (*JobApplication, error)
 	GetJobApplication(ctx context.Context, id int64) (*JobApplication, error)
 	UpdateJobApplication(ctx context.Context, jobApplication *UpdateJobApplication) (*JobApplication, error)

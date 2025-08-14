@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"context"
 	"time"
 
 	"github.com/EmilioCliff/hack-a-milli/cms-backend/pkg"
@@ -39,11 +38,4 @@ type PaymentFilter struct {
 	Status        *bool
 	StartDate     *time.Time
 	EndDate       *time.Time
-}
-
-type PaymentRepository interface {
-	CreatePayment(ctx context.Context, payment *Payment) (*Payment, error)
-	GetPayment(ctx context.Context, id int64) (*Payment, error)
-	UpdatePayment(ctx context.Context, payment *UpdatePayment) (*Payment, error)
-	ListPayment(ctx context.Context, filter *PaymentFilter) ([]*Payment, *pkg.Pagination, error)
 }

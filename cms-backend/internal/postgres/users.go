@@ -15,10 +15,10 @@ import (
 var _ repository.UserRepositort = (*UserRepository)(nil)
 
 type UserRepository struct {
-	queries generated.Queries
+	queries *generated.Queries
 }
 
-func NewUserRepository(queries generated.Queries) *UserRepository {
+func NewUserRepository(queries *generated.Queries) *UserRepository {
 	return &UserRepository{
 		queries: queries,
 	}
@@ -33,6 +33,7 @@ func (ur *UserRepository) CreateUser(ctx context.Context, user *repository.User)
 		PasswordHash: *user.PasswordHash,
 		Role:         user.Role,
 		DepartmentID: pgtype.Int8{Valid: false},
+		RefreshToken: pgtype.Text{Valid: false},
 	}
 
 	if user.DepartmentID != nil {
@@ -43,6 +44,9 @@ func (ur *UserRepository) CreateUser(ctx context.Context, user *repository.User)
 	}
 	if user.Address != nil {
 		createParams.Address = pgtype.Text{String: *user.Address, Valid: true}
+	}
+	if user.RefreshToken != nil {
+		createParams.RefreshToken = pgtype.Text{String: *user.RefreshToken, Valid: true}
 	}
 
 	userID, err := ur.queries.CreateUser(ctx, createParams)
@@ -62,6 +66,50 @@ func (ur *UserRepository) CreateUser(ctx context.Context, user *repository.User)
 	user.MultifactorAuthentication = true
 
 	return user, nil
+}
+
+func (ur *UserRepository) GetUserInternal(ctx context.Context, email string) (*repository.User, error) {
+	user, err := ur.queries.GetUserInternal(ctx, email)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, pkg.Errorf(pkg.AUTHENTICATION_ERROR, "check login credentials")
+		}
+		return nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error fetching user by ID: %s", err.Error())
+	}
+
+	rslt := &repository.User{
+		ID:                        user.ID,
+		PasswordHash:              &user.PasswordHash,
+		RefreshToken:              &user.RefreshToken,
+		Role:                      user.Role,
+		MultifactorAuthentication: user.MultifactorAuthentication,
+	}
+
+	return rslt, nil
+}
+
+func (ur *UserRepository) UpdateUserCredentialsInternal(ctx context.Context, id int64, passwordHash string, refreshToken string) error {
+	updateParams := generated.UpdateUserCredentialsInternalParams{
+		ID:           id,
+		PasswordHash: pgtype.Text{Valid: false},
+		RefreshToken: pgtype.Text{Valid: false},
+	}
+
+	if passwordHash != "" {
+		updateParams.PasswordHash = pgtype.Text{String: passwordHash, Valid: true}
+	}
+	if refreshToken != "" {
+		updateParams.RefreshToken = pgtype.Text{String: refreshToken, Valid: true}
+	}
+
+	if err := ur.queries.UpdateUserCredentialsInternal(ctx, updateParams); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return pkg.Errorf(pkg.NOT_FOUND_ERROR, "user with ID %d not found", id)
+		}
+		return pkg.Errorf(pkg.INTERNAL_ERROR, "error updating user credentials: %s", err.Error())
+	}
+
+	return nil
 }
 
 func (ur *UserRepository) GetUser(ctx context.Context, id int64) (*repository.User, error) {
@@ -141,9 +189,12 @@ func (ur *UserRepository) UpdateUser(ctx context.Context, user *repository.Updat
 		updateParams.PasswordHash = pgtype.Text{String: *user.PasswordHash, Valid: true}
 	}
 	if user.Role != nil {
-		updateParams.Role = user.Role
+		updateParams.Role = *user.Role
 	}
 	if user.DepartmentID != nil {
+		if exists, _ := ur.queries.DepartmentExists(ctx, *user.DepartmentID); !exists {
+			return nil, pkg.Errorf(pkg.NOT_FOUND_ERROR, "department with ID %d not found", *user.DepartmentID)
+		}
 		updateParams.DepartmentID = pgtype.Int8{Int64: *user.DepartmentID, Valid: true}
 	}
 	if user.Active != nil {
@@ -237,9 +288,9 @@ func (ur *UserRepository) ListUser(ctx context.Context, filter *repository.UserF
 		countParams.Active = pgtype.Bool{Bool: *filter.Active, Valid: true}
 	}
 
-	if len(filter.Role) > 0 {
-		listParams.Role = filter.Role
-		countParams.Role = filter.Role
+	if filter.Role != nil {
+		listParams.Role = *filter.Role
+		countParams.Role = *filter.Role
 	}
 
 	users, err := ur.queries.ListUsers(ctx, listParams)

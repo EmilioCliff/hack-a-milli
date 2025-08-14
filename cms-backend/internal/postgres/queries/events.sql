@@ -24,6 +24,11 @@ WHERE id = $1;
 -- name: EventExists :one
 SELECT EXISTS(SELECT 1 FROM events WHERE id = $1) AS exists;
 
+-- name: AddEventRegisteredAttedee :exec
+UPDATE events
+SET registered_attendees = registered_attendees + 1
+WHERE id = sqlc.arg('event_id');
+
 -- name: UpdateEvent :exec
 UPDATE events
 SET title = COALESCE(sqlc.narg('title'), title),

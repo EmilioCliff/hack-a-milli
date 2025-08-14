@@ -1,6 +1,6 @@
 -- name: CreateUser :one
-INSERT INTO users (email, full_name, phone_number, address, password_hash, role, department_id)
-VALUES (sqlc.arg('email'), sqlc.arg('full_name'), sqlc.arg('phone_number'), sqlc.narg('address'), sqlc.arg('password_hash'), sqlc.arg('role'), sqlc.narg('department_id'))
+INSERT INTO users (email, full_name, phone_number, address, password_hash, role, department_id, refresh_token)
+VALUES (sqlc.arg('email'), sqlc.arg('full_name'), sqlc.arg('phone_number'), sqlc.narg('address'), sqlc.arg('password_hash'), sqlc.arg('role'), sqlc.narg('department_id'), sqlc.narg('refresh_token'))
 RETURNING id;
 
 -- name: GetUser :one
@@ -15,9 +15,16 @@ WHERE u.id = sqlc.arg('id');
 SELECT EXISTS (SELECT 1 FROM users WHERE id = sqlc.arg('id')) AS exists;
 
 -- name: GetUserInternal :one
-SELECT id, password_hash
+SELECT id, password_hash, refresh_token, role, multifactor_authentication
 FROM users
 WHERE email = sqlc.arg('email');
+
+-- name: UpdateUserCredentialsInternal :exec
+UPDATE users
+SET
+    password_hash = sqlc.narg('password_hash'),
+    refresh_token = sqlc.narg('refresh_token')
+WHERE id = sqlc.arg('id');
 
 -- name: UpdateUser :one
 UPDATE users

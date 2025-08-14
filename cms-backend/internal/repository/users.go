@@ -28,24 +28,24 @@ type User struct {
 }
 
 type UpdateUser struct {
-	ID                        int64    `json:"id"`
-	UpdatedBy                 int64    `json:"updated_by"`
-	FullName                  *string  `json:"full_name"`
-	PhoneNumber               *string  `json:"phone_number"`
-	Address                   *string  `json:"address"`
-	PasswordHash              *string  `json:"password_hash"`
-	RefreshToken              *string  `json:"refresh_token"`
-	AccountVerified           *bool    `json:"account_verified"`
-	Role                      []string `json:"role"`
-	DepartmentID              *int64   `json:"department_id"`
-	Active                    *bool    `json:"active"`
-	MultifactorAuthentication *bool    `json:"multifactor_authentication"`
+	ID                        int64     `json:"id"`
+	UpdatedBy                 int64     `json:"updated_by"`
+	FullName                  *string   `json:"full_name"`
+	PhoneNumber               *string   `json:"phone_number"`
+	Address                   *string   `json:"address"`
+	PasswordHash              *string   `json:"password_hash"`
+	RefreshToken              *string   `json:"refresh_token"`
+	AccountVerified           *bool     `json:"account_verified"`
+	Role                      *[]string `json:"role"`
+	DepartmentID              *int64    `json:"department_id"`
+	Active                    *bool     `json:"active"`
+	MultifactorAuthentication *bool     `json:"multifactor_authentication"`
 }
 
 type UserFilter struct {
 	Pagination   *pkg.Pagination
 	Search       *string
-	Role         []string
+	Role         *[]string
 	DepartmentID *int64
 	Active       *bool
 }
@@ -58,6 +58,10 @@ type UserRepositort interface {
 	ListUser(ctx context.Context, filter *UserFilter) ([]*User, *pkg.Pagination, error)
 	DeleteUser(ctx context.Context, userToDeleteID int64, userID int64) error
 
+	// User Internal Methods
+	GetUserInternal(ctx context.Context, email string) (*User, error)
+	UpdateUserCredentialsInternal(ctx context.Context, id int64, passwordHash string, refreshToken string) error
+
 	// User Preferences Methods
 	CreateUserPreferences(ctx context.Context, userPreferences *UserPreferences) (*UserPreferences, error)
 	GetUserPreference(ctx context.Context, userID int64) (*UserPreferences, error)
@@ -67,7 +71,7 @@ type UserRepositort interface {
 	// Device Token Methods
 	CreateDeviceToken(ctx context.Context, deviceToken *DeviceToken) (*DeviceToken, error)
 	GetDeviceTokenByID(ctx context.Context, id int64) (*DeviceToken, error)
-	GetDeviceTokenByUserID(ctx context.Context, id int64) (*DeviceToken, error)
+	GetDeviceTokenByUserID(ctx context.Context, id int64) ([]DeviceToken, error)
 	ListDeviceToken(ctx context.Context, filter *DeviceTokenFilter) ([]*DeviceToken, *pkg.Pagination, error)
 	UpdateDeviceToken(ctx context.Context, active bool, userID int64) error
 }

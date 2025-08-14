@@ -11,17 +11,17 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-var _ repository.NewsUpdateRepository = (*NewsUpdateRepository)(nil)
+var _ repository.NewsRepository = (*NewsRepository)(nil)
 
-type NewsUpdateRepository struct {
+type NewsRepository struct {
 	queries *generated.Queries
 }
 
-func NewNewsUpdateRepository(queries *generated.Queries) *NewsUpdateRepository {
-	return &NewsUpdateRepository{queries: queries}
+func NewNewsRepository(queries *generated.Queries) *NewsRepository {
+	return &NewsRepository{queries: queries}
 }
 
-func (nr *NewsUpdateRepository) CreateNewsUpdate(ctx context.Context, newsUpdate *repository.NewsUpdate) (*repository.NewsUpdate, error) {
+func (nr *NewsRepository) CreateNewsUpdate(ctx context.Context, newsUpdate *repository.NewsUpdate) (*repository.NewsUpdate, error) {
 	newsUpdateID, err := nr.queries.CreateNewsUpdate(ctx, generated.CreateNewsUpdateParams{
 		Title:     newsUpdate.Title,
 		Topic:     newsUpdate.Topic,
@@ -42,7 +42,7 @@ func (nr *NewsUpdateRepository) CreateNewsUpdate(ctx context.Context, newsUpdate
 	return nr.GetNewsUpdate(ctx, newsUpdateID)
 }
 
-func (nr *NewsUpdateRepository) GetNewsUpdate(ctx context.Context, id int64) (*repository.NewsUpdate, error) {
+func (nr *NewsRepository) GetNewsUpdate(ctx context.Context, id int64) (*repository.NewsUpdate, error) {
 	newsUpdate, err := nr.queries.GetNewsUpdate(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -82,7 +82,7 @@ func (nr *NewsUpdateRepository) GetNewsUpdate(ctx context.Context, id int64) (*r
 	return rslt, nil
 }
 
-func (nr *NewsUpdateRepository) ListNewsUpdate(ctx context.Context, filter *repository.NewsUpdateFilter) ([]*repository.NewsUpdate, *pkg.Pagination, error) {
+func (nr *NewsRepository) ListNewsUpdate(ctx context.Context, filter *repository.NewsUpdateFilter) ([]*repository.NewsUpdate, *pkg.Pagination, error) {
 	listParams := generated.ListNewsUpdatesParams{
 		Limit:     int32(filter.Pagination.PageSize),
 		Offset:    pkg.Offset(filter.Pagination.Page, filter.Pagination.PageSize),
@@ -144,7 +144,7 @@ func (nr *NewsUpdateRepository) ListNewsUpdate(ctx context.Context, filter *repo
 	return rslt, pkg.CalculatePagination(uint32(count), filter.Pagination.PageSize, filter.Pagination.Page), nil
 }
 
-func (nr *NewsUpdateRepository) PublishNewsUpdate(ctx context.Context, newsUpdateID int64, userID int64) (*repository.NewsUpdate, error) {
+func (nr *NewsRepository) PublishNewsUpdate(ctx context.Context, newsUpdateID int64, userID int64) (*repository.NewsUpdate, error) {
 	newsUpdate, err := nr.queries.PublishNewsUpdate(ctx, generated.PublishNewsUpdateParams{
 		ID:        newsUpdateID,
 		UpdatedBy: userID,
@@ -171,7 +171,7 @@ func (nr *NewsUpdateRepository) PublishNewsUpdate(ctx context.Context, newsUpdat
 	}, nil
 }
 
-func (nr *NewsUpdateRepository) UpdateNewsUpdate(ctx context.Context, newsUpdate *repository.UpdateNewsUpdate) (*repository.NewsUpdate, error) {
+func (nr *NewsRepository) UpdateNewsUpdate(ctx context.Context, newsUpdate *repository.UpdateNewsUpdate) (*repository.NewsUpdate, error) {
 	updateParams := generated.UpdateNewsUpdateParams{
 		ID:        newsUpdate.ID,
 		UpdatedBy: newsUpdate.UpdatedBy,
@@ -212,7 +212,7 @@ func (nr *NewsUpdateRepository) UpdateNewsUpdate(ctx context.Context, newsUpdate
 	return nr.GetNewsUpdate(ctx, newsUpdate.ID)
 }
 
-func (nr *NewsUpdateRepository) DeleteNewsUpdate(ctx context.Context, newsUpdateID int64, userID int64) error {
+func (nr *NewsRepository) DeleteNewsUpdate(ctx context.Context, newsUpdateID int64, userID int64) error {
 	if err := nr.queries.DeleteNewsUpdate(ctx, generated.DeleteNewsUpdateParams{
 		ID:        newsUpdateID,
 		DeletedBy: pgtype.Int8{Int64: userID, Valid: true},

@@ -14,10 +14,27 @@ import (
 )
 
 type PostgresRepo struct {
+	UserRepository       *UserRepository
+	MerchRepository      *MerchRepository
+	BlogRepository       *BlogRepository
+	EventRepository      *EventRepository
+	RegistrarRepository  *RegistrarRepository
+	DepartmentRepository *DepartmentRepository
+	CareerRepository     *CareerRepository
+	NewsRepository       *NewsRepository
 }
 
 func NewPostgresRepo(store *Store) *PostgresRepo {
-	return &PostgresRepo{}
+	return &PostgresRepo{
+		UserRepository:       NewUserRepository(generated.New(store.pool)),
+		MerchRepository:      NewMerchRepository(store),
+		BlogRepository:       NewBlogRepository(generated.New(store.pool)),
+		EventRepository:      NewEventRepository(generated.New(store.pool)),
+		RegistrarRepository:  NewRegistrarRepository(generated.New(store.pool)),
+		DepartmentRepository: NewDepartmentRepository(generated.New(store.pool)),
+		CareerRepository:     NewCareerRepository(generated.New(store.pool)),
+		NewsRepository:       NewNewsRepository(generated.New(store.pool)),
+	}
 }
 
 type Store struct {

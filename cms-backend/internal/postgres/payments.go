@@ -12,17 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-var _ repository.PaymentRepository = (*PaymentRepository)(nil)
-
-type PaymentRepository struct {
-	queries *generated.Queries
-}
-
-func NewPaymentRepository(queries *generated.Queries) *PaymentRepository {
-	return &PaymentRepository{queries: queries}
-}
-
-func (pr *PaymentRepository) CreatePayment(ctx context.Context, payment *repository.Payment) (*repository.Payment, error) {
+func (mr *MerchRepository) CreatePayment(ctx context.Context, payment *repository.Payment) (*repository.Payment, error) {
 	createParams := generated.CreatePaymentParams{
 		OrderID:       payment.OrderID,
 		UserID:        pgtype.Int8{Valid: false},
@@ -43,7 +33,7 @@ func (pr *PaymentRepository) CreatePayment(ctx context.Context, payment *reposit
 		createParams.CreatedBy = pgtype.Int8{Int64: *payment.CreatedBy, Valid: true}
 	}
 
-	paymentID, err := pr.queries.CreatePayment(ctx, createParams)
+	paymentID, err := mr.queries.CreatePayment(ctx, createParams)
 	if err != nil {
 		if pkg.PgxErrorCode(err) == pkg.UNIQUE_VIOLATION {
 			return nil, pkg.Errorf(pkg.ALREADY_EXISTS_ERROR, "payment for order %d already exists", payment.OrderID)
@@ -56,8 +46,8 @@ func (pr *PaymentRepository) CreatePayment(ctx context.Context, payment *reposit
 	return payment, nil
 }
 
-func (pr *PaymentRepository) GetPayment(ctx context.Context, id int64) (*repository.Payment, error) {
-	payment, err := pr.queries.GetPayment(ctx, id)
+func (mr *MerchRepository) GetPayment(ctx context.Context, id int64) (*repository.Payment, error) {
+	payment, err := mr.queries.GetPayment(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, pkg.Errorf(pkg.NOT_FOUND_ERROR, "payment with ID %d not found", id)
@@ -93,7 +83,7 @@ func (pr *PaymentRepository) GetPayment(ctx context.Context, id int64) (*reposit
 	return rslt, nil
 }
 
-func (pr *PaymentRepository) UpdatePayment(ctx context.Context, payment *repository.UpdatePayment) (*repository.Payment, error) {
+func (mr *MerchRepository) UpdatePayment(ctx context.Context, payment *repository.UpdatePayment) (*repository.Payment, error) {
 	updateParams := generated.UpdatePaymentParams{
 		ID:        payment.ID,
 		UpdatedBy: pgtype.Int8{Valid: false},
@@ -111,7 +101,7 @@ func (pr *PaymentRepository) UpdatePayment(ctx context.Context, payment *reposit
 		updateParams.UpdatedBy = pgtype.Int8{Int64: payment.UpdatedBy, Valid: true}
 	}
 
-	updatedPayment, err := pr.queries.UpdatePayment(ctx, updateParams)
+	updatedPayment, err := mr.queries.UpdatePayment(ctx, updateParams)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, pkg.Errorf(pkg.NOT_FOUND_ERROR, "payment with ID %d not found", payment.ID)
@@ -147,7 +137,7 @@ func (pr *PaymentRepository) UpdatePayment(ctx context.Context, payment *reposit
 	return rslt, nil
 }
 
-func (pr *PaymentRepository) ListPayment(ctx context.Context, filter *repository.PaymentFilter) ([]*repository.Payment, *pkg.Pagination, error) {
+func (mr *MerchRepository) ListPayment(ctx context.Context, filter *repository.PaymentFilter) ([]*repository.Payment, *pkg.Pagination, error) {
 	listParams := generated.ListPaymentsParams{
 		Limit:         int32(filter.Pagination.PageSize),
 		Offset:        pkg.Offset(filter.Pagination.Page, filter.Pagination.PageSize),
@@ -196,12 +186,12 @@ func (pr *PaymentRepository) ListPayment(ctx context.Context, filter *repository
 		countParams.EndDate = pgtype.Timestamptz{Time: *filter.EndDate, Valid: true}
 	}
 
-	payments, err := pr.queries.ListPayments(ctx, listParams)
+	payments, err := mr.queries.ListPayments(ctx, listParams)
 	if err != nil {
 		return nil, nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error listing payments: %s", err.Error())
 	}
 
-	count, err := pr.queries.CountPayments(ctx, countParams)
+	count, err := mr.queries.CountPayments(ctx, countParams)
 	if err != nil {
 		return nil, nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error counting payments: %s", err.Error())
 	}

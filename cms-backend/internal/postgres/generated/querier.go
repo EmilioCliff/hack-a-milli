@@ -11,6 +11,7 @@ import (
 )
 
 type Querier interface {
+	AddEventRegisteredAttedee(ctx context.Context, eventID int64) error
 	ChangeVisibilityJobPosting(ctx context.Context, arg ChangeVisibilityJobPostingParams) error
 	CheckEventRegistrantExists(ctx context.Context, arg CheckEventRegistrantExistsParams) (bool, error)
 	CountBlogs(ctx context.Context, arg CountBlogsParams) (int64, error)
@@ -113,8 +114,11 @@ type Querier interface {
 	UpdateProductItemSold(ctx context.Context, arg UpdateProductItemSoldParams) (int64, error)
 	UpdateRegistrar(ctx context.Context, arg UpdateRegistrarParams) (Registrar, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
+	UpdateUserCredentialsInternal(ctx context.Context, arg UpdateUserCredentialsInternalParams) error
 	UpdateUserPreferences(ctx context.Context, arg UpdateUserPreferencesParams) (UserPreference, error)
 	UserExists(ctx context.Context, id int64) (bool, error)
+	UserHasActiveDeviceToken(ctx context.Context, userID int64) (bool, error)
+	UserHasPreferences(ctx context.Context, userID int64) (bool, error)
 }
 
 var _ Querier = (*Queries)(nil)

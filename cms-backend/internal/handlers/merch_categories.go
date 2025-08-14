@@ -8,57 +8,62 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type createJobApplication struct {
-	JobID       int64  `json:"job_id" binding:"required"`
-	FullName    string `json:"full_name" binding:"required"`
-	Email       string `json:"email" binding:"required"`
-	PhoneNumber string `json:"phone_number" binding:"required"`
-	CoverLetter string `json:"cover_letter" binding:"required"`
-	ResumeUrl   string `json:"resume_url" binding:"required"`
+type createCategoryReq struct {
+	ID          int64  `json:"id" binding:"required"`
+	Name        string `json:"name" binding:"required"`
+	Description string `json:"description"`
 }
 
-func (s *Server) createJobApplicationHandler(ctx *gin.Context) {
-	var req createJobApplication
+func (s *Server) createCategoryHandler(ctx *gin.Context) {
+	var req createCategoryReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(pkg.Errorf(pkg.INVALID_ERROR, err.Error())))
 		return
 	}
 
-	jobApplication := &repository.JobApplication{
-		JobID:       req.JobID,
-		FullName:    req.FullName,
-		Email:       req.Email,
-		PhoneNumber: req.PhoneNumber,
-		CoverLetter: req.CoverLetter,
-		ResumeUrl:   req.ResumeUrl,
+	reqCtx, err := getRequestContext(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
 	}
 
-	application, err := s.repo.CareerRepository.CreateJobApplication(ctx, jobApplication)
+	category := &repository.Category{
+		Name:        req.Name,
+		Description: nil,
+		CreatedBy:   reqCtx.UserID,
+		UpdatedBy:   reqCtx.UserID,
+	}
+
+	if req.Description != "" {
+		category.Description = &req.Description
+	}
+
+	newCategory, err := s.repo.MerchRepository.CreateCategory(ctx, category)
 	if err != nil {
 		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, gin.H{"data": application})
+	ctx.JSON(http.StatusCreated, gin.H{"data": newCategory})
 }
 
-func (s *Server) getJobApplicationHandler(ctx *gin.Context) {
+func (s *Server) getCategoryHandler(ctx *gin.Context) {
 	id, err := pkg.StringToInt64(ctx.Param("id"))
 	if err != nil {
 		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
 		return
 	}
 
-	application, err := s.repo.CareerRepository.GetJobApplication(ctx, id)
+	category, err := s.repo.MerchRepository.GetCategory(ctx, id)
 	if err != nil {
 		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"data": application})
+	ctx.JSON(http.StatusOK, gin.H{"data": category})
 }
 
-func (s *Server) updateJobApplicationHandler(ctx *gin.Context) {
+func (s *Server) updateCategoryHandler(ctx *gin.Context) {
 	id, err := pkg.StringToInt64(ctx.Param("id"))
 	if err != nil {
 		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
@@ -71,7 +76,7 @@ func (s *Server) updateJobApplicationHandler(ctx *gin.Context) {
 		return
 	}
 
-	var req repository.UpdateJobApplication
+	var req repository.UpdateCategory
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(pkg.Errorf(pkg.INVALID_ERROR, err.Error())))
 		return
@@ -79,16 +84,19 @@ func (s *Server) updateJobApplicationHandler(ctx *gin.Context) {
 	req.ID = id
 	req.UpdatedBy = reqCtx.UserID
 
-	application, err := s.repo.CareerRepository.UpdateJobApplication(ctx, &req)
+	category, err := s.repo.MerchRepository.UpdateCategory(ctx, &req)
 	if err != nil {
 		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"data": application})
+	ctx.JSON(http.StatusOK, gin.H{
+		"data":    category,
+		"success": "Category updated successfully",
+	})
 }
 
-func (s *Server) listJobApplicationsHandler(ctx *gin.Context) {
+func (s *Server) listCategoriesHandler(ctx *gin.Context) {
 	pageNoStr := ctx.DefaultQuery("page", "1")
 	pageNo, err := pkg.StringToUint32(pageNoStr)
 	if err != nil {
@@ -105,39 +113,47 @@ func (s *Server) listJobApplicationsHandler(ctx *gin.Context) {
 		return
 	}
 
-	filter := repository.JobApplicationFilter{
+	filter := repository.CategoryFilter{
 		Pagination: &pkg.Pagination{
 			Page:     pageNo,
 			PageSize: pageSize,
 		},
 		Search: nil,
-		Status: nil,
-		JobID:  nil,
 	}
-
 	if search := ctx.Query("search"); search != "" {
 		filter.Search = &search
 	}
-	if status := ctx.Query("status"); status != "" {
-		filter.Status = &status
-	}
-	if jobID := ctx.Query("job_id"); jobID != "" {
-		jobIDInt, err := pkg.StringToInt64(jobID)
-		if err != nil {
-			ctx.JSON(http.StatusBadRequest, errorResponse(pkg.Errorf(pkg.INVALID_ERROR, err.Error())))
-			return
-		}
-		filter.JobID = &jobIDInt
-	}
 
-	applications, pagination, err := s.repo.CareerRepository.ListJobApplications(ctx, &filter)
+	categories, pagination, err := s.repo.MerchRepository.ListCategories(ctx, &filter)
 	if err != nil {
 		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
 		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"data":       applications,
+		"data":       categories,
 		"pagination": pagination,
 	})
+}
+
+func (s *Server) deleteCategoryHandler(ctx *gin.Context) {
+	id, err := pkg.StringToInt64(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
+		return
+	}
+
+	reqCtx, err := getRequestContext(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	err = s.repo.MerchRepository.DeleteCategory(ctx, id, reqCtx.UserID)
+	if err != nil {
+		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"success": "Category deleted successfully"})
 }

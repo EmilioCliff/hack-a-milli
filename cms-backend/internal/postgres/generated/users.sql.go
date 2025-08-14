@@ -56,8 +56,8 @@ func (q *Queries) CountUsers(ctx context.Context, arg CountUsersParams) (int64, 
 }
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (email, full_name, phone_number, address, password_hash, role, department_id)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+INSERT INTO users (email, full_name, phone_number, address, password_hash, role, department_id, refresh_token)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 RETURNING id
 `
 
@@ -69,6 +69,7 @@ type CreateUserParams struct {
 	PasswordHash string      `json:"password_hash"`
 	Role         []string    `json:"role"`
 	DepartmentID pgtype.Int8 `json:"department_id"`
+	RefreshToken pgtype.Text `json:"refresh_token"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (int64, error) {
@@ -80,6 +81,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (int64, 
 		arg.PasswordHash,
 		arg.Role,
 		arg.DepartmentID,
+		arg.RefreshToken,
 	)
 	var id int64
 	err := row.Scan(&id)
@@ -159,20 +161,29 @@ func (q *Queries) GetUser(ctx context.Context, id int64) (GetUserRow, error) {
 }
 
 const getUserInternal = `-- name: GetUserInternal :one
-SELECT id, password_hash
+SELECT id, password_hash, refresh_token, role, multifactor_authentication
 FROM users
 WHERE email = $1
 `
 
 type GetUserInternalRow struct {
-	ID           int64  `json:"id"`
-	PasswordHash string `json:"password_hash"`
+	ID                        int64    `json:"id"`
+	PasswordHash              string   `json:"password_hash"`
+	RefreshToken              string   `json:"refresh_token"`
+	Role                      []string `json:"role"`
+	MultifactorAuthentication bool     `json:"multifactor_authentication"`
 }
 
 func (q *Queries) GetUserInternal(ctx context.Context, email string) (GetUserInternalRow, error) {
 	row := q.db.QueryRow(ctx, getUserInternal, email)
 	var i GetUserInternalRow
-	err := row.Scan(&i.ID, &i.PasswordHash)
+	err := row.Scan(
+		&i.ID,
+		&i.PasswordHash,
+		&i.RefreshToken,
+		&i.Role,
+		&i.MultifactorAuthentication,
+	)
 	return i, err
 }
 
@@ -348,6 +359,25 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const updateUserCredentialsInternal = `-- name: UpdateUserCredentialsInternal :exec
+UPDATE users
+SET
+    password_hash = $1,
+    refresh_token = $2
+WHERE id = $3
+`
+
+type UpdateUserCredentialsInternalParams struct {
+	PasswordHash pgtype.Text `json:"password_hash"`
+	RefreshToken pgtype.Text `json:"refresh_token"`
+	ID           int64       `json:"id"`
+}
+
+func (q *Queries) UpdateUserCredentialsInternal(ctx context.Context, arg UpdateUserCredentialsInternalParams) error {
+	_, err := q.db.Exec(ctx, updateUserCredentialsInternal, arg.PasswordHash, arg.RefreshToken, arg.ID)
+	return err
 }
 
 const userExists = `-- name: UserExists :one

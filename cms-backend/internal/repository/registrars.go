@@ -40,7 +40,7 @@ type UpdateRegistrar struct {
 type RegistrarFilter struct {
 	Pagination   *pkg.Pagination
 	Search       *string
-	Specialities []string
+	Specialities *[]string
 }
 
 type RegistrarRepository interface {

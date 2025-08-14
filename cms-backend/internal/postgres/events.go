@@ -171,23 +171,6 @@ func (er *EventRepository) GetEvent(ctx context.Context, id int64) (*repository.
 	return rslt, nil
 }
 
-// Title               pgtype.Text `json:"title"`
-// Topic               pgtype.Text `json:"topic"`
-// Content             pgtype.Text `json:"content"`
-// CoverImg            pgtype.Text `json:"cover_img"`
-// StartTime           pgtype.Text `json:"start_time"`
-// EndTime             pgtype.Text `json:"end_time"`
-// Status              pgtype.Text `json:"status"`
-// Venue               []byte      `json:"venue"`
-// Price               pgtype.Text `json:"price"`
-// Agenda              []byte      `json:"agenda"`
-// Tags                []string    `json:"tags"`
-// Organizers          []byte      `json:"organizers"`
-// Partners            []byte      `json:"partners"`
-// Speakers            []byte      `json:"speakers"`
-// MaxAttendees        pgtype.Int4 `json:"max_attendees"`
-// RegisteredAttendees pgtype.Int4 `json:"registered_attendees"`
-
 func (er *EventRepository) UpdateEvent(ctx context.Context, event *repository.UpdateEvent) (*repository.Event, error) {
 	updateParams := generated.UpdateEventParams{
 		ID:                  event.ID,
@@ -350,8 +333,8 @@ func (er *EventRepository) ListEvent(ctx context.Context, filter *repository.Eve
 		countParams.Published = pgtype.Bool{Bool: *filter.Published, Valid: true}
 	}
 	if filter.Tags != nil {
-		listParams.Tags = filter.Tags
-		countParams.Tags = filter.Tags
+		listParams.Tags = *filter.Tags
+		countParams.Tags = *filter.Tags
 	}
 	if filter.StartTime != nil && filter.EndTime != nil {
 		listParams.StartTime = pgtype.Timestamptz{Time: *filter.StartTime, Valid: true}
@@ -465,6 +448,8 @@ func (er *EventRepository) CreateEventRegistrant(ctx context.Context, registrant
 		}
 		return nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error creating event registrant: %s", err.Error())
 	}
+
+	_ = er.queries.AddEventRegisteredAttedee(ctx, registrant.EventID)
 
 	registrant.ID = registrantId
 

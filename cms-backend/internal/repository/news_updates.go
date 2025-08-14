@@ -46,7 +46,7 @@ type NewsUpdateFilter struct {
 	EndDate    *time.Time
 }
 
-type NewsUpdateRepository interface {
+type NewsRepository interface {
 	// News Update methods
 	CreateNewsUpdate(ctx context.Context, newsUpdate *NewsUpdate) (*NewsUpdate, error)
 	GetNewsUpdate(ctx context.Context, id int64) (*NewsUpdate, error)

@@ -199,3 +199,14 @@ func (q *Queries) UpdateUserPreferences(ctx context.Context, arg UpdateUserPrefe
 	)
 	return i, err
 }
+
+const userHasPreferences = `-- name: UserHasPreferences :one
+SELECT EXISTS (SELECT 1 FROM user_preferences WHERE user_id = $1)
+`
+
+func (q *Queries) UserHasPreferences(ctx context.Context, userID int64) (bool, error) {
+	row := q.db.QueryRow(ctx, userHasPreferences, userID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}

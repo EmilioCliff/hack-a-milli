@@ -12,18 +12,19 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-var _ repository.ProductRepository = (*ProductRepository)(nil)
+var _ repository.ProductRepository = (*MerchRepository)(nil)
 
-type ProductRepository struct {
+type MerchRepository struct {
 	queries *generated.Queries
+	db      *Store
 }
 
-func NewProductRepository(queries *generated.Queries) *ProductRepository {
-	return &ProductRepository{queries: queries}
+func NewMerchRepository(store *Store) *MerchRepository {
+	return &MerchRepository{queries: generated.New(store.pool), db: store}
 }
 
-func (pr *ProductRepository) CreateProduct(ctx context.Context, product *repository.Product) (*repository.Product, error) {
-	if exists, _ := pr.queries.ProductCategoryExists(ctx, product.CategoryID); !exists {
+func (mr *MerchRepository) CreateProduct(ctx context.Context, product *repository.Product) (*repository.Product, error) {
+	if exists, _ := mr.queries.ProductCategoryExists(ctx, product.CategoryID); !exists {
 		return nil, pkg.Errorf(pkg.NOT_FOUND_ERROR, "category with ID %d does not exist", product.CategoryID)
 	}
 
@@ -33,6 +34,8 @@ func (pr *ProductRepository) CreateProduct(ctx context.Context, product *reposit
 		Price:       pkg.Float64ToPgTypeNumeric(product.Price),
 		ImageUrl:    nil,
 		Description: pgtype.Text{Valid: false},
+		UpdatedBy:   product.UpdatedBy,
+		CreatedBy:   product.CreatedBy,
 	}
 
 	if len(product.ImageUrl) > 0 {
@@ -42,7 +45,7 @@ func (pr *ProductRepository) CreateProduct(ctx context.Context, product *reposit
 		createParams.Description = pgtype.Text{String: *product.Description, Valid: true}
 	}
 
-	productID, err := pr.queries.CreateProduct(ctx, createParams)
+	productID, err := mr.queries.CreateProduct(ctx, createParams)
 	if err != nil {
 		if pkg.PgxErrorCode(err) == pkg.UNIQUE_VIOLATION {
 			return nil, pkg.Errorf(pkg.ALREADY_EXISTS_ERROR, "product with name %s already exists", product.Name)
@@ -55,8 +58,8 @@ func (pr *ProductRepository) CreateProduct(ctx context.Context, product *reposit
 	return product, nil
 }
 
-func (pr *ProductRepository) GetProduct(ctx context.Context, id int64) (*repository.Product, error) {
-	product, err := pr.queries.GetProduct(ctx, id)
+func (mr *MerchRepository) GetProduct(ctx context.Context, id int64) (*repository.Product, error) {
+	product, err := mr.queries.GetProduct(ctx, id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, pkg.Errorf(pkg.NOT_FOUND_ERROR, "product with ID %d not found", id)
 	}
@@ -86,7 +89,7 @@ func (pr *ProductRepository) GetProduct(ctx context.Context, id int64) (*reposit
 	return rslt, nil
 }
 
-func (pr *ProductRepository) UpdateProduct(ctx context.Context, product *repository.UpdateProduct) (*repository.Product, error) {
+func (mr *MerchRepository) UpdateProduct(ctx context.Context, product *repository.UpdateProduct) (*repository.Product, error) {
 	updateParams := generated.UpdateProductParams{
 		ID:          product.ID,
 		UpdatedBy:   product.UpdatedBy,
@@ -107,8 +110,8 @@ func (pr *ProductRepository) UpdateProduct(ctx context.Context, product *reposit
 	if product.Price != nil {
 		updateParams.Price = pkg.Float64ToPgTypeNumeric(*product.Price)
 	}
-	if len(product.ImageUrl) > 0 {
-		updateParams.ImageUrl = product.ImageUrl
+	if product.ImageUrl != nil {
+		updateParams.ImageUrl = *product.ImageUrl
 	}
 	if product.Description != nil {
 		updateParams.Description = pgtype.Text{String: *product.Description, Valid: true}
@@ -117,7 +120,7 @@ func (pr *ProductRepository) UpdateProduct(ctx context.Context, product *reposit
 		updateParams.ItemsSold = pgtype.Int4{Int32: *product.ItemsSold, Valid: true}
 	}
 
-	updatedProduct, err := pr.queries.UpdateProduct(ctx, updateParams)
+	updatedProduct, err := mr.queries.UpdateProduct(ctx, updateParams)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, pkg.Errorf(pkg.NOT_FOUND_ERROR, "product with ID %d not found", product.ID)
@@ -139,7 +142,7 @@ func (pr *ProductRepository) UpdateProduct(ctx context.Context, product *reposit
 		ItemsSold:   updatedProduct.ItemsSold,
 	}
 
-	category, err := pr.queries.GetProductCategory(ctx, updatedProduct.CategoryID)
+	category, err := mr.queries.GetProductCategory(ctx, updatedProduct.CategoryID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, pkg.Errorf(pkg.NOT_FOUND_ERROR, "category with ID %d not found", updatedProduct.CategoryID)
@@ -156,7 +159,7 @@ func (pr *ProductRepository) UpdateProduct(ctx context.Context, product *reposit
 	return rslt, nil
 }
 
-func (pr *ProductRepository) ListProducts(ctx context.Context, filter *repository.ProductFilter) ([]*repository.Product, *pkg.Pagination, error) {
+func (mr *MerchRepository) ListProducts(ctx context.Context, filter *repository.ProductFilter) ([]*repository.Product, *pkg.Pagination, error) {
 	listParams := generated.ListProductsParams{
 		Limit:      int32(filter.Pagination.PageSize),
 		Offset:     pkg.Offset(filter.Pagination.Page, filter.Pagination.PageSize),
@@ -180,12 +183,12 @@ func (pr *ProductRepository) ListProducts(ctx context.Context, filter *repositor
 		countParams.CategoryID = pgtype.Int8{Int64: *filter.CategoryID, Valid: true}
 	}
 
-	products, err := pr.queries.ListProducts(ctx, listParams)
+	products, err := mr.queries.ListProducts(ctx, listParams)
 	if err != nil {
 		return nil, nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error listing products: %s", err.Error())
 	}
 
-	count, err := pr.queries.CountProducts(ctx, countParams)
+	count, err := mr.queries.CountProducts(ctx, countParams)
 	if err != nil {
 		return nil, nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error counting products: %s", err.Error())
 	}
@@ -215,8 +218,8 @@ func (pr *ProductRepository) ListProducts(ctx context.Context, filter *repositor
 	return rslt, pkg.CalculatePagination(uint32(count), filter.Pagination.PageSize, filter.Pagination.Page), nil
 }
 
-func (pr *ProductRepository) DeleteProduct(ctx context.Context, productID int64, userID int64) error {
-	if err := pr.queries.DeleteProduct(ctx, generated.DeleteProductParams{
+func (mr *MerchRepository) DeleteProduct(ctx context.Context, productID int64, userID int64) error {
+	if err := mr.queries.DeleteProduct(ctx, generated.DeleteProductParams{
 		ID:        productID,
 		DeletedBy: pgtype.Int8{Int64: userID, Valid: true},
 	}); err != nil {

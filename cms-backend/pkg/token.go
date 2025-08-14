@@ -14,11 +14,10 @@ type JWTMaker struct {
 }
 
 type Payload struct {
-	ID          uuid.UUID `json:"id"`
-	UserID      uint32    `json:"user_id"`
-	Email       string    `json:"email"`
-	Roles       []string  `json:"roles"`
-	Permissions []string  `json:"permissions"`
+	ID     uuid.UUID `json:"id"`
+	UserID uint32    `json:"user_id"`
+	Email  string    `json:"email"`
+	Roles  []string  `json:"roles"`
 	jwt.RegisteredClaims
 }
 
@@ -26,7 +25,7 @@ func NewJWTMaker(jwtSecret string) JWTMaker {
 	return JWTMaker{jwtSecret: jwtSecret}
 }
 
-func (maker *JWTMaker) CreateToken(email string, userID uint32, role, permissions []string, duration time.Duration) (string, error) {
+func (maker *JWTMaker) CreateToken(email string, userID uint32, role []string, duration time.Duration) (string, error) {
 	id, err := uuid.NewUUID()
 	if err != nil {
 		return "", Errorf(INTERNAL_ERROR, "failed to create uuid: %v", err)
@@ -37,7 +36,6 @@ func (maker *JWTMaker) CreateToken(email string, userID uint32, role, permission
 		userID,
 		email,
 		role,
-		permissions,
 		jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(duration)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

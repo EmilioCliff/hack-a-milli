@@ -12,19 +12,8 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-var _ repository.OrderRepository = (*OrderRepository)(nil)
-
-type OrderRepository struct {
-	queries *generated.Queries
-	db      *Store
-}
-
-func NewOrderRepository(queries *generated.Queries) *OrderRepository {
-	return &OrderRepository{queries: queries}
-}
-
-func (or *OrderRepository) CreateOrder(ctx context.Context, order *repository.Order, orderItems []repository.OrderItem) (*repository.Order, error) {
-	err := or.db.ExecTx(ctx, func(q *generated.Queries) error {
+func (mr *MerchRepository) CreateOrder(ctx context.Context, order *repository.Order, orderItems []repository.OrderItem) (*repository.Order, error) {
+	err := mr.db.ExecTx(ctx, func(q *generated.Queries) error {
 		createParams := generated.CreateOrderParams{
 			UserID:        pgtype.Int8{Valid: false},
 			Amount:        pgtype.Numeric{Valid: false},
@@ -98,11 +87,11 @@ func (or *OrderRepository) CreateOrder(ctx context.Context, order *repository.Or
 		return nil, err
 	}
 
-	return or.GetOrder(ctx, order.ID)
+	return mr.GetOrder(ctx, order.ID)
 }
 
-func (or *OrderRepository) GetOrder(ctx context.Context, id int64) (*repository.Order, error) {
-	order, err := or.queries.GetOrder(ctx, id)
+func (mr *MerchRepository) GetOrder(ctx context.Context, id int64) (*repository.Order, error) {
+	order, err := mr.queries.GetOrder(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, pkg.Errorf(pkg.NOT_FOUND_ERROR, "order with ID %d not found", id)
@@ -155,7 +144,7 @@ func (or *OrderRepository) GetOrder(ctx context.Context, id int64) (*repository.
 	return rslt, nil
 }
 
-func (or *OrderRepository) UpdateOrder(ctx context.Context, order *repository.UpdateOrder) (*repository.Order, error) {
+func (mr *MerchRepository) UpdateOrder(ctx context.Context, order *repository.UpdateOrder) (*repository.Order, error) {
 	updateParams := generated.UpdateOrderParams{
 		ID:            order.ID,
 		UpdatedBy:     pgtype.Int8{Valid: true, Int64: order.UpdatedBy},
@@ -174,7 +163,7 @@ func (or *OrderRepository) UpdateOrder(ctx context.Context, order *repository.Up
 		updateParams.PaymentStatus = pgtype.Bool{Bool: *order.PaymentStatus, Valid: true}
 	}
 
-	updatedOrder, err := or.queries.UpdateOrder(ctx, updateParams)
+	updatedOrder, err := mr.queries.UpdateOrder(ctx, updateParams)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, pkg.Errorf(pkg.NOT_FOUND_ERROR, "order with ID %d not found", order.ID)
@@ -211,7 +200,7 @@ func (or *OrderRepository) UpdateOrder(ctx context.Context, order *repository.Up
 	return rslt, nil
 }
 
-func (or *OrderRepository) ListOrders(ctx context.Context, filter *repository.OrderFilter) ([]*repository.Order, *pkg.Pagination, error) {
+func (mr *MerchRepository) ListOrders(ctx context.Context, filter *repository.OrderFilter) ([]*repository.Order, *pkg.Pagination, error) {
 	listParams := generated.ListOrdersParams{
 		Limit:         int32(filter.Pagination.PageSize),
 		Offset:        int32(filter.Pagination.Page * filter.Pagination.PageSize),
@@ -239,12 +228,12 @@ func (or *OrderRepository) ListOrders(ctx context.Context, filter *repository.Or
 		countParams.PaymentStatus = pgtype.Bool{Bool: *filter.PaymentStatus, Valid: true}
 	}
 
-	orders, err := or.queries.ListOrders(ctx, listParams)
+	orders, err := mr.queries.ListOrders(ctx, listParams)
 	if err != nil {
 		return nil, nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error listing orders: %s", err.Error())
 	}
 
-	count, err := or.queries.CountOrders(ctx, countParams)
+	count, err := mr.queries.CountOrders(ctx, countParams)
 	if err != nil {
 		return nil, nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error counting orders: %s", err.Error())
 	}

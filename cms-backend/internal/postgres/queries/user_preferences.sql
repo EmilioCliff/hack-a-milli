@@ -3,6 +3,9 @@ INSERT INTO user_preferences (user_id, notify_policy, notify_news, notify_events
 VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
 
+-- name: UserHasPreferences :one
+SELECT EXISTS (SELECT 1 FROM user_preferences WHERE user_id = $1);
+
 -- name: GetUserPreferences :one
 SELECT up.*,
        u.email AS user_email,

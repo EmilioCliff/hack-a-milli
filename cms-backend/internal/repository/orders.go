@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"context"
 	"time"
 
 	"github.com/EmilioCliff/hack-a-milli/cms-backend/pkg"
@@ -24,14 +23,14 @@ type Order struct {
 }
 
 type OrderDetails struct {
-	FirstName     string `json:"first_name"`
-	LastName      string `json:"last_name"`
-	Email         string `json:"email"`
-	PhoneNumber   string `json:"phone_number"`
-	Address       string `json:"address"`
-	City          string `json:"city"`
-	PostalCode    string `json:"postal_code"`
-	PaymentMethod string `json:"payment_method"`
+	FirstName     string `json:"first_name" binding:"required"`
+	LastName      string `json:"last_name" binding:"required"`
+	Email         string `json:"email" binding:"required"`
+	PhoneNumber   string `json:"phone_number" binding:"required"`
+	Address       string `json:"address" binding:"required"`
+	City          string `json:"city" binding:"required"`
+	PostalCode    string `json:"postal_code" binding:"required"`
+	PaymentMethod string `json:"payment_method" binding:"required"`
 }
 
 type UpdateOrder struct {
@@ -60,11 +59,4 @@ type OrderItem struct {
 
 	// Expandable
 	Product *Product `json:"product,omitempty"`
-}
-
-type OrderRepository interface {
-	CreateOrder(ctx context.Context, order *Order, orderItems []OrderItem) (*Order, error)
-	GetOrder(ctx context.Context, id int64) (*Order, error)
-	UpdateOrder(ctx context.Context, order *UpdateOrder) (*Order, error)
-	ListOrders(ctx context.Context, filter *OrderFilter) ([]*Order, *pkg.Pagination, error)
 }

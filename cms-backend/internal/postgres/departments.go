@@ -49,18 +49,18 @@ func (dr *DepartmentRepository) GetDepartment(ctx context.Context, id int64) (*r
 	}, nil
 }
 
-func (dr *DepartmentRepository) UpdateDeparment(ctx context.Context, id int64, name string, pagination *pkg.Pagination) (*repository.Department, *pkg.Pagination, error) {
+func (dr *DepartmentRepository) UpdateDepartment(ctx context.Context, id int64, name string) (*repository.Department, error) {
 	if err := dr.queries.UpdateDepartment(ctx, generated.UpdateDepartmentParams{
 		ID:   id,
 		Name: name,
 	}); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil, pkg.Errorf(pkg.NOT_FOUND_ERROR, "department with ID %d not found", id)
+			return nil, pkg.Errorf(pkg.NOT_FOUND_ERROR, "department with ID %d not found", id)
 		}
-		return nil, nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error updating department: %s", err.Error())
+		return nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error updating department: %s", err.Error())
 	}
 
-	return &repository.Department{ID: id, Name: name}, pagination, nil
+	return &repository.Department{ID: id, Name: name}, nil
 
 }
 

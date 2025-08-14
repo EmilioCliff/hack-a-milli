@@ -1,6 +1,6 @@
 -- name: CreateProduct :one
-INSERT INTO products (category_id, name, price, image_url, description)
-VALUES (sqlc.arg('category_id'), sqlc.arg('name'), sqlc.arg('price'), sqlc.narg('image_url'), sqlc.narg('description'))
+INSERT INTO products (category_id, name, price, image_url, description, updated_by, created_by)
+VALUES (sqlc.arg('category_id'), sqlc.arg('name'), sqlc.arg('price'), sqlc.narg('image_url'), sqlc.narg('description'), sqlc.arg('updated_by'), sqlc.arg('created_by'))
 RETURNING id;
 
 -- name: GetProduct :one

@@ -11,6 +11,17 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const addEventRegisteredAttedee = `-- name: AddEventRegisteredAttedee :exec
+UPDATE events
+SET registered_attendees = registered_attendees + 1
+WHERE id = $1
+`
+
+func (q *Queries) AddEventRegisteredAttedee(ctx context.Context, eventID int64) error {
+	_, err := q.db.Exec(ctx, addEventRegisteredAttedee, eventID)
+	return err
+}
+
 const countEvents = `-- name: CountEvents :one
 SELECT COUNT(*) FROM events
 WHERE 
