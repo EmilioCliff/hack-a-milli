@@ -5,153 +5,1297 @@
 		"write_timeout": 30
 	},
 	"auth": {
-		"jwt_secret": "your-super-secret-jwt-key-here",
-		"token_issuer": "BACKEND_APP",
+		"jwt_secret": "12345678901234567890123456789012",
+		"token_issuer": ["CMS_BACKEND", "LMS_BACKEND"],
 		"token_header": "Authorization",
-		"casbin_model": "model.conf",
-		"casbin_policy": "policy.csv"
+		"casbin_db_uri": "postgres://cms_backend:secret@localhost:5432/cms?sslmode=disable",
+		"casbin_db_name": "cms"
+	},
+	"backends": {
+		"cms-backend": "http://127.0.0.1:3030",
+		"lms-backend": "http://127.0.0.1:8000"
+	},
+	"cors": {
+		"allow_origins": ["*"],
+		"allow_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+		"allow_headers": [
+			"Content-Type",
+			"Authorization",
+			"X-User-Device",
+			"X-Requested-With",
+			"X-Device-Token"
+		],
+		"allow_credentials": true,
+		"expose_headers": ["Content-Length", "Authorization"],
+		"max_age": 86400
 	},
 	"routes": [
 		{
-			"path": "/api/blogs",
-			"method": "GET",
+			"path": "/api/v1/public/users/login",
+			"method": "POST",
 			"public": true,
-			"permission": "read:blogs",
-			"backend_url": "http://127.0.0.1:7000/blogs",
-			"timeout": 30
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/public/users/login",
+			"rate_limit": {
+				"requests": 5,
+				"window": 300,
+				"per_user": true
+			}
 		},
 		{
-			"path": "/api/blogs",
+			"path": "/api/v1/public/users/logout",
+			"method": "GET",
+			"public": true,
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/public/users/logout"
+		},
+		{
+			"path": "/api/v1/public/users/register",
+			"method": "POST",
+			"public": true,
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/public/users/register",
+			"rate_limit": {
+				"requests": 3,
+				"window": 3600,
+				"per_user": false
+			}
+		},
+		{
+			"path": "/api/v1/public/users/forgot-password",
+			"method": "POST",
+			"public": true,
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/public/users/forgot-password"
+		},
+		{
+			"path": "/api/v1/public/users/:id/refresh-token",
+			"method": "POST",
+			"public": true,
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/public/users/:id/refresh-token"
+		},
+		{
+			"path": "/api/v1/public/departments",
+			"method": "GET",
+			"public": true,
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/public/departments",
+			"cache": {
+				"enabled": true,
+				"ttl": 300,
+				"key_pattern": "departments:list",
+				"invalidate_on": [
+					"POST:/api/v1/departments",
+					"PUT:/api/v1/departments/*"
+				]
+			}
+		},
+		{
+			"path": "/api/v1/public/departments/:id",
+			"method": "GET",
+			"public": true,
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/public/departments/:id",
+			"cache": {
+				"enabled": true,
+				"ttl": 600,
+				"key_pattern": "departments:{id}",
+				"invalidate_on": [
+					"PUT:/api/v1/departments/{id}",
+					"DELETE:/api/v1/departments/{id}"
+				]
+			}
+		},
+		{
+			"path": "/api/v1/public/registrars/:id",
+			"method": "GET",
+			"public": true,
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/public/registrars/:id",
+			"cache": {
+				"enabled": true,
+				"ttl": 1800,
+				"key_pattern": "registrars:{id}",
+				"invalidate_on": [
+					"PUT:/api/v1/registrars/{id}",
+					"DELETE:/api/v1/registrars/{id}"
+				]
+			}
+		},
+		{
+			"path": "/api/v1/public/registrars",
+			"method": "GET",
+			"public": true,
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/public/registrars",
+			"cache": {
+				"enabled": true,
+				"ttl": 1800,
+				"key_pattern": "registrars:list",
+				"invalidate_on": [
+					"POST:/api/v1/registrars",
+					"PUT:/api/v1/registrars/*",
+					"DELETE:/api/v1/registrars/*"
+				]
+			}
+		},
+		{
+			"path": "/api/v1/public/blogs/:id",
+			"method": "GET",
+			"public": true,
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/public/blogs/:id",
+			"cache": {
+				"enabled": true,
+				"ttl": 3600,
+				"key_pattern": "blogs:published:{id}",
+				"invalidate_on": [
+					"PUT:/api/v1/blogs/{id}",
+					"PUT:/api/v1/blogs/{id}/publish",
+					"DELETE:/api/v1/blogs/{id}"
+				]
+			}
+		},
+		{
+			"path": "/api/v1/public/blogs",
+			"method": "GET",
+			"public": true,
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/public/blogs",
+			"cache": {
+				"enabled": true,
+				"ttl": 1800,
+				"key_pattern": "blogs:published:list:{query}",
+				"invalidate_on": [
+					"POST:/api/v1/blogs",
+					"PUT:/api/v1/blogs/*",
+					"DELETE:/api/v1/blogs/*",
+					"PUT:/api/v1/blogs/*/publish"
+				]
+			}
+		},
+		{
+			"path": "/api/v1/public/events/:id",
+			"method": "GET",
+			"public": true,
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/public/events/:id",
+			"cache": {
+				"enabled": true,
+				"ttl": 1800,
+				"key_pattern": "events:published:{id}",
+				"invalidate_on": [
+					"PUT:/api/v1/events/{id}",
+					"PUT:/api/v1/events/{id}/publish",
+					"DELETE:/api/v1/events/{id}"
+				]
+			}
+		},
+		{
+			"path": "/api/v1/public/events",
+			"method": "GET",
+			"public": true,
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/public/events",
+			"cache": {
+				"enabled": true,
+				"ttl": 900,
+				"key_pattern": "events:published:list:{query}",
+				"invalidate_on": [
+					"POST:/api/v1/events",
+					"PUT:/api/v1/events/*",
+					"DELETE:/api/v1/events/*",
+					"PUT:/api/v1/events/*/publish"
+				]
+			}
+		},
+		{
+			"path": "/api/v1/public/events/:id/attendees",
+			"method": "POST",
+			"public": true,
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/public/events/:id/attendees"
+		},
+		{
+			"path": "/api/v1/public/careers/job-postings/:id",
+			"method": "GET",
+			"public": true,
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/public/careers/job-postings/:id",
+			"cache": {
+				"enabled": true,
+				"ttl": 3600,
+				"key_pattern": "job-postings:published:{id}",
+				"invalidate_on": [
+					"PUT:/api/v1/careers/job-postings/{id}",
+					"PUT:/api/v1/careers/job-postings/{id}/publish",
+					"PUT:/api/v1/careers/job-postings/{id}/visibility"
+				]
+			}
+		},
+		{
+			"path": "/api/v1/public/careers/job-postings",
+			"method": "GET",
+			"public": true,
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/public/careers/job-postings",
+			"cache": {
+				"enabled": true,
+				"ttl": 1800,
+				"key_pattern": "job-postings:published:list:{query}",
+				"invalidate_on": [
+					"POST:/api/v1/careers/job-postings",
+					"PUT:/api/v1/careers/job-postings/*"
+				]
+			}
+		},
+		{
+			"path": "/api/v1/public/careers/job-postings/:id/application",
+			"method": "POST",
+			"public": true,
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/public/careers/job-postings/:id/application"
+		},
+		{
+			"path": "/api/v1/public/news/updates/:id",
+			"method": "GET",
+			"public": true,
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/public/news/updates/:id",
+			"cache": {
+				"enabled": true,
+				"ttl": 3600,
+				"key_pattern": "news:published:{id}",
+				"invalidate_on": [
+					"PUT:/api/v1/news/updates/{id}",
+					"PUT:/api/v1/news/updates/{id}/publish"
+				]
+			}
+		},
+		{
+			"path": "/api/v1/public/news/updates",
+			"method": "GET",
+			"public": true,
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/public/news/updates",
+			"cache": {
+				"enabled": true,
+				"ttl": 1800,
+				"key_pattern": "news:published:list:{query}",
+				"invalidate_on": [
+					"POST:/api/v1/news/updates",
+					"PUT:/api/v1/news/updates/*",
+					"PUT:/api/v1/news/updates/*/publish"
+				]
+			}
+		},
+		{
+			"path": "/api/v1/public/news/letter/:id",
+			"method": "GET",
+			"public": true,
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/public/news/letter/:id",
+			"cache": {
+				"enabled": true,
+				"ttl": 3600,
+				"key_pattern": "newsletters:published:{id}",
+				"invalidate_on": [
+					"PUT:/api/v1/news/letter/{id}",
+					"PUT:/api/v1/news/letter/{id}/publish"
+				]
+			}
+		},
+		{
+			"path": "/api/v1/public/news/letter",
+			"method": "GET",
+			"public": true,
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/public/news/letter",
+			"cache": {
+				"enabled": true,
+				"ttl": 1800,
+				"key_pattern": "newsletters:published:list:{query}",
+				"invalidate_on": [
+					"POST:/api/v1/news/letter",
+					"PUT:/api/v1/news/letter/*",
+					"PUT:/api/v1/news/letter/*/publish"
+				]
+			}
+		},
+		{
+			"path": "/api/v1/public/merchandise/categories/:id",
+			"method": "GET",
+			"public": true,
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/public/merchandise/categories/:id",
+			"cache": {
+				"enabled": true,
+				"ttl": 3600,
+				"key_pattern": "categories:{id}",
+				"invalidate_on": [
+					"PUT:/api/v1/merchandise/categories/{id}",
+					"DELETE:/api/v1/merchandise/categories/{id}"
+				]
+			}
+		},
+		{
+			"path": "/api/v1/public/merchandise/categories",
+			"method": "GET",
+			"public": true,
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/public/merchandise/categories",
+			"cache": {
+				"enabled": true,
+				"ttl": 3600,
+				"key_pattern": "categories:list",
+				"invalidate_on": [
+					"POST:/api/v1/merchandise/categories",
+					"PUT:/api/v1/merchandise/categories/*",
+					"DELETE:/api/v1/merchandise/categories/*"
+				]
+			}
+		},
+		{
+			"path": "/api/v1/public/merchandise/products/:id",
+			"method": "GET",
+			"public": true,
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/public/merchandise/products/:id",
+			"cache": {
+				"enabled": true,
+				"ttl": 1800,
+				"key_pattern": "products:{id}",
+				"invalidate_on": [
+					"PUT:/api/v1/merchandise/products/{id}",
+					"DELETE:/api/v1/merchandise/products/{id}"
+				]
+			}
+		},
+		{
+			"path": "/api/v1/public/merchandise/products",
+			"method": "GET",
+			"public": true,
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/public/merchandise/products",
+			"cache": {
+				"enabled": true,
+				"ttl": 1800,
+				"key_pattern": "products:list:{query}",
+				"invalidate_on": [
+					"POST:/api/v1/merchandise/products",
+					"PUT:/api/v1/merchandise/products/*",
+					"DELETE:/api/v1/merchandise/products/*"
+				]
+			}
+		},
+		{
+			"path": "/api/v1/public/merchandise/orders",
+			"method": "POST",
+			"public": true,
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/public/merchandise/orders"
+		},
+		{
+			"path": "/api/v1/public/merchandise/orders/:id/payments",
+			"method": "POST",
+			"public": true,
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/public/merchandise/orders/:id/payments"
+		},
+		{
+			"path": "/api/v1/users/register",
 			"method": "POST",
 			"public": false,
-			"permission": "create:blogs",
-			"backend_url": "http://127.0.0.1:7000/blogs",
-			"timeout": 30
+			"resource": "users",
+			"action": "create",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/users/register",
+			"rate_limit": {
+				"requests": 3,
+				"window": 3600,
+				"per_user": false
+			}
 		},
 		{
-			"path": "/api/blogs/{id}",
+			"path": "/api/v1/users/:id",
 			"method": "GET",
-			"public": true,
-			"permission": "read:blogs",
-			"backend_url": "http://127.0.0.1:7000/blogs/{id}",
-			"timeout": 30
+			"public": false,
+			"resource": "users",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/users/:id",
+			"user_scoped": true,
+			"cache": {
+				"enabled": true,
+				"ttl": 600,
+				"key_pattern": "users:{id}:user:{user_id}",
+				"invalidate_on": [
+					"PUT:/api/v1/users/{id}",
+					"DELETE:/api/v1/users/{id}",
+					"PUT:/api/v1/users/{id}/role",
+					"PUT:/api/v1/users/{id}/department"
+				]
+			}
 		},
 		{
-			"path": "/api/blogs/{id}",
+			"path": "/api/v1/users/:id",
 			"method": "PUT",
 			"public": false,
-			"permission": "update:blogs",
-			"backend_url": "http://127.0.0.1:7000/blogs/{id}",
-			"timeout": 30
+			"resource": "users",
+			"action": "update",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/users/:id",
+			"user_scoped": true
 		},
 		{
-			"path": "/api/blogs/{id}",
+			"path": "/api/v1/users",
+			"method": "GET",
+			"public": false,
+			"resource": "users",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/users",
+			"cache": {
+				"enabled": true,
+				"ttl": 300,
+				"key_pattern": "users:list:{query}:roles:{user_roles}",
+				"invalidate_on": [
+					"POST:/api/v1/users",
+					"PUT:/api/v1/users/*",
+					"DELETE:/api/v1/users/*"
+				]
+			}
+		},
+		{
+			"path": "/api/v1/users/:id",
 			"method": "DELETE",
 			"public": false,
-			"permission": "delete:blogs",
-			"backend_url": "http://127.0.0.1:7000/blogs/{id}",
-			"timeout": 30
+			"resource": "users",
+			"action": "delete",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/users/:id"
 		},
 		{
-			"path": "/api/courses",
-			"method": "GET",
-			"public": true,
-			"permission": "read:courses",
-			"backend_url": "http://127.0.0.1:8000/courses",
-			"timeout": 30
-		},
-		{
-			"path": "/api/courses",
-			"method": "POST",
-			"public": false,
-			"permission": "create:courses",
-			"backend_url": "http://127.0.0.1:8000/courses",
-			"timeout": 30
-		},
-		{
-			"path": "/api/courses/{id}",
-			"method": "GET",
-			"public": true,
-			"permission": "read:courses",
-			"backend_url": "http://127.0.0.1:8000/courses/{id}",
-			"timeout": 30
-		},
-		{
-			"path": "/api/events",
-			"method": "GET",
-			"public": true,
-			"permission": "read:events",
-			"backend_url": "http://127.0.0.1:9000/events",
-			"timeout": 30
-		},
-		{
-			"path": "/api/events",
-			"method": "POST",
-			"public": false,
-			"permission": "create:events",
-			"backend_url": "http://127.0.0.1:9000/events",
-			"timeout": 30
-		},
-		{
-			"path": "/api/careers",
-			"method": "GET",
-			"public": true,
-			"backend_url": "http://127.0.0.1:10000/careers",
-			"timeout": 30
-		},
-		{
-			"path": "/api/careers",
-			"method": "POST",
-			"public": false,
-			"permission": "create:careers",
-			"backend_url": "http://127.0.0.1:10000/careers",
-			"timeout": 30
-		},
-		{
-			"path": "/api/orders",
-			"method": "GET",
-			"public": false,
-			"permission": "read:orders",
-			"backend_url": "http://127.0.0.1:11000/orders",
-			"timeout": 30
-		},
-		{
-			"path": "/api/users",
-			"method": "GET",
-			"public": false,
-			"permission": "read:users",
-			"backend_url": "http://127.0.0.1:12000/users",
-			"timeout": 30
-		},
-		{
-			"path": "/api/users/{id}",
+			"path": "/api/v1/users/:id/role",
 			"method": "PUT",
 			"public": false,
-			"permission": "update:users",
-			"backend_url": "http://127.0.0.1:12000/users/{id}",
-			"timeout": 30
+			"resource": "roles",
+			"action": "update",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/users/:id/role"
 		},
 		{
-			"path": "/api/dashboard",
+			"path": "/api/v1/users/:id/department",
+			"method": "PUT",
+			"public": false,
+			"resource": "users",
+			"action": "update",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/users/:id/department"
+		},
+		{
+			"path": "/api/v1/users/preferences",
 			"method": "GET",
 			"public": false,
-			"compose": [
-				"http://127.0.0.1:8000/courses/summary",
-				"http://127.0.0.1:7000/blogs/latest",
-				"http://127.0.0.1:9000/events/upcoming"
-			],
-			"timeout": 30
+			"resource": "users",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/users/preferences"
 		},
 		{
-			"path": "/api/mobile/dashboard",
+			"path": "/api/v1/users/:id/preferences",
+			"method": "POST",
+			"public": false,
+			"resource": "users",
+			"action": "update",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/users/:id/preferences",
+			"user_scoped": true
+		},
+		{
+			"path": "/api/v1/users/:id/preferences",
+			"method": "PUT",
+			"public": false,
+			"resource": "users",
+			"action": "update",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/users/:id/preferences",
+			"user_scoped": true
+		},
+		{
+			"path": "/api/v1/users/:id/preferences",
+			"method": "GET",
+			"public": false,
+			"resource": "users",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/users/:id/preferences"
+		},
+		{
+			"path": "/api/v1/users/device-tokens",
+			"method": "GET",
+			"public": false,
+			"resource": "users",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/users/device-tokens"
+		},
+		{
+			"path": "/api/v1/users/device-token/:id",
+			"method": "GET",
+			"public": false,
+			"resource": "users",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/users/device-token/:id"
+		},
+		{
+			"path": "/api/v1/users/:id/device-token",
+			"method": "POST",
+			"public": false,
+			"resource": "users",
+			"action": "update",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/users/:id/device-token",
+			"user_scoped": true
+		},
+		{
+			"path": "/api/v1/users/:id/device-tokens",
+			"method": "GET",
+			"public": false,
+			"resource": "users",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/users/:id/device-tokens",
+			"user_scoped": true
+		},
+		{
+			"path": "/api/v1/users/:id/device-token",
+			"method": "PUT",
+			"public": false,
+			"resource": "users",
+			"action": "update",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/users/:id/device-token",
+			"user_scoped": true
+		},
+		{
+			"path": "/api/v1/users/:id/merchandise/orders",
+			"method": "GET",
+			"public": false,
+			"resource": "orders",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/users/:id/merchandise/orders",
+			"user_scoped": true
+		},
+		{
+			"path": "/api/v1/user/:id/merchandise/orders/:order_id",
+			"method": "GET",
+			"public": false,
+			"resource": "orders",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/user/:id/merchandise/orders/:order_id",
+			"user_scoped": true
+		},
+		{
+			"path": "/api/v1/users/:id/merchandise/payments",
+			"method": "GET",
+			"public": false,
+			"resource": "payments",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/users/:id/merchandise/payments",
+			"user_scoped": true
+		},
+		{
+			"path": "/api/v1/user/:id/merchandise/payments/:payment_id",
+			"method": "GET",
+			"public": false,
+			"resource": "payments",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/user/:id/merchandise/payments/:payment_id",
+			"user_scoped": true
+		},
+		{
+			"path": "/api/v1/departments",
+			"method": "POST",
+			"public": false,
+			"resource": "departments",
+			"action": "create",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/departments"
+		},
+		{
+			"path": "/api/v1/departments/:id",
+			"method": "PUT",
+			"public": false,
+			"resource": "departments",
+			"action": "update",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/departments/:id"
+		},
+		{
+			"path": "/api/v1/registrars",
+			"method": "POST",
+			"public": false,
+			"resource": "registrars",
+			"action": "create",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/registrars"
+		},
+		{
+			"path": "/api/v1/registrars/:id",
+			"method": "PUT",
+			"public": false,
+			"resource": "registrars",
+			"action": "update",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/registrars/:id"
+		},
+		{
+			"path": "/api/v1/registrars/:id",
+			"method": "DELETE",
+			"public": false,
+			"resource": "registrars",
+			"action": "delete",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/registrars/:id"
+		},
+		{
+			"path": "/api/v1/blogs",
+			"method": "POST",
+			"public": false,
+			"resource": "blogs",
+			"action": "create",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/blogs"
+		},
+		{
+			"path": "/api/v1/blogs/:id",
+			"method": "GET",
+			"public": false,
+			"resource": "blogs",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/blogs/:id",
+			"published_scoped": true,
+			"cache": {
+				"enabled": true,
+				"ttl": 600,
+				"key_pattern": "blogs:{id}:status:{query}:user:{user_id}",
+				"invalidate_on": [
+					"PUT:/api/v1/blogs/{id}",
+					"PUT:/api/v1/blogs/{id}/publish",
+					"DELETE:/api/v1/blogs/{id}"
+				]
+			}
+		},
+		{
+			"path": "/api/v1/blogs/:id",
+			"method": "PUT",
+			"public": false,
+			"resource": "blogs",
+			"action": "update",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/blogs/:id"
+		},
+		{
+			"path": "/api/v1/blogs/:id/publish",
+			"method": "PUT",
+			"public": false,
+			"resource": "blogs",
+			"action": "publish",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/blogs/:id/publish"
+		},
+		{
+			"path": "/api/v1/blogs",
+			"method": "GET",
+			"public": false,
+			"resource": "blogs",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/blogs",
+			"published_scoped": true,
+			"cache": {
+				"enabled": true,
+				"ttl": 300,
+				"key_pattern": "blogs:list:{query}:user:{user_id}:roles:{user_roles}",
+				"invalidate_on": [
+					"POST:/api/v1/blogs",
+					"PUT:/api/v1/blogs/*",
+					"DELETE:/api/v1/blogs/*",
+					"PUT:/api/v1/blogs/*/publish"
+				]
+			}
+		},
+		{
+			"path": "/api/v1/blogs/:id",
+			"method": "DELETE",
+			"public": false,
+			"resource": "blogs",
+			"action": "delete",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/blogs/:id"
+		},
+		{
+			"path": "/api/v1/events",
+			"method": "POST",
+			"public": false,
+			"resource": "events",
+			"action": "create",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/events"
+		},
+		{
+			"path": "/api/v1/events/:id",
+			"method": "GET",
+			"public": false,
+			"resource": "events",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/events/:id",
+			"cache": {
+				"enabled": true,
+				"ttl": 600,
+				"key_pattern": "events:{id}:status:{query}:user:{user_id}",
+				"invalidate_on": [
+					"PUT:/api/v1/events/{id}",
+					"PUT:/api/v1/events/{id}/publish",
+					"DELETE:/api/v1/events/{id}"
+				]
+			}
+		},
+		{
+			"path": "/api/v1/events/:id",
+			"method": "PUT",
+			"public": false,
+			"resource": "events",
+			"action": "update",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/events/:id"
+		},
+		{
+			"path": "/api/v1/events/:id/publish",
+			"method": "PUT",
+			"public": false,
+			"resource": "events",
+			"action": "publish",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/events/:id/publish"
+		},
+		{
+			"path": "/api/v1/events",
+			"method": "GET",
+			"public": false,
+			"resource": "events",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/events",
+			"cache": {
+				"enabled": true,
+				"ttl": 300,
+				"key_pattern": "events:list:{query}:user:{user_id}:roles:{user_roles}",
+				"invalidate_on": [
+					"POST:/api/v1/events",
+					"PUT:/api/v1/events/*",
+					"DELETE:/api/v1/events/*",
+					"PUT:/api/v1/events/*/publish"
+				]
+			}
+		},
+		{
+			"path": "/api/v1/events/:id",
+			"method": "DELETE",
+			"public": false,
+			"resource": "events",
+			"action": "delete",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/events/:id"
+		},
+		{
+			"path": "/api/v1/events/:id/attendees",
+			"method": "GET",
+			"public": false,
+			"resource": "events",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/events/:id/attendees",
+			"cache": {
+				"enabled": true,
+				"ttl": 300,
+				"key_pattern": "events:{id}:attendees",
+				"invalidate_on": ["POST:/api/v1/public/events/{id}/attendees"]
+			}
+		},
+		{
+			"path": "/api/v1/careers/job-postings",
+			"method": "POST",
+			"public": false,
+			"resource": "career",
+			"action": "create",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/careers/job-postings"
+		},
+		{
+			"path": "/api/v1/careers/job-postings/:id",
+			"method": "GET",
+			"public": false,
+			"resource": "career",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/careers/job-postings/:id",
+			"cache": {
+				"enabled": true,
+				"ttl": 600,
+				"key_pattern": "job-postings:{id}:status:{query}:user:{user_id}",
+				"invalidate_on": [
+					"PUT:/api/v1/careers/job-postings/{id}",
+					"PUT:/api/v1/careers/job-postings/{id}/publish",
+					"PUT:/api/v1/careers/job-postings/{id}/visibility"
+				]
+			}
+		},
+		{
+			"path": "/api/v1/careers/job-postings/:id",
+			"method": "PUT",
+			"public": false,
+			"resource": "career",
+			"action": "update",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/careers/job-postings/:id"
+		},
+		{
+			"path": "/api/v1/careers/job-postings/:id/publish",
+			"method": "PUT",
+			"public": false,
+			"resource": "career",
+			"action": "publish",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/careers/job-postings/:id/publish"
+		},
+		{
+			"path": "/api/v1/careers/job-postings/:id/visibility",
+			"method": "PUT",
+			"public": false,
+			"resource": "career",
+			"action": "update",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/careers/job-postings/:id/visibility"
+		},
+		{
+			"path": "/api/v1/careers/job-postings",
+			"method": "GET",
+			"public": false,
+			"resource": "career",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/careers/job-postings",
+			"cache": {
+				"enabled": true,
+				"ttl": 300,
+				"key_pattern": "job-postings:list:{query}:user:{user_id}:roles:{user_roles}",
+				"invalidate_on": [
+					"POST:/api/v1/careers/job-postings",
+					"PUT:/api/v1/careers/job-postings/*"
+				]
+			}
+		},
+		{
+			"path": "/api/v1/careers/job-postings/:id",
+			"method": "DELETE",
+			"public": false,
+			"resource": "career",
+			"action": "delete",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/careers/job-postings/:id"
+		},
+		{
+			"path": "/api/v1/careers/job-applications/:id",
+			"method": "GET",
+			"public": false,
+			"resource": "career",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/careers/job-applications/:id",
+			"cache": {
+				"enabled": true,
+				"ttl": 600,
+				"key_pattern": "job-applications:{id}:user:{user_id}",
+				"invalidate_on": ["PUT:/api/v1/careers/job-applications/{id}"]
+			}
+		},
+		{
+			"path": "/api/v1/careers/job-applications/:id",
+			"method": "PUT",
+			"public": false,
+			"resource": "career",
+			"action": "update",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/careers/job-applications/:id"
+		},
+		{
+			"path": "/api/v1/careers/job-applications",
+			"method": "GET",
+			"public": false,
+			"resource": "career",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/careers/job-applications",
+			"cache": {
+				"enabled": true,
+				"ttl": 300,
+				"key_pattern": "job-applications:list:{query}:user:{user_id}:roles:{user_roles}",
+				"invalidate_on": [
+					"POST:/api/v1/public/careers/job-applications",
+					"PUT:/api/v1/careers/job-applications/*"
+				]
+			}
+		},
+		{
+			"path": "/api/v1/news/updates",
+			"method": "POST",
+			"public": false,
+			"resource": "news",
+			"action": "create",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/news/updates"
+		},
+		{
+			"path": "/api/v1/news/updates/:id",
+			"method": "GET",
+			"public": false,
+			"resource": "news",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/news/updates/:id",
+			"cache": {
+				"enabled": true,
+				"ttl": 600,
+				"key_pattern": "news:{id}:status:{query}:user:{user_id}",
+				"invalidate_on": [
+					"PUT:/api/v1/news/updates/{id}",
+					"PUT:/api/v1/news/updates/{id}/publish",
+					"DELETE:/api/v1/news/updates/{id}"
+				]
+			}
+		},
+		{
+			"path": "/api/v1/news/updates/:id",
+			"method": "PUT",
+			"public": false,
+			"resource": "news",
+			"action": "update",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/news/updates/:id"
+		},
+		{
+			"path": "/api/v1/news/updates/:id/publish",
+			"method": "PUT",
+			"public": false,
+			"resource": "news",
+			"action": "publish",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/news/updates/:id/publish"
+		},
+		{
+			"path": "/api/v1/news/updates",
+			"method": "GET",
+			"public": false,
+			"resource": "news",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/news/updates",
+			"cache": {
+				"enabled": true,
+				"ttl": 300,
+				"key_pattern": "news:list:{query}:user:{user_id}:roles:{user_roles}",
+				"invalidate_on": [
+					"POST:/api/v1/news/updates",
+					"PUT:/api/v1/news/updates/*",
+					"DELETE:/api/v1/news/updates/*",
+					"PUT:/api/v1/news/updates/*/publish"
+				]
+			}
+		},
+		{
+			"path": "/api/v1/news/updates/:id",
+			"method": "DELETE",
+			"public": false,
+			"resource": "news",
+			"action": "delete",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/news/updates/:id"
+		},
+		{
+			"path": "/api/v1/news/letter",
+			"method": "POST",
+			"public": false,
+			"resource": "news",
+			"action": "create",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/news/letter"
+		},
+		{
+			"path": "/api/v1/news/letter/:id",
+			"method": "GET",
+			"public": false,
+			"resource": "news",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/news/letter/:id",
+			"cache": {
+				"enabled": true,
+				"ttl": 600,
+				"key_pattern": "newsletters:{id}:status:{query}:user:{user_id}",
+				"invalidate_on": [
+					"PUT:/api/v1/news/letter/{id}",
+					"PUT:/api/v1/news/letter/{id}/publish",
+					"DELETE:/api/v1/news/letter/{id}"
+				]
+			}
+		},
+		{
+			"path": "/api/v1/news/letter/:id",
+			"method": "PUT",
+			"public": false,
+			"resource": "news",
+			"action": "update",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/news/letter/:id"
+		},
+		{
+			"path": "/api/v1/news/letter/:id/publish",
+			"method": "PUT",
+			"public": false,
+			"resource": "news",
+			"action": "publish",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/news/letter/:id/publish"
+		},
+		{
+			"path": "/api/v1/news/letter",
+			"method": "GET",
+			"public": false,
+			"resource": "news",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/news/letter",
+			"cache": {
+				"enabled": true,
+				"ttl": 300,
+				"key_pattern": "newsletters:list:{query}:user:{user_id}:roles:{user_roles}",
+				"invalidate_on": [
+					"POST:/api/v1/news/letter",
+					"PUT:/api/v1/news/letter/*",
+					"DELETE:/api/v1/news/letter/*",
+					"PUT:/api/v1/news/letter/*/publish"
+				]
+			}
+		},
+		{
+			"path": "/api/v1/news/letter/:id",
+			"method": "DELETE",
+			"public": false,
+			"resource": "news",
+			"action": "delete",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/news/letter/:id"
+		},
+		{
+			"path": "/api/v1/merchandise/categories",
+			"method": "POST",
+			"public": false,
+			"resource": "merch",
+			"action": "create",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/merchandise/categories"
+		},
+		{
+			"path": "/api/v1/merchandise/categories/:id",
+			"method": "PUT",
+			"public": false,
+			"resource": "merch",
+			"action": "update",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/merchandise/categories/:id"
+		},
+		{
+			"path": "/api/v1/merchandise/categories/:id",
+			"method": "DELETE",
+			"public": false,
+			"resource": "merch",
+			"action": "delete",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/merchandise/categories/:id"
+		},
+		{
+			"path": "/api/v1/merchandise/products",
+			"method": "POST",
+			"public": false,
+			"resource": "merch",
+			"action": "create",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/merchandise/products"
+		},
+		{
+			"path": "/api/v1/merchandise/products/:id",
+			"method": "PUT",
+			"public": false,
+			"resource": "merch",
+			"action": "update",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/merchandise/products/:id"
+		},
+		{
+			"path": "/api/v1/merchandise/products/:id",
+			"method": "DELETE",
+			"public": false,
+			"resource": "merch",
+			"action": "delete",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/merchandise/products/:id"
+		},
+		{
+			"path": "/api/v1/users/:id/merchandise/orders",
+			"method": "POST",
+			"public": false,
+			"resource": "orders",
+			"action": "read",
+			"host": "cms-backend",
+			"user_scoped": true,
+			"url_pattern": "/api/v1/users/:id/merchandise/orders"
+		},
+		{
+			"path": "/api/v1/merchandise/orders/:id",
+			"method": "GET",
+			"public": false,
+			"resource": "orders",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/merchandise/orders/:id",
+			"cache": {
+				"enabled": true,
+				"ttl": 300,
+				"key_pattern": "orders:{id}:user:{user_id}",
+				"invalidate_on": ["PUT:/api/v1/merchandise/orders/{id}"]
+			}
+		},
+		{
+			"path": "/api/v1/merchandise/orders/:id",
+			"method": "PUT",
+			"public": false,
+			"resource": "orders",
+			"action": "update",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/merchandise/orders/:id"
+		},
+		{
+			"path": "/api/v1/merchandise/orders",
+			"method": "GET",
+			"public": false,
+			"resource": "orders",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/merchandise/orders",
+			"cache": {
+				"enabled": true,
+				"ttl": 300,
+				"key_pattern": "orders:list:{query}:user:{user_id}:roles:{user_roles}",
+				"invalidate_on": [
+					"POST:/api/v1/public/merchandise/orders",
+					"PUT:/api/v1/merchandise/orders/*"
+				]
+			}
+		},
+		{
+			"path": "/api/v1/merchandise/orders/:id/payments/internal",
+			"method": "POST",
+			"public": false,
+			"resource": "payments",
+			"action": "create",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/merchandise/orders/:id/payments/internal"
+		},
+		{
+			"path": "/api/v1/merchandise/payments/:id",
+			"method": "GET",
+			"public": false,
+			"resource": "payments",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/merchandise/payments/:id",
+			"cache": {
+				"enabled": true,
+				"ttl": 600,
+				"key_pattern": "payments:{id}:user:{user_id}",
+				"invalidate_on": ["PUT:/api/v1/merchandise/payments/{id}"]
+			}
+		},
+		{
+			"path": "/api/v1/merchandise/payments/:id",
+			"method": "PUT",
+			"public": false,
+			"resource": "payments",
+			"action": "update",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/merchandise/payments/:id"
+		},
+		{
+			"path": "/api/v1/merchandise/payments",
+			"method": "GET",
+			"public": false,
+			"resource": "payments",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/merchandise/payments",
+			"cache": {
+				"enabled": true,
+				"ttl": 300,
+				"key_pattern": "payments:list:{query}:user:{user_id}:roles:{user_roles}",
+				"invalidate_on": [
+					"POST:/api/v1/public/merchandise/orders/*/payments",
+					"PUT:/api/v1/merchandise/payments/*"
+				]
+			}
+		},
+		{
+			"path": "/api/v1/admin/dashboard",
+			"method": "GET",
+			"public": false,
+			"resource": "dashboard",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/dashboard",
+			"timeout": 30,
+			"compose": [
+				{
+					"host": "cms-backend",
+					"url_pattern": "/api/v1/stats/users",
+					"required_permissions": ["users:read"]
+				},
+				{
+					"host": "cms-backend",
+					"url_pattern": "/api/v1/stats/content",
+					"required_permissions": ["blogs:read", "events:read"]
+				},
+				{
+					"host": "cms-backend",
+					"url_pattern": "/api/v1/stats/orders",
+					"required_permissions": ["orders:read"]
+				}
+			]
+		},
+		{
+			"path": "/api/v1/health-check",
 			"method": "GET",
 			"public": true,
-			"compose": [
-				"http://127.0.0.1:8000/courses/featured",
-				"http://127.0.0.1:7000/blogs/published/latest",
-				"http://127.0.0.1:9000/events/published/upcoming"
-			],
-			"timeout": 30
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/health-check"
 		}
 	]
 }

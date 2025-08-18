@@ -1,11 +1,9 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -16,6 +14,63 @@ import (
 	"github.com/EmilioCliff/hack-a-milli/gateway/pkg"
 	"github.com/gin-gonic/gin"
 )
+
+func (s *Server) handleProxyRequest(ctx *gin.Context, route pkg.Route, authCtx *AuthContext) {
+	baseURL, ok := s.config.Backends[route.Host]
+	if !ok {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Unknown backend host"})
+		return
+	}
+
+	// Parse backend URL
+	target, err := url.Parse(baseURL)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid backend URL"})
+		return
+	}
+
+	// Create reverse proxy
+	proxy := httputil.NewSingleHostReverseProxy(target)
+
+	// Customize the request
+	originalDirector := proxy.Director
+	proxy.Director = func(req *http.Request) {
+		originalDirector(req)
+
+		if authCtx.Payload != nil {
+			req.Header.Set("X-User-ID", fmt.Sprintf("%v", authCtx.Payload.UserID))
+			req.Header.Set("X-User-Email", authCtx.Payload.Email)
+			req.Header.Set("X-User-Roles", strings.Join(authCtx.Payload.Roles, ","))
+		}
+
+		// Check if published-only header should be set
+		if publishedOnly, exists := ctx.Get("X-Published-Only"); exists && publishedOnly == "true" {
+			req.Header.Set("X-Published-Only", "true")
+		}
+
+		// Add original host header
+		req.Header.Set("X-Forwarded-Host", ctx.Request.Host)
+		req.Header.Set("X-Forwarded-Proto", "http")
+		if ctx.Request.TLS != nil {
+			req.Header.Set("X-Forwarded-Proto", "https")
+		}
+	}
+
+	// Handle proxy errors
+	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadGateway)
+
+		errorResponse := map[string]interface{}{
+			"status_code": http.StatusBadGateway,
+			"message":     fmt.Sprintf("Backend service error: %s", err.Error()),
+		}
+
+		json.NewEncoder(w).Encode(errorResponse)
+	}
+
+	proxy.ServeHTTP(ctx.Writer, ctx.Request)
+}
 
 func (s *Server) handleComposedRequest(ctx *gin.Context, route pkg.Route, authCtx *AuthContext) {
 	type ServiceResponse struct {
@@ -30,12 +85,21 @@ func (s *Server) handleComposedRequest(ctx *gin.Context, route pkg.Route, authCt
 	// Make concurrent requests to all backend services
 	for i, serviceURL := range route.Compose {
 		wg.Add(1)
-		go func(index int, url string) {
+		go func(index int, composeBackend pkg.ComposeBackends) {
 			defer wg.Done()
 
-			req, err := http.NewRequest("GET", url, nil)
+			baseURL, ok := s.config.Backends[composeBackend.Host]
+			if !ok {
+				ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Unknown backend host"})
+				return
+			}
+
+			backendPath := replacePathParams(composeBackend.URLPattern, ctx.Params)
+			backendURL := baseURL + backendPath
+
+			req, err := http.NewRequest("GET", backendURL, nil)
 			if err != nil {
-				responses[index] = ServiceResponse{URL: url, Err: err}
+				responses[index] = ServiceResponse{URL: backendURL, Err: err}
 				return
 			}
 
@@ -49,7 +113,7 @@ func (s *Server) handleComposedRequest(ctx *gin.Context, route pkg.Route, authCt
 			client := &http.Client{Timeout: 10 * time.Second}
 			resp, err := client.Do(req)
 			if err != nil {
-				responses[index] = ServiceResponse{URL: url, Err: err}
+				responses[index] = ServiceResponse{URL: backendURL, Err: err}
 				return
 			}
 			defer resp.Body.Close()
@@ -57,18 +121,18 @@ func (s *Server) handleComposedRequest(ctx *gin.Context, route pkg.Route, authCt
 			// Read response
 			body, err := io.ReadAll(resp.Body)
 			if err != nil {
-				responses[index] = ServiceResponse{URL: url, Err: err}
+				responses[index] = ServiceResponse{URL: backendURL, Err: err}
 				return
 			}
 
 			// Parse JSON response
 			var data interface{}
 			if err := json.Unmarshal(body, &data); err != nil {
-				responses[index] = ServiceResponse{URL: url, Err: err}
+				responses[index] = ServiceResponse{URL: backendURL, Err: err}
 				return
 			}
 
-			responses[index] = ServiceResponse{URL: url, Data: data}
+			responses[index] = ServiceResponse{URL: backendURL, Data: data}
 		}(i, serviceURL)
 	}
 
@@ -96,64 +160,14 @@ func (s *Server) handleComposedRequest(ctx *gin.Context, route pkg.Route, authCt
 	ctx.JSON(statusCode, composedResponse)
 }
 
-func (s *Server) handleProxyRequest(ctx *gin.Context, route pkg.Route, authCtx *AuthContext) {
-	backendURL := route.BackendURL
+func replacePathParams(pattern string, params gin.Params) string {
+	result := pattern
 
-	// Parse backend URL
-	target, err := url.Parse(backendURL)
-	if err != nil {
-		// s.writeErrorResponse(w, http.StatusInternalServerError, "Invalid backend URL")
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid backend URL"})
-		return
+	for _, param := range params {
+		placeholder := fmt.Sprintf(":%s", param.Key)
+
+		result = strings.ReplaceAll(result, placeholder, param.Value)
 	}
 
-	// Create reverse proxy
-	proxy := httputil.NewSingleHostReverseProxy(target)
-
-	// Customize the request
-	originalDirector := proxy.Director
-	proxy.Director = func(req *http.Request) {
-		originalDirector(req)
-
-		if authCtx.Payload != nil {
-			req.Header.Set("X-User-ID", fmt.Sprintf("%v", authCtx.Payload.UserID))
-			req.Header.Set("X-User-Email", authCtx.Payload.Email)
-			req.Header.Set("X-User-Roles", strings.Join(authCtx.Payload.Roles, ","))
-		}
-
-		// Add original host header
-		req.Header.Set("X-Forwarded-Host", ctx.Request.Host)
-		req.Header.Set("X-Forwarded-Proto", "http")
-		if ctx.Request.TLS != nil {
-			req.Header.Set("X-Forwarded-Proto", "https")
-		}
-	}
-
-	// Handle proxy errors
-	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
-		log.Printf("Proxy error for %s: %v", backendURL, err)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadGateway)
-
-		errorResponse := map[string]interface{}{
-			"error": map[string]interface{}{
-				"code":    http.StatusBadGateway,
-				"message": "Backend service error",
-				"error":   err.Error(),
-			},
-		}
-
-		json.NewEncoder(w).Encode(errorResponse)
-	}
-
-	// Execute request with timeout
-	timeout := time.Duration(route.Timeout) * time.Second
-	if timeout == 0 {
-		timeout = 30 * time.Second
-	}
-
-	ctxTimeout, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-
-	proxy.ServeHTTP(ctx.Writer, ctx.Request.WithContext(ctxTimeout))
+	return result
 }

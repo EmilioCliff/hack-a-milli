@@ -8,14 +8,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/EmilioCliff/hack-a-milli/gateway/auth"
 	"github.com/EmilioCliff/hack-a-milli/gateway/pkg"
-	"github.com/casbin/casbin/v2"
 	"github.com/gin-gonic/gin"
 )
 
 type Server struct {
 	config      *pkg.Config
-	enforcer    *casbin.Enforcer
+	enforcer    *auth.CasbinEnforcer
 	router      *gin.Engine
 	pathMatcher map[string]*pkg.Path // Cache for compiled path patterns
 	mu          sync.RWMutex
@@ -27,7 +27,7 @@ type AuthContext struct {
 	IsPublic bool
 }
 
-func NewServer(config *pkg.Config, enforcer *casbin.Enforcer) (*Server, error) {
+func NewServer(config *pkg.Config, enforcer *auth.CasbinEnforcer) (*Server, error) {
 	gateway := &Server{
 		config:      config,
 		enforcer:    enforcer,
@@ -56,8 +56,6 @@ func (s *Server) setupRoutes() error {
 	}
 
 	s.router.Handle(http.MethodGet, "/health", s.healthCheckHandler)
-
-	// g.router.HandleFunc("/api/user/permissions", g.userPermissionsHandler).Methods("GET")
 
 	return nil
 }
@@ -105,20 +103,11 @@ func (s *Server) createRouteHandler(route pkg.Route) gin.HandlerFunc {
 			}
 		}
 
-		ctx.Set("auth", authCtx)
-
 		// Handle the request based on route type
 		if len(route.Compose) > 0 {
 			s.handleComposedRequest(ctx, route, authCtx)
 		} else {
 			s.handleProxyRequest(ctx, route, authCtx)
 		}
-	}
-}
-
-func errorResponse(err error) gin.H {
-	return gin.H{
-		"code":    pkg.ErrorCode(err),
-		"message": pkg.ErrorMessage(err),
 	}
 }

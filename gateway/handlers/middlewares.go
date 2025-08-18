@@ -9,46 +9,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// authorize checks if the user has permission to access the resource
-func (s *Server) authorize(ctx *gin.Context, authCtx *AuthContext, route pkg.Route) bool {
-	if authCtx.Payload == nil {
-		return false
-	}
-
-	if route.Permission == "" {
-		return true
-	}
-
-	// Extract resource and action from permission string (e.g., "create:blog" -> "blog", "create")
-	parts := strings.Split(route.Permission, ":")
-	if len(parts) != 2 {
-		log.Printf("Invalid permission format: %s", route.Permission)
-		return false
-	}
-
-	resource := parts[1]
-	action := parts[0]
-
-	status := "published" // Default status
-	if queryStatus := ctx.Query("status"); queryStatus != "" {
-		status = queryStatus
-	}
-
-	// Check permission for each user role
-	for _, role := range authCtx.Payload.Roles {
-		allowed, err := s.enforcer.Enforce(role, resource, action, status)
-		if err != nil {
-			log.Printf("Error checking permission for role %s: %v", role, err)
-			continue // Skip this role if there's an error
-		}
-		if allowed {
-			return true
-		}
-	}
-
-	return false
-}
-
 // authenticate verifies the user's identity and extracts user information
 func (s *Server) authenticate(ctx *gin.Context, route pkg.Route) (*AuthContext, error) {
 	authCtx := &AuthContext{
@@ -72,7 +32,7 @@ func (s *Server) authenticate(ctx *gin.Context, route pkg.Route) (*AuthContext, 
 
 	token := fields[1]
 
-	payload, err := pkg.VerifyToken(token, s.config.Auth.JWTSecret)
+	payload, err := pkg.VerifyToken(token, s.config.Auth.JWTSecret, s.config.Auth.TokenIssuer)
 	if err != nil {
 		return nil, fmt.Errorf("invalid token: %w", err)
 	}
@@ -81,4 +41,43 @@ func (s *Server) authenticate(ctx *gin.Context, route pkg.Route) (*AuthContext, 
 	authCtx.Token = token
 
 	return authCtx, nil
+}
+
+// authorize checks if the user has permission to access the resource
+func (s *Server) authorize(ctx *gin.Context, authCtx *AuthContext, route pkg.Route) bool {
+	if authCtx.Payload == nil {
+		return false
+	}
+
+	subject := fmt.Sprintf("user:%d", authCtx.Payload.UserID)
+
+	owner := ""
+	if route.UserScoped {
+		owner = fmt.Sprintf("user:%s", ctx.Param("id"))
+	}
+
+	log.Println(subject, route.Resource, route.Action, owner)
+
+	allowed, err := s.enforcer.Enforcer.Enforce(subject, route.Resource, route.Action, owner)
+	if err != nil {
+		log.Println("Error checking permissions:", err)
+		return false
+	}
+
+	if route.PublishedScoped {
+		for _, role := range authCtx.Payload.Roles {
+			hasPublishPermission, err := s.enforcer.Enforcer.HasPermissionForUser(role, route.Resource, "read:publish")
+			if err != nil {
+				log.Println("Error checking published scoped permissions:", err)
+				return false
+			}
+
+			if hasPublishPermission {
+				ctx.Set("X-Published-Only", "true")
+				break
+			}
+		}
+	}
+
+	return allowed
 }

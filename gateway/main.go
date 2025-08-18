@@ -3,9 +3,9 @@ package main
 import (
 	"log"
 
+	"github.com/EmilioCliff/hack-a-milli/gateway/auth"
 	"github.com/EmilioCliff/hack-a-milli/gateway/handlers"
 	"github.com/EmilioCliff/hack-a-milli/gateway/pkg"
-	"github.com/casbin/casbin/v2"
 )
 
 func main() {
@@ -14,7 +14,7 @@ func main() {
 		log.Fatal("Failed to load config:", err)
 	}
 
-	enforcer, err := casbin.NewEnforcer(config.Auth.CasbinModel, config.Auth.CasbinPolicy)
+	enforcer, err := auth.InitializeCasbin(config.Auth.CasbinDbUri, config.Auth.CasbinDbName)
 	if err != nil {
 		log.Fatal("failed to create casbin enforcer:", err)
 	}

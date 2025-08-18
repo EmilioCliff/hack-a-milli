@@ -1,0 +1,160 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://example.com/api-gateway-config.schema.json",
+	"title": "API Gateway Configuration",
+	"type": "object",
+	"required": ["server", "auth", "backends", "cors", "routes"],
+	"properties": {
+		"server": {
+			"type": "object",
+			"required": ["port", "read_timeout", "write_timeout"],
+			"properties": {
+				"port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+				"read_timeout": { "type": "integer", "minimum": 0 },
+				"write_timeout": { "type": "integer", "minimum": 0 }
+			},
+			"additionalProperties": false
+		},
+		"auth": {
+			"type": "object",
+			"required": [
+				"jwt_secret",
+				"token_issuer",
+				"token_header",
+				"casbin_db_uri",
+				"casbin_db_name"
+			],
+			"properties": {
+				"jwt_secret": { "type": "string", "minLength": 32 },
+				"token_issuer": {
+					"type": "array",
+					"items": { "type": "string" },
+					"minItems": 1
+				},
+				"token_header": { "type": "string" },
+				"casbin_db_uri": { "type": "string", "format": "uri" },
+				"casbin_db_name": { "type": "string" }
+			},
+			"additionalProperties": false
+		},
+		"backends": {
+			"type": "object",
+			"patternProperties": {
+				"^[a-zA-Z0-9_-]+$": { "type": "string", "format": "uri" }
+			},
+			"minProperties": 1,
+			"additionalProperties": false
+		},
+		"cors": {
+			"type": "object",
+			"required": [
+				"allow_origins",
+				"allow_methods",
+				"allow_headers",
+				"allow_credentials",
+				"expose_headers",
+				"max_age"
+			],
+			"properties": {
+				"allow_origins": {
+					"type": "array",
+					"items": { "type": "string" }
+				},
+				"allow_methods": {
+					"type": "array",
+					"items": { "type": "string" }
+				},
+				"allow_headers": {
+					"type": "array",
+					"items": { "type": "string" }
+				},
+				"allow_credentials": { "type": "boolean" },
+				"expose_headers": {
+					"type": "array",
+					"items": { "type": "string" }
+				},
+				"max_age": { "type": "integer", "minimum": 0 }
+			},
+			"additionalProperties": false
+		},
+		"routes": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"required": ["path", "method", "public"],
+				"properties": {
+					"path": { "type": "string" },
+					"method": {
+						"type": "string",
+						"enum": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+					},
+					"public": { "type": "boolean" },
+					"resource": {
+						"type": "string",
+						"description": "RBAC resource name"
+					},
+					"action": {
+						"type": "string",
+						"description": "RBAC action name"
+					},
+					"host": {
+						"type": "string",
+						"description": "Backend host identifier"
+					},
+					"url_pattern": { "type": "string" },
+					"user_scoped": { "type": "boolean" },
+					"published_scoped": { "type": "boolean" },
+					"compose": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"required": ["host", "url_pattern"],
+							"properties": {
+								"host": { "type": "string" },
+								"url_pattern": { "type": "string" },
+								"required_permissions": {
+									"type": "array",
+									"items": {
+										"type": "string"
+									}
+								}
+							},
+							"additionalProperties": false
+						}
+					},
+					"cache": {
+						"type": "object",
+						"required": [
+							"enabled",
+							"ttl",
+							"key_pattern",
+							"invalidate_on"
+						],
+						"properties": {
+							"enabled": { "type": "boolean", "default": false },
+							"ttl": { "type": "integer", "minimum": 0 },
+							"key_pattern": { "type": "string" },
+							"invalidate_on": {
+								"type": "array",
+								"items": { "type": "string" }
+							}
+						},
+						"additionalProperties": false
+					},
+					"rate_limit": {
+						"type": "object",
+						"required": ["requests", "window", "per_user"],
+						"properties": {
+							"requests": { "type": "integer", "minimum": 1 },
+							"window": { "type": "integer", "minimum": 1 },
+							"per_user": { "type": "boolean", "default": false }
+						},
+						"additionalProperties": false
+					}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	"additionalProperties": false
+}

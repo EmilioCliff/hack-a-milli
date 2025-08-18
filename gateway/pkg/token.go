@@ -3,13 +3,12 @@ package pkg
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
-
-const TokenIssuer = "BACKEND_APP"
 
 type Payload struct {
 	ID          uuid.UUID `json:"id"`
@@ -20,9 +19,9 @@ type Payload struct {
 	jwt.RegisteredClaims
 }
 
-func VerifyToken(token, jwtSecret string) (*Payload, error) {
+func VerifyToken(token, jwtSecret string, tokenIssuers []string) (*Payload, error) {
 	jwtToken, err := jwt.ParseWithClaims(token, &Payload{}, func(token *jwt.Token) (any, error) {
-		_, ok := token.Method.(*jwt.SigningMethodRSA)
+		_, ok := token.Method.(*jwt.SigningMethodHMAC)
 		if !ok {
 			return nil, errors.New("unexpected signing method")
 		}
@@ -38,8 +37,13 @@ func VerifyToken(token, jwtSecret string) (*Payload, error) {
 		return nil, errors.New("failed to parse token is invalid")
 	}
 
-	if payload.RegisteredClaims.Issuer != TokenIssuer {
-		return nil, errors.New("invalid issuer")
+	issuer, err := payload.GetIssuer()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get token issuer: %v", err)
+	}
+
+	if ok := slices.Contains(tokenIssuers, issuer); !ok {
+		return nil, fmt.Errorf("token issuer is not allowed: %s", payload.Issuer)
 	}
 
 	if payload.RegisteredClaims.ExpiresAt.Time.Before(time.Now()) {

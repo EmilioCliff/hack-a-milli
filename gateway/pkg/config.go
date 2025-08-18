@@ -9,30 +9,63 @@ import (
 
 // Config represents the gateway configuration
 type Config struct {
-	Routes []Route `mapstructure:"routes"`
 	Server struct {
 		Port         int `mapstructure:"port"`
 		ReadTimeout  int `mapstructure:"read_timeout"`
 		WriteTimeout int `mapstructure:"write_timeout"`
 	} `mapstructure:"server"`
 	Auth struct {
-		JWTSecret    string `mapstructure:"jwt_secret"`
-		TokenIssuer  string `mapstructure:"token_issuer"`
-		TokenHeader  string `mapstructure:"token_header"`
-		CasbinModel  string `mapstructure:"casbin_model"`
-		CasbinPolicy string `mapstructure:"casbin_policy"`
+		JWTSecret    string   `mapstructure:"jwt_secret"`
+		TokenIssuer  []string `mapstructure:"token_issuer"`
+		TokenHeader  string   `mapstructure:"token_header"`
+		CasbinDbUri  string   `mapstructure:"casbin_db_uri"`
+		CasbinDbName string   `mapstructure:"casbin_db_name"`
 	} `mapstructure:"auth"`
+	Backends map[string]string `mapstructure:"backends"`
+	CORS     struct {
+		AllowOrigins     []string `mapstructure:"allow_origins"`
+		AllowMethods     []string `mapstructure:"allow_methods"`
+		AllowHeaders     []string `mapstructure:"allow_headers"`
+		ExposeHeaders    []string `mapstructure:"expose_headers"`
+		AllowCredentials bool     `mapstructure:"allow_credentials"`
+		MaxAge           int32    `mapstructure:"max_age"`
+	} `mapstructure:"cors"`
+	Routes []Route `mapstructure:"routes"`
 }
 
 // Route represents a single API route configuration
 type Route struct {
-	Path       string   `mapstructure:"path"`
-	Method     string   `mapstructure:"method"`
-	Public     bool     `mapstructure:"public"`
-	Permission string   `mapstructure:"permission,omitempty"`
-	BackendURL string   `mapstructure:"backend_url,omitempty"`
-	Compose    []string `mapstructure:"compose,omitempty"`
-	Timeout    int      `mapstructure:"timeout,omitempty"`
+	Path            string            `mapstructure:"path"`
+	Method          string            `mapstructure:"method"`
+	Public          bool              `mapstructure:"public"`
+	Resource        string            `mapstructure:"resource,omitempty"`
+	Action          string            `mapstructure:"action,omitempty"`
+	Host            string            `mapstructure:"host,omitempty"`
+	URLPattern      string            `mapstructure:"url_pattern,omitempty"`
+	UserScoped      bool              `mapstructure:"user_scoped,omitempty"`
+	PublishedScoped bool              `mapstructure:"published_scoped,omitempty"`
+	Compose         []ComposeBackends `mapstructure:"compose,omitempty"`
+	Cache           Cache             `mapstructure:"cache,omitempty"`
+	RateLimit       RateLimit         `mapstructure:"rate_limit,omitempty"`
+}
+
+type ComposeBackends struct {
+	Host                string   `mapstructure:"host"`
+	URLPattern          string   `mapstructure:"url_pattern"`
+	RequiredPermissions []string `mapstructure:"required_permissions,omitempty"`
+}
+
+type Cache struct {
+	Enabled      bool     `mapstructure:"enabled"`
+	TTL          int      `mapstructure:"ttl"`
+	KeyPattern   string   `mapstructure:"key_pattern"`
+	InvalidateOn []string `mapstructure:"invalidate_on"`
+}
+
+type RateLimit struct {
+	Requests int  `mapstructure:"requests"`
+	Window   int  `mapstructure:"window"`   // in seconds
+	PerUser  bool `mapstructure:"per_user"` // if true, applies per user, otherwise globally
 }
 
 func LoadConfig(path string) (*Config, error) {
