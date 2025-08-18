@@ -3,7 +3,10 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"log"
 	"strings"
 
 	"github.com/EmilioCliff/hack-a-milli/cms-backend/internal/postgres/generated"
@@ -16,54 +19,149 @@ var _ repository.UserRepositort = (*UserRepository)(nil)
 
 type UserRepository struct {
 	queries *generated.Queries
+	db      *Store
 }
 
-func NewUserRepository(queries *generated.Queries) *UserRepository {
+func NewUserRepository(db *Store) *UserRepository {
 	return &UserRepository{
-		queries: queries,
+		queries: generated.New(db.pool),
+		db:      db,
 	}
 }
 
-func (ur *UserRepository) CreateUser(ctx context.Context, user *repository.User) (*repository.User, error) {
-	createParams := generated.CreateUserParams{
-		Email:        user.Email,
-		FullName:     user.FullName,
-		PhoneNumber:  user.PhoneNumber,
-		Address:      pgtype.Text{Valid: false},
-		PasswordHash: *user.PasswordHash,
-		Role:         user.Role,
-		DepartmentID: pgtype.Int8{Valid: false},
-		RefreshToken: pgtype.Text{Valid: false},
-	}
-
-	if user.DepartmentID != nil {
-		if exists, _ := ur.queries.DepartmentExists(ctx, *user.DepartmentID); !exists {
-			return nil, pkg.Errorf(pkg.NOT_FOUND_ERROR, "department with ID %d not found", *user.DepartmentID)
+func (ur *UserRepository) CreateUser(ctx context.Context, user *repository.User, roleIDs []int64, assignedBy int64) (*repository.User, error) {
+	err := ur.db.ExecTx(ctx, func(q *generated.Queries) error {
+		createParams := generated.CreateUserParams{
+			Email:        user.Email,
+			FullName:     user.FullName,
+			PhoneNumber:  user.PhoneNumber,
+			Address:      pgtype.Text{Valid: false},
+			PasswordHash: *user.PasswordHash,
+			Role:         nil,
+			DepartmentID: pgtype.Int8{Valid: false},
+			RefreshToken: pgtype.Text{Valid: true, String: ""},
+			CreatedBy:    assignedBy,
 		}
-		createParams.DepartmentID = pgtype.Int8{Int64: *user.DepartmentID, Valid: true}
-	}
-	if user.Address != nil {
-		createParams.Address = pgtype.Text{String: *user.Address, Valid: true}
-	}
-	if user.RefreshToken != nil {
-		createParams.RefreshToken = pgtype.Text{String: *user.RefreshToken, Valid: true}
-	}
 
-	userID, err := ur.queries.CreateUser(ctx, createParams)
+		if user.DepartmentID != nil {
+			if exists, _ := q.DepartmentExists(ctx, *user.DepartmentID); !exists {
+				return pkg.Errorf(pkg.NOT_FOUND_ERROR, "department with ID %d not found", *user.DepartmentID)
+			}
+			createParams.DepartmentID = pgtype.Int8{Int64: *user.DepartmentID, Valid: true}
+		}
+		if user.Address != nil {
+			createParams.Address = pgtype.Text{String: *user.Address, Valid: true}
+		}
+		if user.RefreshToken != nil {
+			createParams.RefreshToken = pgtype.Text{String: *user.RefreshToken, Valid: true}
+		}
+
+		roleNames := []string{}
+		if len(roleIDs) == 0 {
+			roleNames = append(roleNames, "guest")
+		} else {
+			for _, roleID := range roleIDs {
+				role, err := q.GetRole(ctx, roleID)
+				if err != nil {
+					if errors.Is(err, sql.ErrNoRows) {
+						return pkg.Errorf(pkg.AUTHENTICATION_ERROR, "no role with ID %d found", roleID)
+					}
+					return pkg.Errorf(pkg.INTERNAL_ERROR, "error fetching role by ID: %s", err.Error())
+				}
+
+				roleNames = append(roleNames, role.Name)
+			}
+		}
+
+		createParams.Role = roleNames
+
+		userID, err := q.CreateUser(ctx, createParams)
+		if err != nil {
+			if pkg.PgxErrorCode(err) == pkg.UNIQUE_VIOLATION {
+				return pkg.Errorf(pkg.ALREADY_EXISTS_ERROR, "%s", err.Error())
+			}
+
+			return pkg.Errorf(pkg.INTERNAL_ERROR, "error creating user: %s", err.Error())
+		}
+
+		// grant role and log action
+		if len(roleIDs) == 0 {
+			role, err := q.GetRoleByName(ctx, "guest")
+			if err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					return pkg.Errorf(pkg.AUTHENTICATION_ERROR, "no role with name guest found")
+				}
+				return pkg.Errorf(pkg.INTERNAL_ERROR, "error fetching role by ID: %s", err.Error())
+			}
+
+			if err := q.GrantRole(ctx, generated.GrantRoleParams{
+				UserID:     userID,
+				RoleID:     role.ID,
+				AssignedBy: assignedBy,
+			}); err != nil {
+				if pkg.PgxErrorCode(err) == pkg.UNIQUE_VIOLATION {
+					return pkg.Errorf(pkg.ALREADY_EXISTS_ERROR, "%s", err.Error())
+				}
+
+				return pkg.Errorf(pkg.INTERNAL_ERROR, "error granting user role guest: %s", err.Error())
+			}
+
+			if err := q.LogAuditLog(ctx, generated.LogAuditLogParams{
+				Action:      "account_creation",
+				EntityType:  "user_role",
+				EntityID:    userID,
+				PerformedBy: assignedBy,
+			}); err != nil {
+				return pkg.Errorf(pkg.INTERNAL_ERROR, "failed logging action: %s", err.Error())
+			}
+		} else {
+			for _, roleID := range roleIDs {
+				if err := q.GrantRole(ctx, generated.GrantRoleParams{
+					UserID:     userID,
+					RoleID:     roleID,
+					AssignedBy: assignedBy,
+				}); err != nil {
+					if pkg.PgxErrorCode(err) == pkg.UNIQUE_VIOLATION {
+						return pkg.Errorf(pkg.ALREADY_EXISTS_ERROR, "%s", err.Error())
+					}
+
+					return pkg.Errorf(pkg.INTERNAL_ERROR, "error granting user role guest: %s", err.Error())
+				}
+
+				if err := q.LogAuditLog(ctx, generated.LogAuditLogParams{
+					Action:      "account_creation",
+					EntityType:  "user_role",
+					EntityID:    userID,
+					PerformedBy: assignedBy,
+				}); err != nil {
+					return pkg.Errorf(pkg.INTERNAL_ERROR, "failed logging action: %s", err.Error())
+				}
+			}
+		}
+
+		// add group policy
+		for _, roleName := range roleNames {
+			if _, err := ur.db.casbin.enforcer.AddGroupingPolicy(fmt.Sprintf("user:%d", userID), roleName); err != nil {
+				return pkg.Errorf(pkg.INTERNAL_ERROR, "failed to add user role mapping: %s", err.Error())
+			}
+		}
+
+		if err := ur.db.casbin.enforcer.SavePolicy(); err != nil {
+			return pkg.Errorf(pkg.INTERNAL_ERROR, "failed to load policy: %s", err.Error())
+		}
+
+		user.ID = userID
+		user.PasswordHash = nil
+		user.RefreshToken = nil
+		user.Active = true
+		user.AccountVerified = false
+		user.MultifactorAuthentication = true
+
+		return nil
+	})
 	if err != nil {
-		if pkg.PgxErrorCode(err) == pkg.UNIQUE_VIOLATION {
-			return nil, pkg.Errorf(pkg.ALREADY_EXISTS_ERROR, "%s", err.Error())
-		}
-
-		return nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error creating user: %s", err.Error())
+		return nil, err
 	}
-
-	user.ID = userID
-	user.PasswordHash = nil
-	user.RefreshToken = nil
-	user.Active = true
-	user.AccountVerified = false
-	user.MultifactorAuthentication = true
 
 	return user, nil
 }
@@ -136,9 +234,9 @@ func (ur *UserRepository) GetUser(ctx context.Context, id int64) (*repository.Us
 		AccountVerified:           user.AccountVerified,
 		MultifactorAuthentication: user.MultifactorAuthentication,
 		UpdatedBy:                 nil,
-		CreatedBy:                 nil,
 		UpdatedAt:                 user.UpdatedAt,
 		CreatedAt:                 user.CreatedAt,
+		CreatedBy:                 user.CreatedBy,
 	}
 
 	if user.Address.Valid {
@@ -152,9 +250,6 @@ func (ur *UserRepository) GetUser(ctx context.Context, id int64) (*repository.Us
 	}
 	if user.UpdatedBy.Valid {
 		rslt.UpdatedBy = &user.UpdatedBy.Int64
-	}
-	if user.CreatedBy.Valid {
-		rslt.CreatedBy = &user.CreatedBy.Int64
 	}
 
 	return rslt, nil
@@ -233,7 +328,7 @@ func (ur *UserRepository) UpdateUser(ctx context.Context, user *repository.Updat
 		AccountVerified:           updatedUser.AccountVerified,
 		MultifactorAuthentication: updatedUser.MultifactorAuthentication,
 		UpdatedBy:                 nil,
-		CreatedBy:                 nil,
+		CreatedBy:                 updatedUser.CreatedBy,
 		UpdatedAt:                 updatedUser.UpdatedAt,
 		CreatedAt:                 updatedUser.CreatedAt,
 	}
@@ -249,11 +344,108 @@ func (ur *UserRepository) UpdateUser(ctx context.Context, user *repository.Updat
 	if updatedUser.UpdatedBy.Valid {
 		rslt.UpdatedBy = &updatedUser.UpdatedBy.Int64
 	}
-	if updatedUser.CreatedBy.Valid {
-		rslt.CreatedBy = &updatedUser.CreatedBy.Int64
-	}
 
 	return rslt, nil
+}
+
+func (ur *UserRepository) UpdateUserRole(ctx context.Context, userID int64, roleIDs []int64, updatedBy int64) error {
+	err := ur.db.ExecTx(ctx, func(q *generated.Queries) error {
+		// Remove existing roles
+		userPreviousRoles, err := q.GetUserRoles(ctx, userID)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return pkg.Errorf(pkg.NOT_FOUND_ERROR, "user with ID %d not found", userID)
+			}
+			return pkg.Errorf(pkg.INTERNAL_ERROR, "error fetching user roles: %s", err.Error())
+		}
+
+		log.Println(userPreviousRoles)
+
+		if err := q.RemoveUserRoles(ctx, userID); err != nil {
+			return pkg.Errorf(pkg.INTERNAL_ERROR, "error removing user roles: %s", err.Error())
+		}
+
+		roleNames := []string{}
+		userNewRoles := make([]generated.RbacRole, len(roleIDs))
+		for idx, roleID := range roleIDs {
+			role, err := q.GetRole(ctx, roleID)
+			if err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					return pkg.Errorf(pkg.AUTHENTICATION_ERROR, "no role with ID %d found", roleID)
+				}
+				return pkg.Errorf(pkg.INTERNAL_ERROR, "error fetching role by ID: %s", err.Error())
+			}
+
+			if err := q.GrantRole(ctx, generated.GrantRoleParams{
+				UserID:     userID,
+				RoleID:     role.ID,
+				AssignedBy: updatedBy,
+			}); err != nil {
+				if pkg.PgxErrorCode(err) == pkg.UNIQUE_VIOLATION {
+					return pkg.Errorf(pkg.ALREADY_EXISTS_ERROR, "%s", err.Error())
+				}
+
+				return pkg.Errorf(pkg.INTERNAL_ERROR, "error granting user role %s: %s", role.Name, err.Error())
+			}
+
+			roleNames = append(roleNames, role.Name)
+			userNewRoles[idx] = role
+		}
+
+		oldRoles, err := json.Marshal(userPreviousRoles)
+		if err != nil {
+			return pkg.Errorf(pkg.INTERNAL_ERROR, "failed to marshal old roles: %s", err.Error())
+		}
+		newRoles, err := json.Marshal(userNewRoles)
+		if err != nil {
+			return pkg.Errorf(pkg.INTERNAL_ERROR, "failed to marshal new roles: %s", err.Error())
+		}
+
+		if err := q.LogAuditLog(ctx, generated.LogAuditLogParams{
+			Action:      "role_update",
+			EntityType:  "user_role",
+			EntityID:    userID,
+			PerformedBy: updatedBy,
+			OldValues:   oldRoles,
+			NewValues:   newRoles,
+		}); err != nil {
+			return pkg.Errorf(pkg.INTERNAL_ERROR, "failed logging action: %s", err.Error())
+		}
+
+		// update user roles
+		if _, err = q.UpdateUser(ctx, generated.UpdateUserParams{
+			UpdatedBy: pgtype.Int8{Valid: true, Int64: updatedBy},
+			ID:        userID,
+			Role:      roleNames,
+		}); err != nil {
+			return pkg.Errorf(pkg.INTERNAL_ERROR, "error updating user roles: %s", err.Error())
+		}
+
+		// remove group policy for previous roles
+		for _, role := range userPreviousRoles {
+			if _, err := ur.db.casbin.enforcer.RemoveGroupingPolicy(fmt.Sprintf("user:%d", userID), role.Name); err != nil {
+				return pkg.Errorf(pkg.INTERNAL_ERROR, "failed to remove user role mapping: %s", err.Error())
+			}
+		}
+
+		// add group policy
+		for _, roleName := range roleNames {
+			if _, err := ur.db.casbin.enforcer.AddGroupingPolicy(fmt.Sprintf("user:%d", userID), roleName); err != nil {
+				return pkg.Errorf(pkg.INTERNAL_ERROR, "failed to add user role mapping: %s", err.Error())
+			}
+		}
+
+		if err := ur.db.casbin.enforcer.SavePolicy(); err != nil {
+			return pkg.Errorf(pkg.INTERNAL_ERROR, "failed to load policy: %s", err.Error())
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (ur *UserRepository) ListUser(ctx context.Context, filter *repository.UserFilter) ([]*repository.User, *pkg.Pagination, error) {
@@ -320,7 +512,7 @@ func (ur *UserRepository) ListUser(ctx context.Context, filter *repository.UserF
 			AccountVerified:           user.AccountVerified,
 			MultifactorAuthentication: user.MultifactorAuthentication,
 			UpdatedBy:                 nil,
-			CreatedBy:                 nil,
+			CreatedBy:                 user.CreatedBy,
 			UpdatedAt:                 user.UpdatedAt,
 			CreatedAt:                 user.CreatedAt,
 		}
@@ -334,9 +526,6 @@ func (ur *UserRepository) ListUser(ctx context.Context, filter *repository.UserF
 		}
 		if user.UpdatedBy.Valid {
 			userList[i].UpdatedBy = &user.UpdatedBy.Int64
-		}
-		if user.CreatedBy.Valid {
-			userList[i].CreatedBy = &user.CreatedBy.Int64
 		}
 	}
 

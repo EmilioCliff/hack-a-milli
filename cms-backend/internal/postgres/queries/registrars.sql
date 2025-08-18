@@ -41,7 +41,7 @@ WHERE
     )
     AND (
         sqlc.narg('specialities')::text[] IS NULL 
-        OR specialities = ANY(sqlc.narg('specialities')::text[])
+        OR specialities && sqlc.narg('specialities')::text[]
     )
 ORDER BY created_at DESC
 LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
@@ -60,5 +60,5 @@ WHERE
     )
     AND (
         sqlc.narg('specialities')::text[] IS NULL 
-        OR specialities = ANY(sqlc.narg('specialities')::text[])
+        OR specialities && sqlc.narg('specialities')::text[]
     );

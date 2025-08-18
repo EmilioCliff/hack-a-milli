@@ -7,6 +7,10 @@ RETURNING id;
 SELECT * FROM news_letters
 WHERE id = $1;
 
+-- name: GetPublishedNewsLetter :one
+SELECT * FROM news_letters
+WHERE id = $1 AND published = TRUE AND deleted_at IS NULL;
+
 -- name: UpdateNewsLetter :exec
 UPDATE news_letters
 SET title = COALESCE(sqlc.narg('title'), title),

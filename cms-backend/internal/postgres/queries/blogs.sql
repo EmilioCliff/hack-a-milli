@@ -19,6 +19,22 @@ LEFT JOIN LATERAL (
 ) p1 ON true
 WHERE b.id = $1;
 
+-- name: GetPublishedBlog :one
+SELECT b.*,
+       COALESCE(p1.author_json, '{}') AS author_details
+FROM blogs b
+LEFT JOIN LATERAL (
+    SELECT json_build_object(
+        'id', u.id,
+        'email', u.email,
+        'full_name', u.full_name,
+        'role', u.role
+    ) AS author_json
+    FROM users u
+    WHERE u.id = b.author
+) p1 ON true
+WHERE b.id = $1 AND b.published = TRUE AND b.deleted_at IS NULL;
+
 -- name: UpdateBlog :exec
 UPDATE blogs
 SET title = COALESCE(sqlc.narg('title'), title),
@@ -85,14 +101,14 @@ WHERE
     deleted_at IS NULL
     AND (
         sqlc.narg('author')::bigint IS NULL 
-        OR b.author = sqlc.narg('author')
+        OR author = sqlc.narg('author')
     ) 
     AND (
         COALESCE(sqlc.narg('search')::text, '') = '' 
-        OR LOWER(b.title) LIKE sqlc.narg('search')
-        OR LOWER(b.topic) LIKE sqlc.narg('search')
+        OR LOWER(title) LIKE sqlc.narg('search')
+        OR LOWER(topic) LIKE sqlc.narg('search')
     )
     AND (
         sqlc.narg('published')::boolean IS NULL 
-        OR b.published = sqlc.narg('published')
+        OR published = sqlc.narg('published')
     );

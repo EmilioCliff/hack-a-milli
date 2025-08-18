@@ -25,7 +25,7 @@ WHERE
     )
     AND (
         $2::text[] IS NULL 
-        OR specialities = ANY($2::text[])
+        OR specialities && $2::text[]
     )
 `
 
@@ -134,7 +134,7 @@ WHERE
     )
     AND (
         $2::text[] IS NULL 
-        OR specialities = ANY($2::text[])
+        OR specialities && $2::text[]
     )
 ORDER BY created_at DESC
 LIMIT $4 OFFSET $3

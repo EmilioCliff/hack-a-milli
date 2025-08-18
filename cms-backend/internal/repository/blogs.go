@@ -55,6 +55,7 @@ type BlogFilter struct {
 type BlogRepository interface {
 	CreateBlog(ctx context.Context, blog *Blog) (*Blog, error)
 	GetBlog(ctx context.Context, id int64) (*Blog, error)
+	GetPublishedBlog(ctx context.Context, id int64) (*Blog, error)
 	UpdateBlog(ctx context.Context, blog *UpdateBlog) (*Blog, error)
 	PublishBlog(ctx context.Context, blogID int64, userID int64) (*Blog, error)
 	ListBlogs(ctx context.Context, filter *BlogFilter) ([]*Blog, *pkg.Pagination, error)

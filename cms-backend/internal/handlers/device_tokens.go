@@ -123,7 +123,7 @@ func (s *Server) getUserDeviceTokensHandler(ctx *gin.Context) {
 
 func (s *Server) updateDeviceTokenHandler(ctx *gin.Context) {
 	var req struct {
-		Active bool `json:"active" binding:"required"`
+		Active bool `json:"active"`
 	}
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {

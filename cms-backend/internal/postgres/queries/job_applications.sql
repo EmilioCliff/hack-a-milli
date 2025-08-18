@@ -3,6 +3,12 @@ INSERT INTO job_applications (job_id, full_name, email, phone_number, cover_lett
 VALUES (sqlc.arg('job_id'), sqlc.arg('full_name'), sqlc.arg('email'), sqlc.arg('phone_number'), sqlc.arg('cover_letter'), sqlc.arg('resume_url'), NOW())
 RETURNING id;
 
+-- name: CheckJobApplicationExists :one
+SELECT EXISTS (
+    SELECT 1 FROM job_applications
+    WHERE job_id = $1 AND email = $2
+);
+
 -- name: GetJobApplication :one
 SELECT 
     ja.*,

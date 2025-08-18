@@ -16,14 +16,14 @@ const countDeviceTokens = `-- name: CountDeviceTokens :one
 SELECT COUNT(*) AS total_device_tokens
 FROM device_tokens
 WHERE
-    dt.active IS TRUE
+    active IS TRUE
     AND (
         $1::boolean IS NULL 
-        OR dt.active = $1
+        OR active = $1
     )
     AND (
         $2::text IS NULL 
-        OR dt.platform = $2
+        OR platform = $2
     )
 `
 
@@ -65,7 +65,7 @@ SELECT dt.id, dt.user_id, dt.device_token, dt.platform, dt.active, dt.created_at
        u.role AS user_role
 FROM device_tokens dt
 JOIN users u ON dt.user_id = u.id
-WHERE dt.active IS TRUE AND dt.id = $1
+WHERE dt.id = $1
 `
 
 type GetDeviceTokenByIDRow struct {

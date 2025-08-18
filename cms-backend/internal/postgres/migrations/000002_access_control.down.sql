@@ -1,0 +1,20 @@
+ALTER TABLE "rbac_roles" DROP CONSTRAINT "rbac_roles_created_by_fkey";
+ALTER TABLE "rbac_roles" DROP CONSTRAINT "rbac_roles_updated_by_fkey";
+ALTER TABLE "rbac_permissions" DROP CONSTRAINT "rbac_permissions_resource_id_fkey";
+ALTER TABLE "rbac_permissions" DROP CONSTRAINT "rbac_permissions_action_id_fkey";
+ALTER TABLE "rbac_role_permissions" DROP CONSTRAINT "rbac_role_permissions_role_id_fkey";
+ALTER TABLE "rbac_role_permissions" DROP CONSTRAINT "rbac_role_permissions_permission_id_fkey";
+ALTER TABLE "rbac_role_permissions" DROP CONSTRAINT "rbac_role_permissions_granted_by_fkey";
+ALTER TABLE "rbac_user_roles" DROP CONSTRAINT "rbac_user_roles_user_id_fkey";
+ALTER TABLE "rbac_user_roles" DROP CONSTRAINT "rbac_user_roles_role_id_fkey";
+ALTER TABLE "rbac_user_roles" DROP CONSTRAINT "rbac_user_roles_assigned_by_fkey";
+ALTER TABLE "rbac_audit_log" DROP CONSTRAINT "rbac_audit_log_performed_by_fkey";
+
+DROP TABLE IF EXISTS casbin_rule;
+DROP TABLE IF EXISTS rbac_resources;
+DROP TABLE IF EXISTS rbac_actions;
+DROP TABLE IF EXISTS rbac_roles;
+DROP TABLE IF EXISTS rbac_permissions;
+DROP TABLE IF EXISTS rbac_role_permissions;
+DROP TABLE IF EXISTS rbac_user_roles;
+DROP TABLE IF EXISTS rbac_audit_log;

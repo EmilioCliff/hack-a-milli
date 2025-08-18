@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"time"
 
 	"github.com/EmilioCliff/hack-a-milli/cms-backend/internal/postgres"
 	"github.com/EmilioCliff/hack-a-milli/cms-backend/pkg"
@@ -43,120 +44,173 @@ func NewServer(config pkg.Config, tokenMaker pkg.JWTMaker, repo *postgres.Postgr
 }
 
 func (s *Server) setUpRoutes() {
-	v1 := s.router.Group("/api/v1").Use(SetRequestContextMiddleware())
+	s.router.Use(SetRequestContextMiddleware())
+
+	public := s.router.Group("/api/v1")
+	protected := s.router.Group("/api/v1")
+
+	// public  routes
+	public.POST("/public/users/login", s.userLoginHandler)
+	public.GET("/public/users/logout", s.userLogoutHandler)
+	public.POST("/public/users/register", s.userRegisterHandler)
+	public.POST("/public/users/forgot-password", s.forgotPasswordHandler)
+	public.POST("/public/users/:id/refresh-token", s.refreshTokenHandler)
+
+	public.GET("/public/departments", s.listDepartmentsHandler)
+	public.GET("/public/departments/:id", s.getDepartmentHandler)
+
+	// public - published routes
+	public.GET("/public/registrars/:id", s.getRegistrarHandler)
+	public.GET("/public/registrars", s.listRegistrarsHandler)
+
+	public.GET("/public/blogs/:id", s.getPublishedBlogHandler)
+	public.GET("/public/blogs", s.listPublishedBlogsHandler)
+
+	public.GET("/public/events/:id", s.getPublishedEventHandler)
+	public.GET("/public/events", s.listPublishedEventsHandler)
+	public.POST("/public/events/:id/attendees", s.addEventAttendeeHandler)
+
+	public.GET("/public/careers/job-postings/:id", s.getPublishedJobPostingHandler)
+	public.GET("/public/careers/job-postings", s.listPublishedJobPostingsHandler)
+
+	public.POST("/public/careers/job-postings/:id/application", s.createJobApplicationHandler)
+
+	public.GET("/public/news/updates/:id", s.getPublishedNewsHandler)
+	public.GET("/public/news/updates", s.listPublishedNewsHandler)
+
+	public.GET("/public/news/letter/:id", s.getPublishedNewsletterHandler)
+	public.GET("/public/news/letter", s.listPublishedNewslettersHandler)
+
+	public.GET("/public/merchandise/categories/:id", s.getCategoryHandler)
+	public.GET("/public/merchandise/categories", s.listCategoriesHandler)
+
+	public.GET("/public/merchandise/products/:id", s.getProductHandler)
+	public.GET("/public/merchandise/products", s.listProductsHandler)
+
+	public.POST("/public/merchandise/orders", s.createOrderHandler)
+
+	public.POST("/public/merchandise/orders/:id/payments", s.createPaymentHandler)
 
 	// users routes
-	v1.POST("/users/login", s.userLoginHandler)
-	v1.GET("/users/logout", s.userLogoutHandler)
-	v1.POST("/users/register", s.userRegisterHandler)
-	v1.POST("/users/forgot-password", s.forgotPasswordHandler)
-	v1.POST("/users/:id/refresh-token", s.refreshTokenHandler)
+	protected.POST("/users/register", s.userRegisterHandler)
+	protected.GET("/users/:id", s.getUserHandler)
+	protected.PUT("/users/:id", s.updateUserHandler)
+	protected.GET("/users", s.listUsersHandler)
+	protected.DELETE("/users/:id", s.deleteUserHandler)
 
-	v1.GET("/users/:id", s.getUserHandler)
-	v1.PUT("/users/:id", s.updateUserHandler)
-	v1.GET("/users", s.listUsersHandler)
-	v1.DELETE("/users/:id", s.deleteUserHandler)
+	protected.PUT("/users/:id/role", s.updateUserRoleHandler)
+	protected.PUT("/users/:id/department", s.updateUserDepartmentHandler)
 
-	v1.PUT("/users/:id/role", s.updateUserRoleHandler)
-	v1.PUT("/users/:id/department", s.updateUserDepartmentHandler)
+	protected.POST("/users/:id/preferences", s.createUserPreferencesHandler)
+	protected.GET("/users/:id/preferences", s.getUserPreferencesHandler)
+	protected.PUT("/users/:id/preferences", s.updateUserPreferencesHandler)
+	protected.GET("/users/preferences", s.listUserPreferencesHandler)
 
-	v1.GET("/users/preferences", s.listUserPreferencesHandler)
-	v1.POST("/users/:id/preferences", s.createUserPreferencesHandler)
-	v1.PUT("/users/:id/preferences", s.updateUserPreferencesHandler)
-	v1.GET("/users/:id/preferences", s.getUserPreferencesHandler)
+	protected.GET("/users/device-tokens", s.listDeviceTokensHandler)
+	protected.GET("/users/device-token/:id", s.getDeviceTokenHandler)
+	protected.POST("/users/:id/device-token", s.createDeviceTokenHandler)
+	protected.GET("/users/:id/device-tokens", s.getUserDeviceTokensHandler)
+	protected.PUT("/users/:id/device-token", s.updateDeviceTokenHandler)
 
-	v1.GET("/users/device-tokens", s.listDeviceTokensHandler)
-	v1.GET("/users/device-token/:id", s.getDeviceTokenHandler)
-	v1.POST("/users/:id/device-token", s.createDeviceTokenHandler)
-	v1.GET("/users/:id/device-tokens", s.getUserDeviceTokensHandler)
-	v1.PUT("/users/:id/device-token", s.updateDeviceTokenHandler)
+	protected.GET("/users/:id/merchandise/orders", s.listUserOrdersHandler)
+	protected.GET("/user/:id/merchandise/orders/:order_id", s.getUserOrderHandler)
+	protected.GET("/users/:id/merchandise/payments", s.listUserPaymentsHandler)
+	protected.GET("/user/:id/merchandise/payments/:payment_id", s.getUserPaymentHandler)
+
+	// roles
+	// protected.POST("/roles", s.createRoleHandler)
+	// protected.PUT("/roles/:id", s.updateRoleHandler)
+	// protected.GET("/roles/:id", s.getRoleHandler)
+	// protected.GET("/roles", s.listRolesHandler)
+	// protected.DELETE("/roles/:id", s.deleteRoleHandler)
+
+	// // users - roles
+	// protected.POST("/users/:id/roles", s.addUserRoleHandler)
+	// protected.DELETE("/users/:id/roles/:roleId", s.removeUserRoleHandler)
 
 	// departments routes
-	v1.POST("/departments", s.createDepartmentHandler)
-	v1.GET("/departments/:id", s.getDepartmentHandler)
-	v1.PUT("/departments/:id", s.updateDepartmentHandler)
-	v1.GET("/departments", s.listDepartmentsHandler)
+	protected.POST("/departments", s.createDepartmentHandler)
+	protected.PUT("/departments/:id", s.updateDepartmentHandler)
 
 	// registrars routes
-	v1.POST("/registrars", s.createRegistrarHandler)
-	v1.GET("/registrars/:id", s.getRegistrarHandler)
-	v1.PUT("/registrars/:id", s.updateRegistrarHandler)
-	v1.GET("/registrars", s.listRegistrarsHandler)
-	v1.DELETE("/registrars/:id", s.deleteRegistrarHandler)
+	protected.POST("/registrars", s.createRegistrarHandler)
+	protected.PUT("/registrars/:id", s.updateRegistrarHandler)
+	protected.DELETE("/registrars/:id", s.deleteRegistrarHandler)
 
 	// blogs routes
-	v1.POST("/blogs", s.createBlogHandler)
-	v1.GET("/blogs/:id", s.getBlogHandler)
-	v1.PUT("/blogs/:id", s.updateBlogHandler)
-	v1.PUT("/blogs/:id/publish", s.publishBlogHandler)
-	v1.GET("/blogs", s.listBlogsHandler)
-	v1.DELETE("/blogs/:id", s.deleteBlogHandler)
+	protected.POST("/blogs", s.createBlogHandler)
+	protected.GET("/blogs/:id", s.getBlogHandler)
+	protected.PUT("/blogs/:id", s.updateBlogHandler)
+	protected.PUT("/blogs/:id/publish", s.publishBlogHandler)
+	protected.GET("/blogs", s.listBlogsHandler)
+	protected.DELETE("/blogs/:id", s.deleteBlogHandler)
 
 	// events routes
-	v1.POST("/events", s.createEventHandler)
-	v1.GET("/events/:id", s.getEventHandler)
-	v1.PUT("/events/:id", s.updateEventHandler)
-	v1.PUT("/events/:id/publish", s.publishEventHandler)
-	v1.GET("/events", s.listEventsHandler)
-	v1.DELETE("/events/:id", s.deleteEventHandler)
+	protected.POST("/events", s.createEventHandler)
+	protected.GET("/events/:id", s.getEventHandler)
+	protected.PUT("/events/:id", s.updateEventHandler)
+	protected.PUT("/events/:id/publish", s.publishEventHandler)
+	protected.GET("/events", s.listEventsHandler)
+	protected.DELETE("/events/:id", s.deleteEventHandler)
 
-	v1.POST("/events/:id/attendees", s.addEventAttendeeHandler)
-	v1.GET("/events/:id/attendees", s.listEventAttendeesHandler)
+	protected.GET("/events/:id/attendees", s.listEventAttendeesHandler)
 
 	// career routes
-	v1.POST("/careers/job-postings", s.createJobPostingHandler)
-	v1.GET("/careers/job-postings/:id", s.getJobPostingHandler)
-	v1.PUT("/careers/job-postings/:id", s.updateJobPostingHandler)
-	v1.PUT("/careers/job-postings/:id/publish", s.publishJobPostingHandler)
-	v1.PUT("/careers/job-postings/:id/visibility", s.closeJobPostingHandler)
-	v1.GET("/careers/job-postings", s.listJobPostingsHandler)
-	v1.DELETE("/careers/job-postings/:id", s.deleteJobPostingHandler)
+	protected.POST("/careers/job-postings", s.createJobPostingHandler)
+	protected.GET("/careers/job-postings/:id", s.getJobPostingHandler)
+	protected.PUT("/careers/job-postings/:id", s.updateJobPostingHandler)
+	protected.PUT("/careers/job-postings/:id/publish", s.publishJobPostingHandler)
+	protected.PUT("/careers/job-postings/:id/visibility", s.closeJobPostingHandler)
+	protected.GET("/careers/job-postings", s.listJobPostingsHandler)
+	protected.DELETE("/careers/job-postings/:id", s.deleteJobPostingHandler)
 
-	v1.POST("/careers/job-applications", s.createJobApplicationHandler)
-	v1.GET("/careers/job-applications/:id", s.getJobApplicationHandler)
-	v1.PUT("/careers/job-applications/:id", s.updateJobApplicationHandler)
-	v1.GET("/careers/job-applications", s.listJobApplicationsHandler)
+	protected.GET("/careers/job-applications/:id", s.getJobApplicationHandler)
+	protected.PUT("/careers/job-applications/:id", s.updateJobApplicationHandler)
+	protected.GET("/careers/job-applications", s.listJobApplicationsHandler)
 
 	// news routes
-	v1.POST("/news/updates", s.createNewsHandler)
-	v1.GET("/news/updates/:id", s.getNewsHandler)
-	v1.PUT("/news/updates/:id", s.updateNewsHandler)
-	v1.PUT("/news/updates/:id/publish", s.publishNewsHandler)
-	v1.GET("/news/updates", s.listNewsHandler)
-	v1.DELETE("/news/updates/:id", s.deleteNewsHandler)
+	protected.POST("/news/updates", s.createNewsHandler)
+	protected.GET("/news/updates/:id", s.getNewsHandler)
+	protected.PUT("/news/updates/:id", s.updateNewsHandler)
+	protected.PUT("/news/updates/:id/publish", s.publishNewsHandler)
+	protected.GET("/news/updates", s.listNewsHandler)
+	protected.DELETE("/news/updates/:id", s.deleteNewsHandler)
 
-	v1.POST("/news/letter", s.createNewsletterHandler)
-	v1.GET("/news/letter/:id", s.getNewsletterHandler)
-	v1.PUT("/news/letter/:id", s.updateNewsletterHandler)
-	v1.PUT("/news/letter/:id/publish", s.publishNewsletterHandler)
-	v1.GET("/news/letter", s.listNewslettersHandler)
-	v1.DELETE("/news/letter/:id", s.deleteNewsletterHandler)
+	protected.POST("/news/letter", s.createNewsletterHandler)
+	protected.GET("/news/letter/:id", s.getNewsletterHandler)
+	protected.PUT("/news/letter/:id", s.updateNewsletterHandler)
+	protected.PUT("/news/letter/:id/publish", s.publishNewsletterHandler)
+	protected.GET("/news/letter", s.listNewslettersHandler)
+	protected.DELETE("/news/letter/:id", s.deleteNewsletterHandler)
 
 	// merchandise routes (categories, products, orders, payments)
-	v1.POST("/merchandise/categories", s.createCategoryHandler)
-	v1.GET("/merchandise/categories/:id", s.getCategoryHandler)
-	v1.PUT("/merchandise/categories/:id", s.updateCategoryHandler)
-	v1.GET("/merchandise/categories", s.listCategoriesHandler)
-	v1.DELETE("/merchandise/categories/:id", s.deleteCategoryHandler)
+	protected.POST("/merchandise/categories", s.createCategoryHandler)
+	protected.PUT("/merchandise/categories/:id", s.updateCategoryHandler)
+	protected.DELETE("/merchandise/categories/:id", s.deleteCategoryHandler)
 
-	v1.POST("/merchandise/products", s.createProductHandler)
-	v1.GET("/merchandise/products/:id", s.getProductHandler)
-	v1.PUT("/merchandise/products/:id", s.updateProductHandler)
-	v1.GET("/merchandise/products", s.listProductsHandler)
-	v1.DELETE("/merchandise/products/:id", s.deleteProductHandler)
+	protected.POST("/merchandise/products", s.createProductHandler)
+	protected.PUT("/merchandise/products/:id", s.updateProductHandler)
+	protected.DELETE("/merchandise/products/:id", s.deleteProductHandler)
 
-	v1.POST("/merchandise/orders", s.createOrderHandler)
-	v1.GET("/merchandise/orders/:id", s.getOrderHandler)
-	v1.PUT("/merchandise/orders/:id", s.updateOrderHandler)
-	v1.GET("/merchandise/orders", s.listOrdersHandler)
+	protected.POST("/users/:id/merchandise/orders", s.createOrderHandler)
+	protected.GET("/merchandise/orders/:id", s.getOrderHandler)
+	protected.PUT("/merchandise/orders/:id", s.updateOrderHandler)
+	protected.GET("/merchandise/orders", s.listOrdersHandler)
 
-	v1.POST("/merchandise/orders/:id/payments", s.createPaymentHandler)
-	v1.GET("/merchandise/payments/:id", s.getPaymentHandler)
-	v1.PUT("/merchandise/payments/:id", s.updatePaymentHandler)
-	v1.GET("/merchandise/payments", s.listPaymentsHandler)
+	protected.POST("/merchandise/orders/:id/payments/internal", s.createPaymentHandler)
+	protected.GET("/merchandise/payments/:id", s.getPaymentHandler)
+	protected.PUT("/merchandise/payments/:id", s.updatePaymentHandler)
+	protected.GET("/merchandise/payments", s.listPaymentsHandler)
 
 	// health check
-	v1.GET("/health-check", s.healthCheckHandler)
+	protected.GET("/health-check", s.healthCheckHandler)
+
+	s.srv = &http.Server{
+		Addr:         s.config.SERVER_ADDRESS,
+		Handler:      s.router.Handler(),
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
 
 }
 

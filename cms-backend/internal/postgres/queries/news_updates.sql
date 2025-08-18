@@ -7,6 +7,10 @@ RETURNING id;
 SELECT * FROM news_updates
 WHERE id = $1;
 
+-- name: GetPublishedNewsUpdate :one
+SELECT * FROM news_updates
+WHERE id = $1 AND published = TRUE AND deleted_at IS NULL;
+
 -- name: UpdateNewsUpdate :exec
 UPDATE news_updates
 SET title = COALESCE(sqlc.narg('title'), title),
@@ -48,7 +52,7 @@ WHERE
         OR published = sqlc.narg('published')
     )
     AND (
-        slqc.narg('start_date')::timestamptz IS NULL 
+        sqlc.narg('start_date')::timestamptz IS NULL 
         OR date >= sqlc.narg('start_date')
     )
     AND (
@@ -72,7 +76,7 @@ WHERE
         OR published = sqlc.narg('published')
     )
     AND (
-        slqc.narg('start_date')::timestamptz IS NULL 
+        sqlc.narg('start_date')::timestamptz IS NULL 
         OR date >= sqlc.narg('start_date')
     )
     AND (

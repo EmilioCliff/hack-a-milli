@@ -10,7 +10,7 @@ import (
 
 type createOrderReq struct {
 	Status        string                  `json:"status" binding:"required"`
-	PaymentStatus string                  `json:"payment_status" binding:"required,oneof=true,false"`
+	PaymentStatus string                  `json:"payment_status" binding:"required"`
 	OrderDetails  repository.OrderDetails `json:"order_details" binding:"required"`
 	Items         []struct {
 		ProductID int64  `json:"product_id" binding:"required"`
@@ -24,6 +24,11 @@ func (s *Server) createOrderHandler(ctx *gin.Context) {
 	var req createOrderReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(pkg.Errorf(pkg.INVALID_ERROR, err.Error())))
+		return
+	}
+
+	if len(req.Items) == 0 {
+		ctx.JSON(http.StatusBadRequest, errorResponse(pkg.Errorf(pkg.INVALID_ERROR, "at least one item is required in the order")))
 		return
 	}
 
@@ -41,7 +46,7 @@ func (s *Server) createOrderHandler(ctx *gin.Context) {
 	order.PaymentStatus = paymentStatusBool
 
 	reqCtx, _ := getRequestContext(ctx)
-	if reqCtx != nil {
+	if reqCtx.UserID != 0 {
 		order.UserID = &reqCtx.UserID
 	}
 
@@ -73,6 +78,28 @@ func (s *Server) getOrderHandler(ctx *gin.Context) {
 	}
 
 	order, err := s.repo.MerchRepository.GetOrder(ctx, id)
+	if err != nil {
+		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": order})
+}
+
+func (s *Server) getUserOrderHandler(ctx *gin.Context) {
+	orderID, err := pkg.StringToInt64(ctx.Param("order_id"))
+	if err != nil {
+		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
+		return
+	}
+
+	userId, err := pkg.StringToInt64(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
+		return
+	}
+
+	order, err := s.repo.MerchRepository.GetUserOrder(ctx, orderID, userId)
 	if err != nil {
 		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
 		return
@@ -147,6 +174,62 @@ func (s *Server) listOrdersHandler(ctx *gin.Context) {
 			return
 		}
 		filter.UserID = &userIDInt
+	}
+	if paymentStatus := ctx.Query("payment_status"); paymentStatus != "" {
+		paymentBool, err := pkg.StringToBool(paymentStatus)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, errorResponse(pkg.Errorf(pkg.INVALID_ERROR, err.Error())))
+			return
+		}
+		filter.PaymentStatus = &paymentBool
+	}
+
+	orders, pagination, err := s.repo.MerchRepository.ListOrders(ctx, &filter)
+	if err != nil {
+		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"data":       orders,
+		"pagination": pagination,
+	})
+}
+
+func (s *Server) listUserOrdersHandler(ctx *gin.Context) {
+	id, err := pkg.StringToInt64(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
+		return
+	}
+
+	pageNoStr := ctx.DefaultQuery("page", "1")
+	pageNo, err := pkg.StringToUint32(pageNoStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(pkg.Errorf(pkg.INVALID_ERROR, err.Error())))
+
+		return
+	}
+
+	pageSizeStr := ctx.DefaultQuery("limit", "10")
+	pageSize, err := pkg.StringToUint32(pageSizeStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(pkg.Errorf(pkg.INVALID_ERROR, err.Error())))
+
+		return
+	}
+
+	filter := repository.OrderFilter{
+		Pagination: &pkg.Pagination{
+			Page:     pageNo,
+			PageSize: pageSize,
+		},
+		UserID:        &id,
+		PaymentStatus: nil,
+		Status:        nil,
+	}
+	if status := ctx.Query("status"); status != "" {
+		filter.Status = &status
 	}
 	if paymentStatus := ctx.Query("payment_status"); paymentStatus != "" {
 		paymentBool, err := pkg.StringToBool(paymentStatus)

@@ -26,7 +26,7 @@ WHERE
         OR published = $2
     )
     AND (
-        slqc.narg('start_date')::timestamptz IS NULL 
+        $3::timestamptz IS NULL 
         OR date >= $3
     )
     AND (
@@ -132,6 +132,34 @@ func (q *Queries) GetNewsUpdate(ctx context.Context, id int64) (NewsUpdate, erro
 	return i, err
 }
 
+const getPublishedNewsUpdate = `-- name: GetPublishedNewsUpdate :one
+SELECT id, title, topic, date, min_read, content, cover_img, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at FROM news_updates
+WHERE id = $1 AND published = TRUE AND deleted_at IS NULL
+`
+
+func (q *Queries) GetPublishedNewsUpdate(ctx context.Context, id int64) (NewsUpdate, error) {
+	row := q.db.QueryRow(ctx, getPublishedNewsUpdate, id)
+	var i NewsUpdate
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Topic,
+		&i.Date,
+		&i.MinRead,
+		&i.Content,
+		&i.CoverImg,
+		&i.Published,
+		&i.PublishedAt,
+		&i.UpdatedBy,
+		&i.CreatedBy,
+		&i.DeletedBy,
+		&i.DeletedAt,
+		&i.UpdatedAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const listNewsUpdates = `-- name: ListNewsUpdates :many
 SELECT id, title, topic, date, min_read, content, cover_img, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at FROM news_updates
 WHERE 
@@ -146,7 +174,7 @@ WHERE
         OR published = $2
     )
     AND (
-        slqc.narg('start_date')::timestamptz IS NULL 
+        $3::timestamptz IS NULL 
         OR date >= $3
     )
     AND (

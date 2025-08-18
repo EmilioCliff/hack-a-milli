@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"log"
 
 	"github.com/EmilioCliff/hack-a-milli/cms-backend/internal/postgres/generated"
 	"github.com/EmilioCliff/hack-a-milli/cms-backend/internal/repository"
@@ -81,6 +82,8 @@ func (mr *MerchRepository) CreateOrder(ctx context.Context, order *repository.Or
 			}
 		}
 
+		order.ID = orderID
+
 		return nil
 	})
 	if err != nil {
@@ -144,6 +147,63 @@ func (mr *MerchRepository) GetOrder(ctx context.Context, id int64) (*repository.
 	return rslt, nil
 }
 
+func (mr *MerchRepository) GetUserOrder(ctx context.Context, orderId, userId int64) (*repository.Order, error) {
+	order, err := mr.queries.GetUserOrderByID(ctx, generated.GetUserOrderByIDParams{
+		ID:     orderId,
+		UserID: pgtype.Int8{Int64: userId, Valid: true},
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, pkg.Errorf(pkg.NOT_FOUND_ERROR, "order with ID %d not found", orderId)
+		}
+		return nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error fetching order by ID: %s", err.Error())
+	}
+
+	rslt := &repository.Order{
+		ID:            order.ID,
+		UserID:        nil,
+		Amount:        pkg.PgTypeNumericToFloat64(order.Amount),
+		Status:        order.Status,
+		PaymentStatus: order.PaymentStatus,
+		UpdatedBy:     nil,
+		UpdatedAt:     order.UpdatedAt,
+		CreatedAt:     order.CreatedAt,
+		User:          nil,
+		OrderItems:    nil,
+	}
+
+	if order.UserID.Valid {
+		rslt.UserID = &order.UserID.Int64
+	}
+	if order.UpdatedBy.Valid {
+		rslt.UpdatedBy = &order.UpdatedBy.Int64
+	}
+
+	var orderDetails repository.OrderDetails
+	if err := json.Unmarshal(order.OrderDetails, &orderDetails); err != nil {
+		return nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error unmarshalling order details: %s", err.Error())
+	}
+	rslt.OrderDetails = orderDetails
+
+	if len(order.OrderItems) > 0 {
+		var orderItems []repository.OrderItem
+		if err := json.Unmarshal(order.OrderItems, &orderItems); err != nil {
+			return nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error unmarshalling order items: %s", err.Error())
+		}
+		rslt.OrderItems = orderItems
+	}
+
+	if len(order.User) > 0 {
+		var user repository.User
+		if err := json.Unmarshal(order.User, &user); err != nil {
+			return nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error unmarshalling user: %s", err.Error())
+		}
+		rslt.User = &user
+	}
+
+	return rslt, nil
+}
+
 func (mr *MerchRepository) UpdateOrder(ctx context.Context, order *repository.UpdateOrder) (*repository.Order, error) {
 	updateParams := generated.UpdateOrderParams{
 		ID:            order.ID,
@@ -154,6 +214,9 @@ func (mr *MerchRepository) UpdateOrder(ctx context.Context, order *repository.Up
 	}
 
 	if order.UserID != nil {
+		if exists, _ := mr.queries.UserExists(ctx, *order.UserID); !exists {
+			return nil, pkg.Errorf(pkg.NOT_FOUND_ERROR, "user with ID %d not found", *order.UserID)
+		}
 		updateParams.UserID = pgtype.Int8{Int64: *order.UserID, Valid: true}
 	}
 	if order.Status != nil {
@@ -202,8 +265,8 @@ func (mr *MerchRepository) UpdateOrder(ctx context.Context, order *repository.Up
 
 func (mr *MerchRepository) ListOrders(ctx context.Context, filter *repository.OrderFilter) ([]*repository.Order, *pkg.Pagination, error) {
 	listParams := generated.ListOrdersParams{
+		Offset:        pkg.Offset(filter.Pagination.Page, filter.Pagination.PageSize),
 		Limit:         int32(filter.Pagination.PageSize),
-		Offset:        int32(filter.Pagination.Page * filter.Pagination.PageSize),
 		UserID:        pgtype.Int8{Valid: false},
 		Status:        pgtype.Text{Valid: false},
 		PaymentStatus: pgtype.Bool{Valid: false},
@@ -232,6 +295,8 @@ func (mr *MerchRepository) ListOrders(ctx context.Context, filter *repository.Or
 	if err != nil {
 		return nil, nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error listing orders: %s", err.Error())
 	}
+
+	log.Println(listParams)
 
 	count, err := mr.queries.CountOrders(ctx, countParams)
 	if err != nil {

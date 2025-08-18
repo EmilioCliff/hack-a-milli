@@ -9,24 +9,20 @@ import (
 )
 
 type createUserReq struct {
-	Email        string   `json:"email" binding:"required"`
-	FullName     string   `json:"full_name" binding:"required"`
-	PhoneNumber  string   `json:"phone_number" binding:"required"`
-	Password     string   `json:"password_hash" binding:"required"`
-	Role         []string `json:"role" binding:"required"`
-	DepartmentID *int64   `json:"department_id"`
-	Address      *string  `json:"address"`
+	Email       string `json:"email" binding:"required"`
+	FullName    string `json:"full_name" binding:"required"`
+	PhoneNumber string `json:"phone_number" binding:"required"`
+	Password    string `json:"password" binding:"required"`
+	// Role         []string `json:"role" binding:"required"`
+	RoleIDs      []int64 `json:"role_ids"`
+	DepartmentID *int64  `json:"department_id"`
+	Address      *string `json:"address"`
 }
 
 func (s *Server) userRegisterHandler(ctx *gin.Context) {
 	var req createUserReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(pkg.Errorf(pkg.INVALID_ERROR, err.Error())))
-		return
-	}
-
-	if len(req.Role) == 0 {
-		ctx.JSON(http.StatusBadRequest, errorResponse(pkg.Errorf(pkg.INVALID_ERROR, "role is required")))
 		return
 	}
 
@@ -41,7 +37,7 @@ func (s *Server) userRegisterHandler(ctx *gin.Context) {
 		FullName:     req.FullName,
 		PhoneNumber:  req.PhoneNumber,
 		PasswordHash: &hashPassword,
-		Role:         req.Role,
+		Role:         nil,
 	}
 
 	if req.DepartmentID != nil {
@@ -52,7 +48,23 @@ func (s *Server) userRegisterHandler(ctx *gin.Context) {
 		createUser.Address = req.Address
 	}
 
-	user, err := s.repo.UserRepository.CreateUser(ctx, createUser)
+	createdBy := 1 // system super_user
+	if len(req.RoleIDs) != 0 {
+		authCtx, err := getRequestContext(ctx)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
+
+		if authCtx.UserID == 0 {
+			ctx.JSON(http.StatusBadRequest, errorResponse(pkg.Errorf(pkg.INVALID_ERROR, "user ID is required for role assignment")))
+			return
+		}
+
+		createdBy = int(authCtx.UserID)
+	}
+
+	user, err := s.repo.UserRepository.CreateUser(ctx, createUser, req.RoleIDs, int64(createdBy))
 	if err != nil {
 		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
 		return
@@ -70,7 +82,7 @@ func (s *Server) userRegisterHandler(ctx *gin.Context) {
 		return
 	}
 
-	s.repo.UserRepository.UpdateUserCredentialsInternal(ctx, user.ID, "", refreshToken)
+	_ = s.repo.UserRepository.UpdateUserCredentialsInternal(ctx, user.ID, "", refreshToken)
 
 	authCtx, err := getRequestContext(ctx)
 	if err != nil {
@@ -109,7 +121,7 @@ func (s *Server) userRegisterHandler(ctx *gin.Context) {
 
 type userLoginReq struct {
 	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=8"`
+	Password string `json:"password" binding:"required"`
 }
 
 func (s *Server) userLoginHandler(ctx *gin.Context) {
@@ -217,7 +229,7 @@ func (s *Server) forgotPasswordHandler(ctx *gin.Context) {
 }
 
 type updateUserRoleReq struct {
-	Role []string `json:"role" binding:"required,oneof=admin user"`
+	RoleIDs []int64 `json:"role_ids" binding:"required"`
 }
 
 func (s *Server) updateUserRoleHandler(ctx *gin.Context) {
@@ -239,20 +251,12 @@ func (s *Server) updateUserRoleHandler(ctx *gin.Context) {
 		return
 	}
 
-	user, err := s.repo.UserRepository.UpdateUser(ctx, &repository.UpdateUser{
-		ID:        id,
-		Role:      &req.Role,
-		UpdatedBy: reqCtx.UserID,
-	})
-	if err != nil {
+	if err := s.repo.UserRepository.UpdateUserRole(ctx, id, req.RoleIDs, reqCtx.UserID); err != nil {
 		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"data":    user,
-		"success": "User role updated successfully",
-	})
+	ctx.JSON(http.StatusOK, gin.H{"success": "User role updated successfully"})
 }
 
 type updateUserDepartmentReq struct {

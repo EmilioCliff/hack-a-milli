@@ -22,7 +22,7 @@ func SetRequestContextMiddleware() gin.HandlerFunc {
 		userID := ctx.GetHeader("X-User-ID")
 		email := ctx.GetHeader("X-User-Email")
 		roles := ctx.GetHeader("X-User-Roles")
-		platform := ctx.GetHeader("X-User-Platform")
+		platform := ctx.GetHeader("X-User-Device")
 
 		reqCtx := requestContext{
 			Email:    email,
@@ -40,15 +40,15 @@ func SetRequestContextMiddleware() gin.HandlerFunc {
 	}
 }
 
-func getRequestContext(ctx *gin.Context) (*requestContext, error) {
+func getRequestContext(ctx *gin.Context) (requestContext, error) {
 	value, exists := ctx.Get(requestContextKey)
 	if !exists {
-		return nil, pkg.Errorf(pkg.INVALID_ERROR, "request context not found")
+		return requestContext{}, pkg.Errorf(pkg.INVALID_ERROR, "request context not found")
 	}
 
-	reqCtx, ok := value.(*requestContext)
+	reqCtx, ok := value.(requestContext)
 	if !ok {
-		return nil, pkg.Errorf(pkg.INVALID_ERROR, "invalid request context type")
+		return requestContext{}, pkg.Errorf(pkg.INVALID_ERROR, "invalid request context type")
 	}
 
 	return reqCtx, nil

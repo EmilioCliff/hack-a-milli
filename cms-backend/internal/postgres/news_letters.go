@@ -70,6 +70,44 @@ func (nr *NewsRepository) GetNewsLetter(ctx context.Context, id int64) (*reposit
 	return rslt, nil
 }
 
+func (nr *NewsRepository) GetPublishedNewsLetter(ctx context.Context, id int64) (*repository.NewsLetter, error) {
+	newsLetter, err := nr.queries.GetPublishedNewsLetter(ctx, id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, pkg.Errorf(pkg.NOT_FOUND_ERROR, "newsletter with ID %d not found", id)
+		}
+		return nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error retrieving newsletter: %s", err.Error())
+	}
+
+	rslt := &repository.NewsLetter{
+		ID:          newsLetter.ID,
+		Title:       newsLetter.Title,
+		Description: newsLetter.Description,
+		PdfUrl:      newsLetter.PdfUrl,
+		Date:        newsLetter.Date,
+		UpdatedBy:   newsLetter.UpdatedBy,
+		PublishedAt: nil,
+		Published:   newsLetter.Published,
+		UpdatedAt:   newsLetter.UpdatedAt,
+		CreatedBy:   newsLetter.CreatedBy,
+		CreatedAt:   newsLetter.CreatedAt,
+		DeletedBy:   nil,
+		DeletedAt:   nil,
+	}
+
+	if newsLetter.PublishedAt.Valid {
+		rslt.PublishedAt = &newsLetter.PublishedAt.Time
+	}
+	if newsLetter.DeletedBy.Valid {
+		rslt.DeletedBy = &newsLetter.DeletedBy.Int64
+	}
+	if newsLetter.DeletedAt.Valid {
+		rslt.DeletedAt = &newsLetter.DeletedAt.Time
+	}
+
+	return rslt, nil
+}
+
 func (nr *NewsRepository) ListNewsLetters(ctx context.Context, filter *repository.NewsLetterFilter) ([]*repository.NewsLetter, *pkg.Pagination, error) {
 	listParams := generated.ListNewsLettersParams{
 		Limit:     int32(filter.Pagination.PageSize),

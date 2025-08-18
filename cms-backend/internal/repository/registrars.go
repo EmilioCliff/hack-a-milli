@@ -25,16 +25,16 @@ type Registrar struct {
 }
 
 type UpdateRegistrar struct {
-	ID           int64    `json:"id"`
-	UpdatedBy    int64    `json:"updated_by"`
-	Email        *string  `json:"email"`
-	Name         *string  `json:"name"`
-	LogoUrl      *string  `json:"logo_url"`
-	Address      *string  `json:"address"`
-	Specialities []string `json:"specialities"`
-	PhoneNumber  *string  `json:"phone_number"`
-	WebsiteUrl   *string  `json:"website_url"`
-	DeletedBy    *int64   `json:"deleted_by"`
+	ID           int64     `json:"id"`
+	UpdatedBy    int64     `json:"updated_by"`
+	Email        *string   `json:"email"`
+	Name         *string   `json:"name"`
+	LogoUrl      *string   `json:"logo_url"`
+	Address      *string   `json:"address"`
+	Specialities *[]string `json:"specialities"`
+	PhoneNumber  *string   `json:"phone_number"`
+	WebsiteUrl   *string   `json:"website_url"`
+	DeletedBy    *int64    `json:"deleted_by"`
 }
 
 type RegistrarFilter struct {

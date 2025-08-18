@@ -1,6 +1,6 @@
 -- name: CreateUser :one
-INSERT INTO users (email, full_name, phone_number, address, password_hash, role, department_id, refresh_token)
-VALUES (sqlc.arg('email'), sqlc.arg('full_name'), sqlc.arg('phone_number'), sqlc.narg('address'), sqlc.arg('password_hash'), sqlc.arg('role'), sqlc.narg('department_id'), sqlc.narg('refresh_token'))
+INSERT INTO users (email, full_name, phone_number, address, password_hash, role, department_id, refresh_token, created_by)
+VALUES (sqlc.arg('email'), sqlc.arg('full_name'), sqlc.arg('phone_number'), sqlc.narg('address'), sqlc.arg('password_hash'), sqlc.arg('role'), sqlc.narg('department_id'), sqlc.narg('refresh_token'), sqlc.arg('created_by'))
 RETURNING id;
 
 -- name: GetUser :one
@@ -66,7 +66,7 @@ WHERE
     )
     AND (
         sqlc.narg('role')::text[] IS NULL 
-        OR u.role = ANY(sqlc.narg('role')::text[])
+        OR u.role && sqlc.narg('role')::text[]
     )
     AND (
         sqlc.narg('department_id')::bigint IS NULL 
@@ -91,7 +91,7 @@ WHERE
     )
     AND (
         sqlc.narg('role')::text[] IS NULL 
-        OR role = ANY(sqlc.narg('role')::text[])
+        OR role && sqlc.narg('role')::text[]
     )
     AND (
         sqlc.narg('department_id')::bigint IS NULL 

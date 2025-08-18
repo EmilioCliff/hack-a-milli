@@ -75,7 +75,7 @@ func (q *Queries) DeleteProductCategory(ctx context.Context, arg DeleteProductCa
 
 const getProductCategory = `-- name: GetProductCategory :one
 SELECT id, name, description, created_by, updated_by, deleted_by, deleted_at, updated_at, created_at FROM product_categories
-WHERE id = $1
+WHERE id = $1 AND deleted_at IS NULL
 `
 
 func (q *Queries) GetProductCategory(ctx context.Context, id int64) (ProductCategory, error) {

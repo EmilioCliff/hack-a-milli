@@ -9,7 +9,6 @@ import (
 )
 
 type createJobApplication struct {
-	JobID       int64  `json:"job_id" binding:"required"`
 	FullName    string `json:"full_name" binding:"required"`
 	Email       string `json:"email" binding:"required"`
 	PhoneNumber string `json:"phone_number" binding:"required"`
@@ -18,6 +17,12 @@ type createJobApplication struct {
 }
 
 func (s *Server) createJobApplicationHandler(ctx *gin.Context) {
+	id, err := pkg.StringToInt64(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
+		return
+	}
+
 	var req createJobApplication
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(pkg.Errorf(pkg.INVALID_ERROR, err.Error())))
@@ -25,7 +30,7 @@ func (s *Server) createJobApplicationHandler(ctx *gin.Context) {
 	}
 
 	jobApplication := &repository.JobApplication{
-		JobID:       req.JobID,
+		JobID:       id,
 		FullName:    req.FullName,
 		Email:       req.Email,
 		PhoneNumber: req.PhoneNumber,

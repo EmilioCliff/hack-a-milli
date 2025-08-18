@@ -7,6 +7,10 @@ RETURNING id;
 SELECT * FROM payments
 WHERE id = $1;
 
+-- name: GetUserPayment :one
+SELECT * FROM payments
+WHERE id = $1 and user_id = $2;
+
 -- name: UpdatePayment :one
 UPDATE payments
 SET user_id = COALESCE(sqlc.narg('user_id'), user_id),

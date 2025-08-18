@@ -115,6 +115,34 @@ func (q *Queries) GetPayment(ctx context.Context, id int64) (Payment, error) {
 	return i, err
 }
 
+const getUserPayment = `-- name: GetUserPayment :one
+SELECT id, order_id, user_id, payment_method, amount, status, updated_by, created_by, updated_at, created_at FROM payments
+WHERE id = $1 and user_id = $2
+`
+
+type GetUserPaymentParams struct {
+	ID     int64       `json:"id"`
+	UserID pgtype.Int8 `json:"user_id"`
+}
+
+func (q *Queries) GetUserPayment(ctx context.Context, arg GetUserPaymentParams) (Payment, error) {
+	row := q.db.QueryRow(ctx, getUserPayment, arg.ID, arg.UserID)
+	var i Payment
+	err := row.Scan(
+		&i.ID,
+		&i.OrderID,
+		&i.UserID,
+		&i.PaymentMethod,
+		&i.Amount,
+		&i.Status,
+		&i.UpdatedBy,
+		&i.CreatedBy,
+		&i.UpdatedAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const listPayments = `-- name: ListPayments :many
 SELECT 
     p.id, p.order_id, p.user_id, p.payment_method, p.amount, p.status, p.updated_by, p.created_by, p.updated_at, p.created_at,

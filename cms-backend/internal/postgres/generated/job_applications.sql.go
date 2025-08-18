@@ -12,6 +12,25 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const checkJobApplicationExists = `-- name: CheckJobApplicationExists :one
+SELECT EXISTS (
+    SELECT 1 FROM job_applications
+    WHERE job_id = $1 AND email = $2
+)
+`
+
+type CheckJobApplicationExistsParams struct {
+	JobID int64  `json:"job_id"`
+	Email string `json:"email"`
+}
+
+func (q *Queries) CheckJobApplicationExists(ctx context.Context, arg CheckJobApplicationExistsParams) (bool, error) {
+	row := q.db.QueryRow(ctx, checkJobApplicationExists, arg.JobID, arg.Email)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const countJobApplications = `-- name: CountJobApplications :one
 SELECT COUNT(*) FROM job_applications
 WHERE 

@@ -10,9 +10,9 @@ INSERT INTO events (
 VALUES (
     sqlc.arg('title'), sqlc.arg('topic'), sqlc.arg('content'), 
     sqlc.arg('cover_img'), sqlc.arg('start_time'), sqlc.arg('end_time'), 
-    sqlc.arg('status'), sqlc.narg('venue'), sqlc.narg('price'), 
-    sqlc.narg('agenda'), sqlc.narg('tags'), sqlc.narg('organizers'), 
-    sqlc.narg('partners'), sqlc.narg('speakers'), sqlc.narg('max_attendees'), 
+    sqlc.arg('status'), COALESCE(sqlc.narg('venue'), '{}'::jsonb), COALESCE(sqlc.narg('price'), 'free'), 
+    COALESCE(sqlc.narg('agenda'), '{}'::jsonb), COALESCE(sqlc.narg('tags'), '{}'::text[]), COALESCE(sqlc.narg('organizers'), '{}'::jsonb), 
+    COALESCE(sqlc.narg('partners'), '{}'::jsonb), COALESCE(sqlc.narg('speakers'), '{}'::jsonb), COALESCE(sqlc.narg('max_attendees'), 500), 
     sqlc.arg('updated_by'), sqlc.arg('created_by')
 )
 RETURNING id;
@@ -20,6 +20,20 @@ RETURNING id;
 -- name: GetEvent :one
 SELECT * FROM events
 WHERE id = $1;
+
+-- name: GetPublishedEvent :one
+SELECT * FROM events
+WHERE id = $1 AND published = TRUE AND deleted_at IS NULL;
+
+-- name: CheckEventIsPublishedAndUpcomingOrLive :one
+SELECT EXISTS(
+    SELECT 1 FROM events
+    WHERE id = sqlc.arg('event_id')
+    AND published = TRUE
+    AND deleted_at IS NULL
+    AND status IN ('upcoming', 'live')
+) AS is_published_and_upcoming_or_live;
+
 
 -- name: EventExists :one
 SELECT EXISTS(SELECT 1 FROM events WHERE id = $1) AS exists;
@@ -80,11 +94,11 @@ WHERE
     )
     AND (
         sqlc.narg('published')::boolean IS NULL 
-        OR b.published = sqlc.narg('published')
+        OR published = sqlc.narg('published')
     )
     AND (
         sqlc.narg('tags')::text[] IS NULL 
-        OR tags = ANY(sqlc.narg('tags')::text[])
+        OR tags && sqlc.narg('tags')::text[]
     )
     AND (
         sqlc.narg('start_time')::timestamptz IS NULL 
@@ -112,11 +126,11 @@ WHERE
     )
     AND (
         sqlc.narg('published')::boolean IS NULL 
-        OR b.published = sqlc.narg('published')
+        OR published = sqlc.narg('published')
     )
     AND (
         sqlc.narg('tags')::text[] IS NULL 
-        OR tags = ANY(sqlc.narg('tags')::text[])
+        OR tags && sqlc.narg('tags')::text[]
     )
     AND (
         sqlc.narg('start_time')::timestamptz IS NULL 

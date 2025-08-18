@@ -126,6 +126,32 @@ func (q *Queries) GetNewsLetter(ctx context.Context, id int64) (NewsLetter, erro
 	return i, err
 }
 
+const getPublishedNewsLetter = `-- name: GetPublishedNewsLetter :one
+SELECT id, title, description, pdf_url, date, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at FROM news_letters
+WHERE id = $1 AND published = TRUE AND deleted_at IS NULL
+`
+
+func (q *Queries) GetPublishedNewsLetter(ctx context.Context, id int64) (NewsLetter, error) {
+	row := q.db.QueryRow(ctx, getPublishedNewsLetter, id)
+	var i NewsLetter
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Description,
+		&i.PdfUrl,
+		&i.Date,
+		&i.Published,
+		&i.PublishedAt,
+		&i.UpdatedBy,
+		&i.CreatedBy,
+		&i.DeletedBy,
+		&i.DeletedAt,
+		&i.UpdatedAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const listNewsLetters = `-- name: ListNewsLetters :many
 SELECT id, title, description, pdf_url, date, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at FROM news_letters
 WHERE 

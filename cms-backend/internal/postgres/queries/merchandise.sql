@@ -8,7 +8,7 @@ SELECT p.*,
        c.name AS category_name
 FROM products p
 JOIN product_categories c ON p.category_id = c.id
-WHERE p.id = $1;
+WHERE p.id = $1 AND p.deleted_at IS NULL;
 
 -- name: UpdateProduct :one
 UPDATE products

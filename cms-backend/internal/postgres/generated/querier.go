@@ -13,7 +13,10 @@ import (
 type Querier interface {
 	AddEventRegisteredAttedee(ctx context.Context, eventID int64) error
 	ChangeVisibilityJobPosting(ctx context.Context, arg ChangeVisibilityJobPostingParams) error
+	CheckEventIsPublishedAndUpcomingOrLive(ctx context.Context, eventID int64) (bool, error)
 	CheckEventRegistrantExists(ctx context.Context, arg CheckEventRegistrantExistsParams) (bool, error)
+	CheckJobApplicationExists(ctx context.Context, arg CheckJobApplicationExistsParams) (bool, error)
+	CheckJobPostingIsPublished(ctx context.Context, id int64) (bool, error)
 	CountBlogs(ctx context.Context, arg CountBlogsParams) (int64, error)
 	CountDepartments(ctx context.Context, search pgtype.Text) (int64, error)
 	CountDeviceTokens(ctx context.Context, arg CountDeviceTokensParams) (int64, error)
@@ -72,10 +75,21 @@ type Querier interface {
 	GetPayment(ctx context.Context, id int64) (Payment, error)
 	GetProduct(ctx context.Context, id int64) (GetProductRow, error)
 	GetProductCategory(ctx context.Context, id int64) (ProductCategory, error)
+	GetPublishedBlog(ctx context.Context, id int64) (GetPublishedBlogRow, error)
+	GetPublishedEvent(ctx context.Context, id int64) (Event, error)
+	GetPublishedJobPosting(ctx context.Context, id int64) (GetPublishedJobPostingRow, error)
+	GetPublishedNewsLetter(ctx context.Context, id int64) (NewsLetter, error)
+	GetPublishedNewsUpdate(ctx context.Context, id int64) (NewsUpdate, error)
 	GetRegistrar(ctx context.Context, id int64) (Registrar, error)
+	GetRole(ctx context.Context, id int64) (RbacRole, error)
+	GetRoleByName(ctx context.Context, name string) (RbacRole, error)
 	GetUser(ctx context.Context, id int64) (GetUserRow, error)
 	GetUserInternal(ctx context.Context, email string) (GetUserInternalRow, error)
+	GetUserOrderByID(ctx context.Context, arg GetUserOrderByIDParams) (GetUserOrderByIDRow, error)
+	GetUserPayment(ctx context.Context, arg GetUserPaymentParams) (Payment, error)
 	GetUserPreferences(ctx context.Context, userID int64) (GetUserPreferencesRow, error)
+	GetUserRoles(ctx context.Context, userID int64) ([]RbacRole, error)
+	GrantRole(ctx context.Context, arg GrantRoleParams) error
 	ListBlogs(ctx context.Context, arg ListBlogsParams) ([]ListBlogsRow, error)
 	ListDepartments(ctx context.Context, arg ListDepartmentsParams) ([]Department, error)
 	ListDeviceTokens(ctx context.Context, arg ListDeviceTokensParams) ([]ListDeviceTokensRow, error)
@@ -92,6 +106,7 @@ type Querier interface {
 	ListRegistrars(ctx context.Context, arg ListRegistrarsParams) ([]Registrar, error)
 	ListUserPreferences(ctx context.Context, arg ListUserPreferencesParams) ([]ListUserPreferencesRow, error)
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]ListUsersRow, error)
+	LogAuditLog(ctx context.Context, arg LogAuditLogParams) error
 	ProductCategoryExists(ctx context.Context, id int64) (bool, error)
 	ProductExists(ctx context.Context, id int64) (bool, error)
 	PublishBlog(ctx context.Context, arg PublishBlogParams) error
@@ -99,6 +114,7 @@ type Querier interface {
 	PublishJobPosting(ctx context.Context, arg PublishJobPostingParams) error
 	PublishNewsLetter(ctx context.Context, arg PublishNewsLetterParams) error
 	PublishNewsUpdate(ctx context.Context, arg PublishNewsUpdateParams) (NewsUpdate, error)
+	RemoveUserRoles(ctx context.Context, userID int64) error
 	UpdateBlog(ctx context.Context, arg UpdateBlogParams) error
 	UpdateDepartment(ctx context.Context, arg UpdateDepartmentParams) error
 	UpdateDeviceToken(ctx context.Context, arg UpdateDeviceTokenParams) error

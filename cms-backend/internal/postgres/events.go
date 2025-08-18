@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"strings"
 
 	"github.com/EmilioCliff/hack-a-milli/cms-backend/internal/postgres/generated"
 	"github.com/EmilioCliff/hack-a-milli/cms-backend/internal/repository"
@@ -115,57 +116,26 @@ func (er *EventRepository) GetEvent(ctx context.Context, id int64) (*repository.
 		return nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error retrieving event: %s", err.Error())
 	}
 
-	rslt := &repository.Event{
-		ID:                  event.ID,
-		Title:               event.Title,
-		Topic:               event.Topic,
-		Content:             event.Content,
-		CoverImg:            event.CoverImg,
-		StartTime:           event.StartTime,
-		EndTime:             event.EndTime,
-		Status:              event.Status,
-		Price:               event.Price,
-		Tags:                event.Tags,
-		Venue:               repository.Venue{},
-		Agenda:              []repository.Agenda{},
-		Organizers:          []repository.Company{},
-		Partners:            []repository.Company{},
-		Speakers:            []repository.Speakers{},
-		MaxAttendees:        event.MaxAttendees,
-		RegisteredAttendees: event.RegisteredAttendees,
-		Published:           event.Published,
-		UpdatedBy:           event.UpdatedBy,
-		UpdatedAt:           event.UpdatedAt,
-		CreatedBy:           event.CreatedBy,
-		CreatedAt:           event.CreatedAt,
-		DeletedBy:           nil,
-		DeletedAt:           nil,
+	rslt, err := convertEventToRepositoryEvent(event)
+	if err != nil {
+		return nil, err
 	}
 
-	if err := json.Unmarshal(event.Venue, &rslt.Venue); err != nil {
-		return nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error unmarshalling venue: %s", err.Error())
-	}
-	if err := json.Unmarshal(event.Agenda, &rslt.Agenda); err != nil {
-		return nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error unmarshalling agenda: %s", err.Error())
-	}
-	if err := json.Unmarshal(event.Organizers, &rslt.Organizers); err != nil {
-		return nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error unmarshalling organizers: %s", err.Error())
-	}
-	if err := json.Unmarshal(event.Partners, &rslt.Partners); err != nil {
-		return nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error unmarshalling partners: %s", err.Error())
-	}
-	if err := json.Unmarshal(event.Speakers, &rslt.Speakers); err != nil {
-		return nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error unmarshalling speakers: %s", err.Error())
+	return rslt, nil
+}
+
+func (er *EventRepository) GetPublishedEvent(ctx context.Context, id int64) (*repository.Event, error) {
+	event, err := er.queries.GetPublishedEvent(ctx, id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, pkg.Errorf(pkg.NOT_FOUND_ERROR, "event with ID %d not found", id)
+		}
+		return nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error retrieving event: %s", err.Error())
 	}
 
-	if event.PublishedAt.Valid {
-		rslt.PublishedAt = &event.PublishedAt.Time
-	}
-	if event.DeletedBy.Valid {
-		rslt.DeletedBy = &event.DeletedBy.Int64
-	}
-	if event.DeletedAt.Valid {
-		rslt.DeletedAt = &event.DeletedAt.Time
+	rslt, err := convertEventToRepositoryEvent(event)
+	if err != nil {
+		return nil, err
 	}
 
 	return rslt, nil
@@ -179,8 +149,8 @@ func (er *EventRepository) UpdateEvent(ctx context.Context, event *repository.Up
 		Topic:               pgtype.Text{Valid: false},
 		Content:             pgtype.Text{Valid: false},
 		CoverImg:            pgtype.Text{Valid: false},
-		StartTime:           pgtype.Text{Valid: false},
-		EndTime:             pgtype.Text{Valid: false},
+		StartTime:           pgtype.Timestamptz{Valid: false},
+		EndTime:             pgtype.Timestamptz{Valid: false},
 		Status:              pgtype.Text{Valid: false},
 		Price:               pgtype.Text{Valid: false},
 		MaxAttendees:        pgtype.Int4{Valid: false},
@@ -206,10 +176,10 @@ func (er *EventRepository) UpdateEvent(ctx context.Context, event *repository.Up
 		updateParams.CoverImg = pgtype.Text{String: *event.CoverImg, Valid: true}
 	}
 	if event.StartTime != nil {
-		updateParams.StartTime = pgtype.Text{String: *event.StartTime, Valid: true}
+		updateParams.StartTime = pgtype.Timestamptz{Time: *event.StartTime, Valid: true}
 	}
 	if event.EndTime != nil {
-		updateParams.EndTime = pgtype.Text{String: *event.EndTime, Valid: true}
+		updateParams.EndTime = pgtype.Timestamptz{Time: *event.EndTime, Valid: true}
 	}
 	if event.Status != nil {
 		updateParams.Status = pgtype.Text{String: *event.Status, Valid: true}
@@ -218,7 +188,7 @@ func (er *EventRepository) UpdateEvent(ctx context.Context, event *repository.Up
 		updateParams.Price = pgtype.Text{String: *event.Price, Valid: true}
 	}
 	if event.Tags != nil {
-		updateParams.Tags = event.Tags
+		updateParams.Tags = *event.Tags
 	}
 	if event.MaxAttendees != nil {
 		updateParams.MaxAttendees = pgtype.Int4{Int32: *event.MaxAttendees, Valid: true}
@@ -355,57 +325,9 @@ func (er *EventRepository) ListEvent(ctx context.Context, filter *repository.Eve
 
 	rslt := make([]*repository.Event, len(events))
 	for i, event := range events {
-		rslt[i] = &repository.Event{
-			ID:                  event.ID,
-			Title:               event.Title,
-			Topic:               event.Topic,
-			Content:             event.Content,
-			CoverImg:            event.CoverImg,
-			StartTime:           event.StartTime,
-			EndTime:             event.EndTime,
-			Status:              event.Status,
-			Price:               event.Price,
-			Tags:                event.Tags,
-			Venue:               repository.Venue{},
-			Agenda:              []repository.Agenda{},
-			Organizers:          []repository.Company{},
-			Partners:            []repository.Company{},
-			Speakers:            []repository.Speakers{},
-			MaxAttendees:        event.MaxAttendees,
-			RegisteredAttendees: event.RegisteredAttendees,
-			Published:           event.Published,
-			UpdatedBy:           event.UpdatedBy,
-			UpdatedAt:           event.UpdatedAt,
-			CreatedBy:           event.CreatedBy,
-			CreatedAt:           event.CreatedAt,
-			DeletedBy:           nil,
-			DeletedAt:           nil,
-		}
-
-		if err := json.Unmarshal(event.Venue, &rslt[i].Venue); err != nil {
-			return nil, nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error unmarshalling venue: %s", err.Error())
-		}
-		if err := json.Unmarshal(event.Agenda, &rslt[i].Agenda); err != nil {
-			return nil, nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error unmarshalling agenda: %s", err.Error())
-		}
-		if err := json.Unmarshal(event.Organizers, &rslt[i].Organizers); err != nil {
-			return nil, nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error unmarshalling organizers: %s", err.Error())
-		}
-		if err := json.Unmarshal(event.Partners, &rslt[i].Partners); err != nil {
-			return nil, nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error unmarshalling partners: %s", err.Error())
-		}
-		if err := json.Unmarshal(event.Speakers, &rslt[i].Speakers); err != nil {
-			return nil, nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error unmarshalling speakers: %s", err.Error())
-		}
-
-		if event.PublishedAt.Valid {
-			rslt[i].PublishedAt = &event.PublishedAt.Time
-		}
-		if event.DeletedBy.Valid {
-			rslt[i].DeletedBy = &event.DeletedBy.Int64
-		}
-		if event.DeletedAt.Valid {
-			rslt[i].DeletedAt = &event.DeletedAt.Time
+		rslt[i], err = convertEventToRepositoryEvent(event)
+		if err != nil {
+			return nil, nil, err
 		}
 	}
 
@@ -435,6 +357,10 @@ func (er *EventRepository) CreateEventRegistrant(ctx context.Context, registrant
 		Email:   registrant.Email,
 	}); exists {
 		return nil, pkg.Errorf(pkg.ALREADY_EXISTS_ERROR, "registrant with email %s already exists for event ID %d", registrant.Email, registrant.EventID)
+	}
+
+	if exists, _ := er.queries.CheckEventIsPublishedAndUpcomingOrLive(ctx, registrant.EventID); !exists {
+		return nil, pkg.Errorf(pkg.NOT_FOUND_ERROR, "event with ID %d is not published or not upcoming/live", registrant.EventID)
 	}
 
 	registrantId, err := er.queries.CreateEventRegistrant(ctx, generated.CreateEventRegistrantParams{
@@ -485,4 +411,76 @@ func (er *EventRepository) ListEventRegistrants(ctx context.Context, eventID int
 	}
 
 	return rslt, pkg.CalculatePagination(uint32(count), pagination.PageSize, pagination.Page), nil
+}
+
+func convertEventToRepositoryEvent(event generated.Event) (*repository.Event, error) {
+	rslt := &repository.Event{
+		ID:                  event.ID,
+		Title:               event.Title,
+		Topic:               event.Topic,
+		Content:             event.Content,
+		CoverImg:            event.CoverImg,
+		StartTime:           event.StartTime,
+		EndTime:             event.EndTime,
+		Status:              event.Status,
+		Price:               event.Price,
+		Tags:                event.Tags,
+		Venue:               repository.Venue{},
+		Agenda:              []repository.Agenda{},
+		Organizers:          []repository.Company{},
+		Partners:            []repository.Company{},
+		Speakers:            []repository.Speakers{},
+		MaxAttendees:        event.MaxAttendees,
+		RegisteredAttendees: event.RegisteredAttendees,
+		Published:           event.Published,
+		UpdatedBy:           event.UpdatedBy,
+		UpdatedAt:           event.UpdatedAt,
+		CreatedBy:           event.CreatedBy,
+		CreatedAt:           event.CreatedAt,
+		DeletedBy:           nil,
+		DeletedAt:           nil,
+	}
+
+	if len(event.Venue) > 0 && !isEmptyJSON(event.Venue) {
+		if err := json.Unmarshal(event.Venue, &rslt.Venue); err != nil {
+			return nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error unmarshalling venue: %s", err.Error())
+		}
+	}
+	if len(event.Agenda) > 0 && !isEmptyJSON(event.Agenda) {
+		if err := json.Unmarshal(event.Agenda, &rslt.Agenda); err != nil {
+			return nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error unmarshalling agenda: %s", err.Error())
+		}
+	}
+	if len(event.Organizers) > 0 && !isEmptyJSON(event.Organizers) {
+		if err := json.Unmarshal(event.Organizers, &rslt.Organizers); err != nil {
+			return nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error unmarshalling organizers: %s", err.Error())
+		}
+	}
+	if len(event.Partners) > 0 && !isEmptyJSON(event.Partners) {
+		if err := json.Unmarshal(event.Partners, &rslt.Partners); err != nil {
+			return nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error unmarshalling partners: %s", err.Error())
+		}
+	}
+	if len(event.Speakers) > 0 && !isEmptyJSON(event.Speakers) {
+		if err := json.Unmarshal(event.Speakers, &rslt.Speakers); err != nil {
+			return nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error unmarshalling speakers: %s", err.Error())
+		}
+	}
+
+	if event.PublishedAt.Valid {
+		rslt.PublishedAt = &event.PublishedAt.Time
+	}
+	if event.DeletedBy.Valid {
+		rslt.DeletedBy = &event.DeletedBy.Int64
+	}
+	if event.DeletedAt.Valid {
+		rslt.DeletedAt = &event.DeletedAt.Time
+	}
+
+	return rslt, nil
+}
+
+func isEmptyJSON(data []byte) bool {
+	trimmed := strings.TrimSpace(string(data))
+	return trimmed == "{}" || trimmed == "[]" || trimmed == "null"
 }

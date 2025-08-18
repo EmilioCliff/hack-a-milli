@@ -140,6 +140,81 @@ func (q *Queries) GetOrder(ctx context.Context, id int64) (GetOrderRow, error) {
 	return i, err
 }
 
+const getUserOrderByID = `-- name: GetUserOrderByID :one
+SELECT 
+    o.id, o.user_id, o.amount, o.status, o.payment_status, o.order_details, o.updated_by, o.updated_at, o.created_at,
+    COALESCE(p1.order_items_json, '[]') as order_items,
+    COALESCE(p2.user_json, '{}') as user
+FROM orders o
+LEFT JOIN LATERAL (
+    SELECT json_agg(json_build_object(
+        'product_id', oi.product_id,
+        'size', oi.size,
+        'color', oi.color,
+        'quantity', oi.quantity,
+        'amount', oi.amount,
+        'product', json_build_object(
+            'id', p.id,
+            'name', p.name,
+            'price', p.price,
+            'image_url', p.image_url
+        )
+    )) AS order_items_json
+    FROM order_items oi
+    JOIN products p ON oi.product_id = p.id
+    WHERE oi.order_id = o.id
+) p1 ON true
+LEFT JOIN LATERAL (
+    SELECT json_build_object(
+        'id', u.id,
+        'email', u.email,
+        'full_name', u.full_name,
+        'role', u.role
+    ) AS user_json
+    FROM users u
+    WHERE u.id = o.user_id
+) p2 ON true
+WHERE o.id = $1 AND o.user_id = $2
+`
+
+type GetUserOrderByIDParams struct {
+	ID     int64       `json:"id"`
+	UserID pgtype.Int8 `json:"user_id"`
+}
+
+type GetUserOrderByIDRow struct {
+	ID            int64          `json:"id"`
+	UserID        pgtype.Int8    `json:"user_id"`
+	Amount        pgtype.Numeric `json:"amount"`
+	Status        string         `json:"status"`
+	PaymentStatus bool           `json:"payment_status"`
+	OrderDetails  []byte         `json:"order_details"`
+	UpdatedBy     pgtype.Int8    `json:"updated_by"`
+	UpdatedAt     time.Time      `json:"updated_at"`
+	CreatedAt     time.Time      `json:"created_at"`
+	OrderItems    []byte         `json:"order_items"`
+	User          []byte         `json:"user"`
+}
+
+func (q *Queries) GetUserOrderByID(ctx context.Context, arg GetUserOrderByIDParams) (GetUserOrderByIDRow, error) {
+	row := q.db.QueryRow(ctx, getUserOrderByID, arg.ID, arg.UserID)
+	var i GetUserOrderByIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Amount,
+		&i.Status,
+		&i.PaymentStatus,
+		&i.OrderDetails,
+		&i.UpdatedBy,
+		&i.UpdatedAt,
+		&i.CreatedAt,
+		&i.OrderItems,
+		&i.User,
+	)
+	return i, err
+}
+
 const listOrders = `-- name: ListOrders :many
 SELECT id, user_id, amount, status, payment_status, order_details, updated_by, updated_at, created_at FROM orders
 WHERE 

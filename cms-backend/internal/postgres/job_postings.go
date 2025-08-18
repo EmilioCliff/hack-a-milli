@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 
 	"github.com/EmilioCliff/hack-a-milli/cms-backend/internal/postgres/generated"
 	"github.com/EmilioCliff/hack-a-milli/cms-backend/internal/repository"
@@ -55,6 +56,53 @@ func (cr *CareerRepository) GetJobPosting(ctx context.Context, id int64) (*repos
 	jobPosting, err := cr.queries.GetJobPosting(ctx, id)
 	if err != nil {
 		return nil, pkg.Errorf(pkg.NOT_FOUND_ERROR, "job posting with ID %d not found", id)
+	}
+
+	rslt := &repository.JobPosting{
+		ID:             jobPosting.ID,
+		Title:          jobPosting.Title,
+		DepartmentID:   jobPosting.DepartmentID,
+		DepartmentName: jobPosting.DepartmentName,
+		Location:       jobPosting.Location,
+		EmploymentType: jobPosting.EmploymentType,
+		Content:        jobPosting.Content,
+		SalaryRange:    nil,
+		StartDate:      jobPosting.StartDate,
+		EndDate:        jobPosting.EndDate,
+		ShowCase:       jobPosting.ShowCase,
+		Published:      jobPosting.Published,
+		PublishedAt:    nil,
+		UpdatedBy:      jobPosting.UpdatedBy,
+		CreatedBy:      jobPosting.CreatedBy,
+		UpdatedAt:      jobPosting.UpdatedAt,
+		CreatedAt:      jobPosting.CreatedAt,
+		DeletedBy:      nil,
+		DeletedAt:      nil,
+	}
+
+	if jobPosting.SalaryRange.Valid {
+		rslt.SalaryRange = &jobPosting.SalaryRange.String
+	}
+	if jobPosting.PublishedAt.Valid {
+		rslt.PublishedAt = &jobPosting.PublishedAt.Time
+	}
+	if jobPosting.DeletedBy.Valid {
+		rslt.DeletedBy = &jobPosting.DeletedBy.Int64
+	}
+	if jobPosting.DeletedAt.Valid {
+		rslt.DeletedAt = &jobPosting.DeletedAt.Time
+	}
+
+	return rslt, nil
+}
+
+func (cr *CareerRepository) GetPublishedJobPosting(ctx context.Context, id int64) (*repository.JobPosting, error) {
+	jobPosting, err := cr.queries.GetPublishedJobPosting(ctx, id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, pkg.Errorf(pkg.NOT_FOUND_ERROR, "job posting with ID %d not found or published or show cased", id)
+		}
+		return nil, pkg.Errorf(pkg.NOT_FOUND_ERROR, "error retrieving job posting with ID %d: %s", id, err.Error())
 	}
 
 	rslt := &repository.JobPosting{
@@ -159,11 +207,31 @@ func (cr *CareerRepository) PublishJobPosting(ctx context.Context, jobPostingID 
 }
 
 func (cr *CareerRepository) ChangeJobPostingVisibility(ctx context.Context, jobPostingID int64, userID int64, showCase bool) (*repository.JobPosting, error) {
-	if err := cr.queries.ChangeVisibilityJobPosting(ctx, generated.ChangeVisibilityJobPostingParams{
-		ID:        jobPostingID,
-		ShowCase:  showCase,
-		UpdatedBy: userID,
-	}); err != nil {
+	params := generated.ChangeVisibilityJobPostingParams{
+		ID:          jobPostingID,
+		ShowCase:    showCase,
+		UpdatedBy:   userID,
+		Published:   pgtype.Bool{Valid: false},
+		PublishedAt: pgtype.Timestamptz{Valid: false},
+	}
+
+	// if we showcasing the job posting, we need to check if it is already published
+	if showCase {
+		isPublished, err := cr.queries.CheckJobPostingIsPublished(ctx, jobPostingID)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, pkg.Errorf(pkg.NOT_FOUND_ERROR, "job posting with ID %d not found or not published", jobPostingID)
+			}
+			return nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error checking if job posting with ID %d is published: %s", jobPostingID, err.Error())
+		}
+
+		if !isPublished {
+			params.Published = pgtype.Bool{Bool: true, Valid: true}
+			params.PublishedAt = pgtype.Timestamptz{Time: time.Now(), Valid: true}
+		}
+	}
+
+	if err := cr.queries.ChangeVisibilityJobPosting(ctx, params); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, pkg.Errorf(pkg.NOT_FOUND_ERROR, "job posting with ID %d not found", jobPostingID)
 		}
@@ -180,12 +248,14 @@ func (cr *CareerRepository) ListJobPosting(ctx context.Context, filter *reposito
 		Search:         pgtype.Text{Valid: false},
 		EmploymentType: pgtype.Text{Valid: false},
 		Published:      pgtype.Bool{Valid: false},
+		ShowCase:       pgtype.Bool{Valid: false},
 	}
 
 	countParams := generated.CountJobPostingsParams{
 		Search:         pgtype.Text{Valid: false},
 		EmploymentType: pgtype.Text{Valid: false},
 		Published:      pgtype.Bool{Valid: false},
+		ShowCase:       pgtype.Bool{Valid: false},
 	}
 
 	if filter.Search != nil {
@@ -200,6 +270,10 @@ func (cr *CareerRepository) ListJobPosting(ctx context.Context, filter *reposito
 	if filter.Published != nil {
 		listParams.Published = pgtype.Bool{Bool: *filter.Published, Valid: true}
 		countParams.Published = pgtype.Bool{Bool: *filter.Published, Valid: true}
+	}
+	if filter.ShowCase != nil {
+		listParams.ShowCase = pgtype.Bool{Bool: *filter.ShowCase, Valid: true}
+		countParams.ShowCase = pgtype.Bool{Bool: *filter.ShowCase, Valid: true}
 	}
 
 	jobPostings, err := cr.queries.ListJobPostings(ctx, listParams)

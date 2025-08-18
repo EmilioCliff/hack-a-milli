@@ -95,6 +95,53 @@ func (br *BlogRepository) GetBlog(ctx context.Context, id int64) (*repository.Bl
 	return rslt, nil
 }
 
+func (br *BlogRepository) GetPublishedBlog(ctx context.Context, id int64) (*repository.Blog, error) {
+	blog, err := br.queries.GetPublishedBlog(ctx, id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, pkg.Errorf(pkg.NOT_FOUND_ERROR, "blog with ID %d not found or isnt published yet", id)
+		}
+		return nil, pkg.Errorf(pkg.NOT_FOUND_ERROR, "blog with ID %d fetch error", id)
+	}
+
+	rslt := &repository.Blog{
+		ID:            blog.ID,
+		Title:         blog.Title,
+		Author:        blog.Author,
+		CoverImg:      blog.CoverImg,
+		Topic:         blog.Topic,
+		Description:   blog.Description,
+		Content:       blog.Content,
+		Views:         blog.Views,
+		MinRead:       blog.MinRead,
+		Published:     blog.Published,
+		PublishedAt:   nil,
+		UpdatedBy:     blog.UpdatedBy,
+		UpdatedAt:     blog.UpdatedAt,
+		DeletedBy:     nil,
+		DeletedAt:     nil,
+		CreatedBy:     blog.CreatedBy,
+		CreatedAt:     blog.CreatedAt,
+		AuthorDetails: &repository.User{},
+	}
+
+	if blog.PublishedAt.Valid {
+		rslt.PublishedAt = &blog.PublishedAt.Time
+	}
+	if blog.DeletedBy.Valid {
+		rslt.DeletedBy = &blog.DeletedBy.Int64
+	}
+	if blog.DeletedAt.Valid {
+		rslt.DeletedAt = &blog.DeletedAt.Time
+	}
+
+	if err := json.Unmarshal(blog.AuthorDetails, &rslt.AuthorDetails); err != nil {
+		return nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error unmarshalling author details: %s", err.Error())
+	}
+
+	return rslt, nil
+}
+
 func (br *BlogRepository) UpdateBlog(ctx context.Context, blog *repository.UpdateBlog) (*repository.Blog, error) {
 	updateParams := generated.UpdateBlogParams{
 		ID:          blog.ID,

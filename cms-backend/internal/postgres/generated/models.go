@@ -30,6 +30,17 @@ type Blog struct {
 	CreatedAt   time.Time          `json:"created_at"`
 }
 
+type CasbinRule struct {
+	ID    string      `json:"id"`
+	Ptype pgtype.Text `json:"ptype"`
+	V0    pgtype.Text `json:"v0"`
+	V1    pgtype.Text `json:"v1"`
+	V2    pgtype.Text `json:"v2"`
+	V3    pgtype.Text `json:"v3"`
+	V4    pgtype.Text `json:"v4"`
+	V5    pgtype.Text `json:"v5"`
+}
+
 type Department struct {
 	ID   int64  `json:"id"`
 	Name string `json:"name"`
@@ -50,8 +61,8 @@ type Event struct {
 	Topic               string             `json:"topic"`
 	Content             string             `json:"content"`
 	CoverImg            string             `json:"cover_img"`
-	StartTime           string             `json:"start_time"`
-	EndTime             string             `json:"end_time"`
+	StartTime           time.Time          `json:"start_time"`
+	EndTime             time.Time          `json:"end_time"`
 	Status              string             `json:"status"`
 	Venue               []byte             `json:"venue"`
 	Price               string             `json:"price"`
@@ -213,6 +224,68 @@ type ProductCategory struct {
 	CreatedAt   time.Time          `json:"created_at"`
 }
 
+type RbacAction struct {
+	ID          int64     `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+type RbacAuditLog struct {
+	ID          int64     `json:"id"`
+	Action      string    `json:"action"`
+	EntityType  string    `json:"entity_type"`
+	EntityID    int64     `json:"entity_id"`
+	OldValues   []byte    `json:"old_values"`
+	NewValues   []byte    `json:"new_values"`
+	PerformedBy int64     `json:"performed_by"`
+	PerformedAt time.Time `json:"performed_at"`
+}
+
+type RbacPermission struct {
+	ID          int64     `json:"id"`
+	ResourceID  int64     `json:"resource_id"`
+	ActionID    int64     `json:"action_id"`
+	Description string    `json:"description"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+type RbacResource struct {
+	ID          int64     `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+type RbacRole struct {
+	ID           int64       `json:"id"`
+	Name         string      `json:"name"`
+	Description  string      `json:"description"`
+	IsSystemRole bool        `json:"is_system_role"`
+	IsActive     bool        `json:"is_active"`
+	CreatedBy    int64       `json:"created_by"`
+	UpdatedBy    pgtype.Int8 `json:"updated_by"`
+	CreatedAt    time.Time   `json:"created_at"`
+	UpdatedAt    time.Time   `json:"updated_at"`
+}
+
+type RbacRolePermission struct {
+	RoleID       int64     `json:"role_id"`
+	PermissionID int64     `json:"permission_id"`
+	GrantedBy    int64     `json:"granted_by"`
+	GrantedAt    time.Time `json:"granted_at"`
+}
+
+type RbacUserRole struct {
+	UserID     int64              `json:"user_id"`
+	RoleID     int64              `json:"role_id"`
+	AssignedBy int64              `json:"assigned_by"`
+	AssignedAt time.Time          `json:"assigned_at"`
+	ExpiresAt  pgtype.Timestamptz `json:"expires_at"`
+}
+
 type Registrar struct {
 	ID           int64              `json:"id"`
 	Email        string             `json:"email"`
@@ -244,7 +317,7 @@ type User struct {
 	MultifactorAuthentication bool        `json:"multifactor_authentication"`
 	RefreshToken              string      `json:"refresh_token"`
 	UpdatedBy                 pgtype.Int8 `json:"updated_by"`
-	CreatedBy                 pgtype.Int8 `json:"created_by"`
+	CreatedBy                 int64       `json:"created_by"`
 	UpdatedAt                 time.Time   `json:"updated_at"`
 	CreatedAt                 time.Time   `json:"created_at"`
 }

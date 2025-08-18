@@ -85,12 +85,14 @@ type ProductRepository interface {
 	// Order Methods
 	CreateOrder(ctx context.Context, order *Order, orderItems []OrderItem) (*Order, error)
 	GetOrder(ctx context.Context, id int64) (*Order, error)
+	GetUserOrder(ctx context.Context, orderId int64, userId int64) (*Order, error)
 	UpdateOrder(ctx context.Context, order *UpdateOrder) (*Order, error)
 	ListOrders(ctx context.Context, filter *OrderFilter) ([]*Order, *pkg.Pagination, error)
 
 	// Payment Methods
 	CreatePayment(ctx context.Context, payment *Payment) (*Payment, error)
 	GetPayment(ctx context.Context, id int64) (*Payment, error)
+	GetUserPayment(ctx context.Context, paymentId int64, userId int64) (*Payment, error)
 	UpdatePayment(ctx context.Context, payment *UpdatePayment) (*Payment, error)
 	ListPayment(ctx context.Context, filter *PaymentFilter) ([]*Payment, *pkg.Pagination, error)
 }

@@ -19,16 +19,16 @@ WHERE
     deleted_at IS NULL
     AND (
         $1::bigint IS NULL 
-        OR b.author = $1
+        OR author = $1
     ) 
     AND (
         COALESCE($2::text, '') = '' 
-        OR LOWER(b.title) LIKE $2
-        OR LOWER(b.topic) LIKE $2
+        OR LOWER(title) LIKE $2
+        OR LOWER(topic) LIKE $2
     )
     AND (
         $3::boolean IS NULL 
-        OR b.published = $3
+        OR published = $3
     )
 `
 
@@ -138,6 +138,70 @@ type GetBlogRow struct {
 func (q *Queries) GetBlog(ctx context.Context, id int64) (GetBlogRow, error) {
 	row := q.db.QueryRow(ctx, getBlog, id)
 	var i GetBlogRow
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Author,
+		&i.CoverImg,
+		&i.Topic,
+		&i.Description,
+		&i.Content,
+		&i.Views,
+		&i.MinRead,
+		&i.Published,
+		&i.PublishedAt,
+		&i.UpdatedBy,
+		&i.CreatedBy,
+		&i.DeletedBy,
+		&i.DeletedAt,
+		&i.UpdatedAt,
+		&i.CreatedAt,
+		&i.AuthorDetails,
+	)
+	return i, err
+}
+
+const getPublishedBlog = `-- name: GetPublishedBlog :one
+SELECT b.id, b.title, b.author, b.cover_img, b.topic, b.description, b.content, b.views, b.min_read, b.published, b.published_at, b.updated_by, b.created_by, b.deleted_by, b.deleted_at, b.updated_at, b.created_at,
+       COALESCE(p1.author_json, '{}') AS author_details
+FROM blogs b
+LEFT JOIN LATERAL (
+    SELECT json_build_object(
+        'id', u.id,
+        'email', u.email,
+        'full_name', u.full_name,
+        'role', u.role
+    ) AS author_json
+    FROM users u
+    WHERE u.id = b.author
+) p1 ON true
+WHERE b.id = $1 AND b.published = TRUE AND b.deleted_at IS NULL
+`
+
+type GetPublishedBlogRow struct {
+	ID            int64              `json:"id"`
+	Title         string             `json:"title"`
+	Author        int64              `json:"author"`
+	CoverImg      string             `json:"cover_img"`
+	Topic         string             `json:"topic"`
+	Description   string             `json:"description"`
+	Content       string             `json:"content"`
+	Views         int32              `json:"views"`
+	MinRead       int32              `json:"min_read"`
+	Published     bool               `json:"published"`
+	PublishedAt   pgtype.Timestamptz `json:"published_at"`
+	UpdatedBy     int64              `json:"updated_by"`
+	CreatedBy     int64              `json:"created_by"`
+	DeletedBy     pgtype.Int8        `json:"deleted_by"`
+	DeletedAt     pgtype.Timestamptz `json:"deleted_at"`
+	UpdatedAt     time.Time          `json:"updated_at"`
+	CreatedAt     time.Time          `json:"created_at"`
+	AuthorDetails []byte             `json:"author_details"`
+}
+
+func (q *Queries) GetPublishedBlog(ctx context.Context, id int64) (GetPublishedBlogRow, error) {
+	row := q.db.QueryRow(ctx, getPublishedBlog, id)
+	var i GetPublishedBlogRow
 	err := row.Scan(
 		&i.ID,
 		&i.Title,

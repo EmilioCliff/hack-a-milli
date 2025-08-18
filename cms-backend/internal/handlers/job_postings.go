@@ -74,6 +74,22 @@ func (s *Server) getJobPostingHandler(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"data": jobPosting})
 }
 
+func (s *Server) getPublishedJobPostingHandler(ctx *gin.Context) {
+	id, err := pkg.StringToInt64(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
+		return
+	}
+
+	jobPosting, err := s.repo.CareerRepository.GetPublishedJobPosting(ctx, id)
+	if err != nil {
+		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": jobPosting})
+}
+
 func (s *Server) updateJobPostingHandler(ctx *gin.Context) {
 	id, err := pkg.StringToInt64(ctx.Param("id"))
 	if err != nil {
@@ -140,20 +156,14 @@ func (s *Server) closeJobPostingHandler(ctx *gin.Context) {
 	}
 
 	var req struct {
-		ShowCase string `json:"show_case" binding:"required,oneof=true,false"`
+		ShowCase bool `json:"show_case"`
 	}
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(pkg.Errorf(pkg.INVALID_ERROR, err.Error())))
 		return
 	}
 
-	showCaseBool, err := pkg.StringToBool(req.ShowCase)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	job, err := s.repo.CareerRepository.ChangeJobPostingVisibility(ctx, id, reqCtx.UserID, showCaseBool)
+	job, err := s.repo.CareerRepository.ChangeJobPostingVisibility(ctx, id, reqCtx.UserID, req.ShowCase)
 	if err != nil {
 		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
 		return
@@ -216,7 +226,55 @@ func (s *Server) listJobPostingsHandler(ctx *gin.Context) {
 			ctx.JSON(http.StatusBadRequest, errorResponse(err))
 			return
 		}
-		filter.Published = &showCaseBool
+		filter.ShowCase = &showCaseBool
+	}
+
+	jobPostings, pagination, err := s.repo.CareerRepository.ListJobPosting(ctx, &filter)
+	if err != nil {
+		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"data":       jobPostings,
+		"pagination": pagination,
+	})
+}
+
+func (s *Server) listPublishedJobPostingsHandler(ctx *gin.Context) {
+	pageNoStr := ctx.DefaultQuery("page", "1")
+	pageNo, err := pkg.StringToUint32(pageNoStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(pkg.Errorf(pkg.INVALID_ERROR, err.Error())))
+
+		return
+	}
+
+	pageSizeStr := ctx.DefaultQuery("limit", "10")
+	pageSize, err := pkg.StringToUint32(pageSizeStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(pkg.Errorf(pkg.INVALID_ERROR, err.Error())))
+
+		return
+	}
+
+	published := true // Default to published job postings
+	filter := repository.JobPostingFilter{
+		Pagination: &pkg.Pagination{
+			Page:     pageNo,
+			PageSize: pageSize,
+		},
+		Published:      &published,
+		ShowCase:       &published, // Show only job postings that are showcased
+		Search:         nil,
+		EmploymentType: nil,
+	}
+
+	if search := ctx.Query("search"); search != "" {
+		filter.Search = &search
+	}
+	if employmentType := ctx.Query("employment_type"); employmentType != "" {
+		filter.EmploymentType = &employmentType
 	}
 
 	jobPostings, pagination, err := s.repo.CareerRepository.ListJobPosting(ctx, &filter)

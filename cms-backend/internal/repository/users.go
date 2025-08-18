@@ -22,7 +22,7 @@ type User struct {
 	AccountVerified           bool      `json:"account_verified"`
 	MultifactorAuthentication bool      `json:"multifactor_authentication"`
 	UpdatedBy                 *int64    `json:"updated_by"`
-	CreatedBy                 *int64    `json:"created_by"`
+	CreatedBy                 int64     `json:"created_by"`
 	UpdatedAt                 time.Time `json:"updated_at"`
 	CreatedAt                 time.Time `json:"created_at"`
 }
@@ -52,11 +52,14 @@ type UserFilter struct {
 
 type UserRepositort interface {
 	// User Methods
-	CreateUser(ctx context.Context, user *User) (*User, error)
+	CreateUser(ctx context.Context, user *User, roleIds []int64, assignedBy int64) (*User, error)
 	GetUser(ctx context.Context, id int64) (*User, error)
 	UpdateUser(ctx context.Context, user *UpdateUser) (*User, error)
 	ListUser(ctx context.Context, filter *UserFilter) ([]*User, *pkg.Pagination, error)
 	DeleteUser(ctx context.Context, userToDeleteID int64, userID int64) error
+
+	// User roles
+	UpdateUserRole(ctx context.Context, userID int64, roleIDs []int64, updatedBy int64) error
 
 	// User Internal Methods
 	GetUserInternal(ctx context.Context, email string) (*User, error)

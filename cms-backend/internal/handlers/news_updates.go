@@ -9,14 +9,12 @@ import (
 )
 
 type NewsUpdate struct {
-	Title     string `json:"title" binding:"required"`
-	Topic     string `json:"topic" binding:"required"`
-	Date      string `json:"date" binding:"required"`
-	MinRead   int32  `json:"min_read" binding:"required"`
-	Content   string `json:"content" binding:"required"`
-	CoverImg  string `json:"cover_img" binding:"required"`
-	UpdatedBy int64  `json:"updated_by" binding:"required"`
-	CreatedBy int64  `json:"created_by" binding:"required"`
+	Title    string `json:"title" binding:"required"`
+	Topic    string `json:"topic" binding:"required"`
+	Date     string `json:"date" binding:"required"`
+	MinRead  int32  `json:"min_read" binding:"required"`
+	Content  string `json:"content" binding:"required"`
+	CoverImg string `json:"cover_img" binding:"required"`
 }
 
 func (s *Server) createNewsHandler(ctx *gin.Context) {
@@ -60,6 +58,22 @@ func (s *Server) getNewsHandler(ctx *gin.Context) {
 	}
 
 	news, err := s.repo.NewsRepository.GetNewsUpdate(ctx, id)
+	if err != nil {
+		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": news})
+}
+
+func (s *Server) getPublishedNewsHandler(ctx *gin.Context) {
+	id, err := pkg.StringToInt64(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
+		return
+	}
+
+	news, err := s.repo.NewsRepository.GetPublishedNewsUpdate(ctx, id)
 	if err != nil {
 		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
 		return
@@ -187,6 +201,60 @@ func (s *Server) listNewsHandler(ctx *gin.Context) {
 	})
 }
 
+func (s *Server) listPublishedNewsHandler(ctx *gin.Context) {
+	pageNoStr := ctx.DefaultQuery("page", "1")
+	pageNo, err := pkg.StringToUint32(pageNoStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(pkg.Errorf(pkg.INVALID_ERROR, err.Error())))
+
+		return
+	}
+
+	pageSizeStr := ctx.DefaultQuery("limit", "10")
+	pageSize, err := pkg.StringToUint32(pageSizeStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(pkg.Errorf(pkg.INVALID_ERROR, err.Error())))
+
+		return
+	}
+
+	published := true // Default to true for published news updates
+	filter := repository.NewsUpdateFilter{
+		Pagination: &pkg.Pagination{
+			Page:     pageNo,
+			PageSize: pageSize,
+		},
+		Published: &published,
+		Search:    nil,
+		StartDate: nil,
+		EndDate:   nil,
+	}
+
+	if search := ctx.Query("search"); search != "" {
+		filter.Search = &search
+	}
+	if startDate := ctx.Query("start_date"); startDate != "" {
+		startTime := pkg.StringToTime(startDate)
+		filter.StartDate = &startTime
+	}
+
+	if endDate := ctx.Query("end_date"); endDate != "" {
+		endTime := pkg.StringToTime(endDate)
+		filter.EndDate = &endTime
+	}
+
+	newsUpdates, pagination, err := s.repo.NewsRepository.ListNewsUpdate(ctx, &filter)
+	if err != nil {
+		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"data":       newsUpdates,
+		"pagination": pagination,
+	})
+}
+
 func (s *Server) deleteNewsHandler(ctx *gin.Context) {
 	id, err := pkg.StringToInt64(ctx.Param("id"))
 	if err != nil {
@@ -206,5 +274,5 @@ func (s *Server) deleteNewsHandler(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusNoContent, gin.H{"success": "News deleted successfully"})
+	ctx.JSON(http.StatusOK, gin.H{"success": "News deleted successfully"})
 }

@@ -95,7 +95,7 @@ SELECT p.id, p.category_id, p.name, p.price, p.image_url, p.description, p.items
        c.name AS category_name
 FROM products p
 JOIN product_categories c ON p.category_id = c.id
-WHERE p.id = $1
+WHERE p.id = $1 AND p.deleted_at IS NULL
 `
 
 type GetProductRow struct {

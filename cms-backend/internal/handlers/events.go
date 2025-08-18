@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/EmilioCliff/hack-a-milli/cms-backend/internal/repository"
 	"github.com/EmilioCliff/hack-a-milli/cms-backend/pkg"
@@ -44,8 +45,6 @@ func (s *Server) createEventHandler(ctx *gin.Context) {
 		Topic:        req.Topic,
 		Content:      req.Content,
 		CoverImg:     req.CoverImg,
-		StartTime:    req.StartTime,
-		EndTime:      req.EndTime,
 		Status:       req.Status,
 		MaxAttendees: req.MaxAttendees,
 		Price:        req.Price,
@@ -57,6 +56,19 @@ func (s *Server) createEventHandler(ctx *gin.Context) {
 		Speakers:     req.Speakers,
 		CreatedBy:    reqCtx.UserID,
 		UpdatedBy:    reqCtx.UserID,
+	}
+
+	// timeFormat := "Monday 02 Jan 2006 - 3:04PM"
+	event.StartTime, err = time.Parse("Monday 02 Jan 2006 - 3:04PM", req.StartTime)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(pkg.Errorf(pkg.INVALID_ERROR, "invalid start time format: %s", err.Error())))
+		return
+	}
+
+	event.EndTime, err = time.Parse("Monday 02 Jan 2006 - 3:04PM", req.EndTime)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(pkg.Errorf(pkg.INVALID_ERROR, "invalid start time format: %s", err.Error())))
+		return
 	}
 
 	createdEvent, err := s.repo.EventRepository.CreateEvent(ctx, event)
@@ -76,6 +88,22 @@ func (s *Server) getEventHandler(ctx *gin.Context) {
 	}
 
 	event, err := s.repo.EventRepository.GetEvent(ctx, id)
+	if err != nil {
+		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": event})
+}
+
+func (s *Server) getPublishedEventHandler(ctx *gin.Context) {
+	id, err := pkg.StringToInt64(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
+		return
+	}
+
+	event, err := s.repo.EventRepository.GetPublishedEvent(ctx, id)
 	if err != nil {
 		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
 		return
@@ -182,6 +210,68 @@ func (s *Server) listEventsHandler(ctx *gin.Context) {
 			return
 		}
 		filter.Published = &publishedBool
+	}
+	if startDate := ctx.Query("start_date"); startDate != "" {
+		startTime := pkg.StringToTime(startDate)
+		filter.StartTime = &startTime
+	}
+	if endDate := ctx.Query("end_date"); endDate != "" {
+		endTime := pkg.StringToTime(endDate)
+		filter.EndTime = &endTime
+	}
+	if tags := ctx.QueryArray("tags"); len(tags) > 0 {
+		filter.Tags = &tags
+	}
+
+	data, pagination, err := s.repo.EventRepository.ListEvent(ctx, &filter)
+	if err != nil {
+		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"data":       data,
+		"pagination": pagination,
+	})
+
+}
+
+func (s *Server) listPublishedEventsHandler(ctx *gin.Context) {
+	pageNoStr := ctx.DefaultQuery("page", "1")
+	pageNo, err := pkg.StringToUint32(pageNoStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(pkg.Errorf(pkg.INVALID_ERROR, err.Error())))
+
+		return
+	}
+
+	pageSizeStr := ctx.DefaultQuery("limit", "10")
+	pageSize, err := pkg.StringToUint32(pageSizeStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(pkg.Errorf(pkg.INVALID_ERROR, err.Error())))
+
+		return
+	}
+
+	published := true // Default to published events
+	filter := repository.EventFilter{
+		Pagination: &pkg.Pagination{
+			Page:     pageNo,
+			PageSize: pageSize,
+		},
+		Published: &published,
+		Search:    nil,
+		Status:    nil,
+		StartTime: nil,
+		EndTime:   nil,
+		Tags:      nil,
+	}
+
+	if search := ctx.Query("search"); search != "" {
+		filter.Search = &search
+	}
+	if status := ctx.Query("status"); status != "" {
+		filter.Status = &status
 	}
 	if startDate := ctx.Query("start_date"); startDate != "" {
 		startTime := pkg.StringToTime(startDate)

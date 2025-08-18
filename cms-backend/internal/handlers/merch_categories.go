@@ -9,7 +9,6 @@ import (
 )
 
 type createCategoryReq struct {
-	ID          int64  `json:"id" binding:"required"`
 	Name        string `json:"name" binding:"required"`
 	Description string `json:"description"`
 }

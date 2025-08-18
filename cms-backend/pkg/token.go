@@ -7,10 +7,9 @@ import (
 	"github.com/google/uuid"
 )
 
-const TokenIssuer = "BACKEND_APP"
-
 type JWTMaker struct {
-	jwtSecret string
+	jwtSecret   string
+	tokenIssuer string
 }
 
 type Payload struct {
@@ -21,8 +20,8 @@ type Payload struct {
 	jwt.RegisteredClaims
 }
 
-func NewJWTMaker(jwtSecret string) JWTMaker {
-	return JWTMaker{jwtSecret: jwtSecret}
+func NewJWTMaker(jwtSecret, tokenIssuer string) JWTMaker {
+	return JWTMaker{jwtSecret: jwtSecret, tokenIssuer: tokenIssuer}
 }
 
 func (maker *JWTMaker) CreateToken(email string, userID uint32, role []string, duration time.Duration) (string, error) {
@@ -39,7 +38,7 @@ func (maker *JWTMaker) CreateToken(email string, userID uint32, role []string, d
 		jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(duration)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			Issuer:    TokenIssuer,
+			Issuer:    maker.tokenIssuer,
 		},
 	}
 
@@ -71,7 +70,7 @@ func (maker *JWTMaker) VerifyToken(token string) (*Payload, error) {
 		return nil, Errorf(INTERNAL_ERROR, "failed to parse token is invalid")
 	}
 
-	if payload.RegisteredClaims.Issuer != TokenIssuer {
+	if payload.RegisteredClaims.Issuer != maker.tokenIssuer {
 		return nil, Errorf(INTERNAL_ERROR, "invalid issuer")
 	}
 

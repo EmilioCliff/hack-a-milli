@@ -24,7 +24,7 @@ WHERE
     )
     AND (
         $2::text[] IS NULL 
-        OR role = ANY($2::text[])
+        OR role && $2::text[]
     )
     AND (
         $3::bigint IS NULL 
@@ -56,8 +56,8 @@ func (q *Queries) CountUsers(ctx context.Context, arg CountUsersParams) (int64, 
 }
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (email, full_name, phone_number, address, password_hash, role, department_id, refresh_token)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+INSERT INTO users (email, full_name, phone_number, address, password_hash, role, department_id, refresh_token, created_by)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 RETURNING id
 `
 
@@ -70,6 +70,7 @@ type CreateUserParams struct {
 	Role         []string    `json:"role"`
 	DepartmentID pgtype.Int8 `json:"department_id"`
 	RefreshToken pgtype.Text `json:"refresh_token"`
+	CreatedBy    int64       `json:"created_by"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (int64, error) {
@@ -82,6 +83,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (int64, 
 		arg.Role,
 		arg.DepartmentID,
 		arg.RefreshToken,
+		arg.CreatedBy,
 	)
 	var id int64
 	err := row.Scan(&id)
@@ -129,7 +131,7 @@ type GetUserRow struct {
 	MultifactorAuthentication bool        `json:"multifactor_authentication"`
 	RefreshToken              string      `json:"refresh_token"`
 	UpdatedBy                 pgtype.Int8 `json:"updated_by"`
-	CreatedBy                 pgtype.Int8 `json:"created_by"`
+	CreatedBy                 int64       `json:"created_by"`
 	UpdatedAt                 time.Time   `json:"updated_at"`
 	CreatedAt                 time.Time   `json:"created_at"`
 	DepartmentName            pgtype.Text `json:"department_name"`
@@ -202,7 +204,7 @@ WHERE
     )
     AND (
         $2::text[] IS NULL 
-        OR u.role = ANY($2::text[])
+        OR u.role && $2::text[]
     )
     AND (
         $3::bigint IS NULL 
@@ -239,7 +241,7 @@ type ListUsersRow struct {
 	MultifactorAuthentication bool        `json:"multifactor_authentication"`
 	RefreshToken              string      `json:"refresh_token"`
 	UpdatedBy                 pgtype.Int8 `json:"updated_by"`
-	CreatedBy                 pgtype.Int8 `json:"created_by"`
+	CreatedBy                 int64       `json:"created_by"`
 	UpdatedAt                 time.Time   `json:"updated_at"`
 	CreatedAt                 time.Time   `json:"created_at"`
 	DepartmentName            pgtype.Text `json:"department_name"`

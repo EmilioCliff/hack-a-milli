@@ -13,7 +13,7 @@ SELECT dt.*,
        u.role AS user_role
 FROM device_tokens dt
 JOIN users u ON dt.user_id = u.id
-WHERE dt.active IS TRUE AND dt.id = $1;
+WHERE dt.id = $1;
 
 -- name: GetDeviceTokenByUserID :many
 SELECT dt.*,
@@ -54,12 +54,12 @@ LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 SELECT COUNT(*) AS total_device_tokens
 FROM device_tokens
 WHERE
-    dt.active IS TRUE
+    active IS TRUE
     AND (
         sqlc.narg('is_active')::boolean IS NULL 
-        OR dt.active = sqlc.narg('is_active')
+        OR active = sqlc.narg('is_active')
     )
     AND (
         sqlc.narg('platform')::text IS NULL 
-        OR dt.platform = sqlc.narg('platform')
+        OR platform = sqlc.narg('platform')
     );

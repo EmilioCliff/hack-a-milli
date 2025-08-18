@@ -63,6 +63,28 @@ func (s *Server) getBlogHandler(ctx *gin.Context) {
 		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
 		return
 	}
+	if publishedScope := ctx.GetHeader("X-Published-Only"); publishedScope == "true" {
+		if !blog.Published {
+			ctx.JSON(http.StatusNotFound, errorResponse(pkg.Errorf(pkg.NOT_FOUND_ERROR, "Blog not found or not published")))
+			return
+		}
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": blog})
+}
+
+func (s *Server) getPublishedBlogHandler(ctx *gin.Context) {
+	id, err := pkg.StringToInt64(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
+		return
+	}
+
+	blog, err := s.repo.BlogRepository.GetPublishedBlog(ctx, id)
+	if err != nil {
+		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
+		return
+	}
 
 	ctx.JSON(http.StatusOK, gin.H{"data": blog})
 }
@@ -160,6 +182,65 @@ func (s *Server) listBlogsHandler(ctx *gin.Context) {
 			return
 		}
 		filter.Published = &publishedBool
+	}
+
+	if publishedScope := ctx.GetHeader("X-Published-Only"); publishedScope == "true" {
+		published := true // Default to published blogs
+		filter.Published = &published
+	}
+
+	if author := ctx.Query("author"); author != "" {
+		authorId, err := pkg.StringToInt64(author)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, errorResponse(err))
+			return
+		}
+
+		filter.Author = &authorId
+	}
+
+	blogs, pagination, err := s.repo.BlogRepository.ListBlogs(ctx, &filter)
+	if err != nil {
+		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"data":       blogs,
+		"pagination": pagination,
+	})
+}
+
+func (s *Server) listPublishedBlogsHandler(ctx *gin.Context) {
+	pageNoStr := ctx.DefaultQuery("page", "1")
+	pageNo, err := pkg.StringToUint32(pageNoStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(pkg.Errorf(pkg.INVALID_ERROR, err.Error())))
+
+		return
+	}
+
+	pageSizeStr := ctx.DefaultQuery("limit", "10")
+	pageSize, err := pkg.StringToUint32(pageSizeStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(pkg.Errorf(pkg.INVALID_ERROR, err.Error())))
+
+		return
+	}
+
+	published := true // Default to published blogs
+	filter := repository.BlogFilter{
+		Pagination: &pkg.Pagination{
+			Page:     pageNo,
+			PageSize: pageSize,
+		},
+		Published: &published,
+		Search:    nil,
+		Author:    nil,
+	}
+
+	if search := ctx.Query("search"); search != "" {
+		filter.Search = &search
 	}
 
 	if author := ctx.Query("author"); author != "" {

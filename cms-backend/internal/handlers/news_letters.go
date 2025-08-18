@@ -62,6 +62,22 @@ func (s *Server) getNewsletterHandler(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"data": newLetter})
 }
 
+func (s *Server) getPublishedNewsletterHandler(ctx *gin.Context) {
+	id, err := pkg.StringToInt64(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
+		return
+	}
+
+	newLetter, err := s.repo.NewsRepository.GetPublishedNewsLetter(ctx, id)
+	if err != nil {
+		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": newLetter})
+}
+
 func (s *Server) updateNewsletterHandler(ctx *gin.Context) {
 	id, err := pkg.StringToInt64(ctx.Param("id"))
 	if err != nil {
@@ -158,6 +174,60 @@ func (s *Server) listNewslettersHandler(ctx *gin.Context) {
 		filter.Published = &publishedBool
 	}
 
+	if startDate := ctx.Query("start_date"); startDate != "" {
+		startTime := pkg.StringToTime(startDate)
+		filter.StartDate = &startTime
+	}
+
+	if endDate := ctx.Query("end_date"); endDate != "" {
+		endTime := pkg.StringToTime(endDate)
+		filter.EndDate = &endTime
+	}
+
+	newsletters, pagination, err := s.repo.NewsRepository.ListNewsLetters(ctx, &filter)
+	if err != nil {
+		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"data":       newsletters,
+		"pagination": pagination,
+	})
+}
+
+func (s *Server) listPublishedNewslettersHandler(ctx *gin.Context) {
+	pageNoStr := ctx.DefaultQuery("page", "1")
+	pageNo, err := pkg.StringToUint32(pageNoStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(pkg.Errorf(pkg.INVALID_ERROR, err.Error())))
+
+		return
+	}
+
+	pageSizeStr := ctx.DefaultQuery("limit", "10")
+	pageSize, err := pkg.StringToUint32(pageSizeStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(pkg.Errorf(pkg.INVALID_ERROR, err.Error())))
+
+		return
+	}
+
+	published := true // Default to true for published newsletters
+	filter := repository.NewsLetterFilter{
+		Pagination: &pkg.Pagination{
+			Page:     pageNo,
+			PageSize: pageSize,
+		},
+		Published: &published,
+		Search:    nil,
+		StartDate: nil,
+		EndDate:   nil,
+	}
+
+	if search := ctx.Query("search"); search != "" {
+		filter.Search = &search
+	}
 	if startDate := ctx.Query("start_date"); startDate != "" {
 		startTime := pkg.StringToTime(startDate)
 		filter.StartDate = &startTime

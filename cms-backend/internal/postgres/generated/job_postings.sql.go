@@ -15,42 +15,68 @@ import (
 const changeVisibilityJobPosting = `-- name: ChangeVisibilityJobPosting :exec
 UPDATE job_postings
 SET show_case = $1,
-    updated_by = $2,
+    published = COALESCE($2, published),
+    published_at = COALESCE($3, published_at),
+    updated_by = $4,
     updated_at = NOW()
-WHERE id = $3
+WHERE id = $5
 `
 
 type ChangeVisibilityJobPostingParams struct {
-	ShowCase  bool  `json:"show_case"`
-	UpdatedBy int64 `json:"updated_by"`
-	ID        int64 `json:"id"`
+	ShowCase    bool               `json:"show_case"`
+	Published   pgtype.Bool        `json:"published"`
+	PublishedAt pgtype.Timestamptz `json:"published_at"`
+	UpdatedBy   int64              `json:"updated_by"`
+	ID          int64              `json:"id"`
 }
 
 func (q *Queries) ChangeVisibilityJobPosting(ctx context.Context, arg ChangeVisibilityJobPostingParams) error {
-	_, err := q.db.Exec(ctx, changeVisibilityJobPosting, arg.ShowCase, arg.UpdatedBy, arg.ID)
+	_, err := q.db.Exec(ctx, changeVisibilityJobPosting,
+		arg.ShowCase,
+		arg.Published,
+		arg.PublishedAt,
+		arg.UpdatedBy,
+		arg.ID,
+	)
 	return err
 }
 
+const checkJobPostingIsPublished = `-- name: CheckJobPostingIsPublished :one
+SELECT EXISTS (
+    SELECT 1 FROM job_postings
+    WHERE id = $1 AND published = TRUE AND deleted_at IS NULL
+) AS is_published
+`
+
+func (q *Queries) CheckJobPostingIsPublished(ctx context.Context, id int64) (bool, error) {
+	row := q.db.QueryRow(ctx, checkJobPostingIsPublished, id)
+	var is_published bool
+	err := row.Scan(&is_published)
+	return is_published, err
+}
+
 const countJobPostings = `-- name: CountJobPostings :one
-SELECT COUNT(*) FROM job_postings
+SELECT COUNT(*)
+FROM job_postings jp
+JOIN departments d ON jp.department_id = d.id
 WHERE 
     deleted_at IS NULL
     AND (
         COALESCE($1::text, '') = '' 
-        OR LOWER(title) LIKE $1
+        OR LOWER(jp.title) LIKE $1
         OR LOWER(d.name) LIKE $1
     )
     AND (
         $2::boolean IS NULL 
-        OR published = $2
+        OR jp.published = $2
     )
     AND (
         $3::text IS NULL 
-        OR employment_type = $3
+        OR jp.employment_type = $3
     )
     AND (
         $4::boolean IS NULL 
-        OR show_case = $4
+        OR jp.show_case = $4
     )
 `
 
@@ -161,6 +187,64 @@ type GetJobPostingRow struct {
 func (q *Queries) GetJobPosting(ctx context.Context, id int64) (GetJobPostingRow, error) {
 	row := q.db.QueryRow(ctx, getJobPosting, id)
 	var i GetJobPostingRow
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.DepartmentID,
+		&i.Location,
+		&i.EmploymentType,
+		&i.Content,
+		&i.SalaryRange,
+		&i.StartDate,
+		&i.EndDate,
+		&i.ShowCase,
+		&i.Published,
+		&i.PublishedAt,
+		&i.UpdatedBy,
+		&i.CreatedBy,
+		&i.DeletedBy,
+		&i.DeletedAt,
+		&i.UpdatedAt,
+		&i.CreatedAt,
+		&i.DepartmentName,
+	)
+	return i, err
+}
+
+const getPublishedJobPosting = `-- name: GetPublishedJobPosting :one
+SELECT 
+    jp.id, jp.title, jp.department_id, jp.location, jp.employment_type, jp.content, jp.salary_range, jp.start_date, jp.end_date, jp.show_case, jp.published, jp.published_at, jp.updated_by, jp.created_by, jp.deleted_by, jp.deleted_at, jp.updated_at, jp.created_at,
+    d.name AS department_name
+FROM job_postings jp
+JOIN departments d ON jp.department_id = d.id
+WHERE jp.id = $1 AND jp.published = TRUE AND jp.show_case = TRUE AND jp.deleted_at IS NULL
+`
+
+type GetPublishedJobPostingRow struct {
+	ID             int64              `json:"id"`
+	Title          string             `json:"title"`
+	DepartmentID   int64              `json:"department_id"`
+	Location       string             `json:"location"`
+	EmploymentType string             `json:"employment_type"`
+	Content        string             `json:"content"`
+	SalaryRange    pgtype.Text        `json:"salary_range"`
+	StartDate      time.Time          `json:"start_date"`
+	EndDate        time.Time          `json:"end_date"`
+	ShowCase       bool               `json:"show_case"`
+	Published      bool               `json:"published"`
+	PublishedAt    pgtype.Timestamptz `json:"published_at"`
+	UpdatedBy      int64              `json:"updated_by"`
+	CreatedBy      int64              `json:"created_by"`
+	DeletedBy      pgtype.Int8        `json:"deleted_by"`
+	DeletedAt      pgtype.Timestamptz `json:"deleted_at"`
+	UpdatedAt      time.Time          `json:"updated_at"`
+	CreatedAt      time.Time          `json:"created_at"`
+	DepartmentName string             `json:"department_name"`
+}
+
+func (q *Queries) GetPublishedJobPosting(ctx context.Context, id int64) (GetPublishedJobPostingRow, error) {
+	row := q.db.QueryRow(ctx, getPublishedJobPosting, id)
+	var i GetPublishedJobPostingRow
 	err := row.Scan(
 		&i.ID,
 		&i.Title,

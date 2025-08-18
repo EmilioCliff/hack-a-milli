@@ -5,7 +5,7 @@ RETURNING id;
 
 -- name: GetProductCategory :one
 SELECT * FROM product_categories
-WHERE id = $1;
+WHERE id = $1 AND deleted_at IS NULL;
 
 -- name: ProductCategoryExists :one
 SELECT EXISTS (SELECT 1 FROM product_categories WHERE id = $1 AND deleted_at IS NULL) AS exists;

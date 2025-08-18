@@ -20,7 +20,7 @@ func (mr *MerchRepository) CreateCategory(ctx context.Context, category *reposit
 		UpdatedBy:   category.UpdatedBy,
 	}
 
-	if category.Description == nil {
+	if category.Description != nil {
 		createParams.Description = pgtype.Text{Valid: true, String: *category.Description}
 	}
 

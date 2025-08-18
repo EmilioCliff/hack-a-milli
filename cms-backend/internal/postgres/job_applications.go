@@ -14,6 +14,14 @@ import (
 )
 
 func (cr *CareerRepository) CreateJobApplication(ctx context.Context, jobApplication *repository.JobApplication) (*repository.JobApplication, error) {
+	// check if email already exist for the job posting
+	if exists, _ := cr.queries.CheckJobApplicationExists(ctx, generated.CheckJobApplicationExistsParams{
+		JobID: jobApplication.JobID,
+		Email: jobApplication.Email,
+	}); exists {
+		return nil, pkg.Errorf(pkg.ALREADY_EXISTS_ERROR, "job application for user %s already exists", jobApplication.Email)
+	}
+
 	jobApplicationID, err := cr.queries.CreateJobApplication(ctx, generated.CreateJobApplicationParams{
 		JobID:       jobApplication.JobID,
 		FullName:    jobApplication.FullName,

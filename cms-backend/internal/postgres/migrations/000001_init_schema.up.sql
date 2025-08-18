@@ -12,14 +12,14 @@ CREATE TABLE "users" (
   "phone_number" varchar(50) NOT NULL,
   "address" varchar(100) NULL,
   "password_hash" text NOT NULL,
-  "role" text[] NOT NULL, -- ('guest, 'staff', 'admin')
+  "role" text[] NOT NULL DEFAULT '{}', -- ('guest, 'staff', 'admin')
   "department_id" bigint NULL,
   "active" boolean NOT NULL DEFAULT true,
   "account_verified" boolean NOT NULL DEFAULT false,
   "multifactor_authentication" bool NOT NULL DEFAULT false,
   "refresh_token" text NOT NULL DEFAULT '',
   "updated_by" bigint NULL,
-  "created_by" bigint NULL,
+  "created_by" bigint NOT NULL,
   "updated_at" timestamptz NOT NULL DEFAULT (now()),
   "created_at" timestamptz NOT NULL DEFAULT (now()),
 
@@ -185,8 +185,8 @@ CREATE TABLE "events" (
   "topic" varchar(255) NOT NULL,
   "content" text NOT NULL,
   "cover_img" text NOT NULL,
-  "start_time" varchar(100) NOT NULL,
-  "end_time" varchar(100) NOT NULL,
+  "start_time" timestamptz NOT NULL,
+  "end_time" timestamptz NOT NULL,
   "status" varchar(255) NOT NULL CHECK (status IN ('upcoming', 'live', 'completed')),
   "venue" jsonb NOT NULL DEFAULT '{}',
   "price" varchar(255) NOT NULL DEFAULT 'free',
@@ -307,3 +307,24 @@ CREATE TABLE "job_applications" (
   CONSTRAINT "job_applications_job_id_fkey" FOREIGN KEY ("job_id") REFERENCES "job_postings" ("id"),
   CONSTRAINT "job_applications_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "users" ("id")
 );
+
+-- Insert bootstrap super_admin user
+INSERT INTO "users" (
+  "id", "email", "full_name", "phone_number", "address",
+  "role", "password_hash", "active", "account_verified", 
+  "multifactor_authentication", "refresh_token", "created_by"
+) VALUES (
+  1, -- force ID = 1 for consistent references
+  'superadmin@kenic.co.ke',
+  'System Super Admin',
+  '0000000000',
+  'Default Address',
+  ARRAY['super_admin'],
+  -- Store a pre-hashed password here (bcrypt recommended, e.g. "admin")
+  '$2a$10$B72xlicrNfFvSTQJx3yWoeNzErEkof6U.WxflonUHo0qtrIj9y672',
+  TRUE,
+  TRUE,
+  FALSE,
+  '',
+  1
+) ON CONFLICT (id) DO NOTHING;

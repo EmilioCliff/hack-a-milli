@@ -50,6 +50,7 @@ type NewsRepository interface {
 	// News Update methods
 	CreateNewsUpdate(ctx context.Context, newsUpdate *NewsUpdate) (*NewsUpdate, error)
 	GetNewsUpdate(ctx context.Context, id int64) (*NewsUpdate, error)
+	GetPublishedNewsUpdate(ctx context.Context, id int64) (*NewsUpdate, error)
 	ListNewsUpdate(ctx context.Context, filter *NewsUpdateFilter) ([]*NewsUpdate, *pkg.Pagination, error)
 	PublishNewsUpdate(ctx context.Context, newsUpdateID int64, userID int64) (*NewsUpdate, error)
 	UpdateNewsUpdate(ctx context.Context, newsUpdate *UpdateNewsUpdate) (*NewsUpdate, error)
@@ -58,6 +59,7 @@ type NewsRepository interface {
 	// News Letter methods
 	CreateNewsLetter(ctx context.Context, newsLetter *NewsLetter) (*NewsLetter, error)
 	GetNewsLetter(ctx context.Context, id int64) (*NewsLetter, error)
+	GetPublishedNewsLetter(ctx context.Context, id int64) (*NewsLetter, error)
 	ListNewsLetters(ctx context.Context, filter *NewsLetterFilter) ([]*NewsLetter, *pkg.Pagination, error)
 	PublishNewsLetter(ctx context.Context, newsLetterID int64, userID int64) (*NewsLetter, error)
 	UpdateNewsLetter(ctx context.Context, newsLetter *UpdateNewsLetter) (*NewsLetter, error)

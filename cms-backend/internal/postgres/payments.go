@@ -83,6 +83,46 @@ func (mr *MerchRepository) GetPayment(ctx context.Context, id int64) (*repositor
 	return rslt, nil
 }
 
+func (mr *MerchRepository) GetUserPayment(ctx context.Context, paymentId int64, userId int64) (*repository.Payment, error) {
+	payment, err := mr.queries.GetUserPayment(ctx, generated.GetUserPaymentParams{
+		ID:     paymentId,
+		UserID: pgtype.Int8{Int64: userId, Valid: true},
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, pkg.Errorf(pkg.NOT_FOUND_ERROR, "payment with ID %d not found", paymentId)
+		}
+		return nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error fetching payment by ID: %s", err.Error())
+	}
+
+	rslt := &repository.Payment{
+		ID:            payment.ID,
+		OrderID:       payment.OrderID,
+		UserID:        nil,
+		PaymentMethod: payment.PaymentMethod,
+		Amount:        pkg.PgTypeNumericToFloat64(payment.Amount),
+		Status:        payment.Status,
+		UpdatedBy:     nil,
+		CreatedBy:     nil,
+		UpdatedAt:     payment.UpdatedAt,
+		CreatedAt:     payment.CreatedAt,
+	}
+
+	if payment.UserID.Valid {
+		rslt.UserID = &payment.UserID.Int64
+	}
+
+	if payment.UpdatedBy.Valid {
+		rslt.UpdatedBy = &payment.UpdatedBy.Int64
+	}
+
+	if payment.CreatedBy.Valid {
+		rslt.CreatedBy = &payment.CreatedBy.Int64
+	}
+
+	return rslt, nil
+}
+
 func (mr *MerchRepository) UpdatePayment(ctx context.Context, payment *repository.UpdatePayment) (*repository.Payment, error) {
 	updateParams := generated.UpdatePaymentParams{
 		ID:        payment.ID,
@@ -92,6 +132,9 @@ func (mr *MerchRepository) UpdatePayment(ctx context.Context, payment *repositor
 	}
 
 	if payment.UserID != nil {
+		if exists, _ := mr.queries.UserExists(ctx, *payment.UserID); !exists {
+			return nil, pkg.Errorf(pkg.NOT_FOUND_ERROR, "user with ID %d not found", *payment.UserID)
+		}
 		updateParams.UserID = pgtype.Int8{Int64: *payment.UserID, Valid: true}
 	}
 	if payment.Status != nil {

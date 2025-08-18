@@ -82,6 +82,46 @@ func (nr *NewsRepository) GetNewsUpdate(ctx context.Context, id int64) (*reposit
 	return rslt, nil
 }
 
+func (nr *NewsRepository) GetPublishedNewsUpdate(ctx context.Context, id int64) (*repository.NewsUpdate, error) {
+	newsUpdate, err := nr.queries.GetPublishedNewsUpdate(ctx, id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, pkg.Errorf(pkg.NOT_FOUND_ERROR, "news update with ID %d not found", id)
+		}
+		return nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error retrieving news update: %s", err.Error())
+	}
+
+	rslt := &repository.NewsUpdate{
+		ID:          newsUpdate.ID,
+		Title:       newsUpdate.Title,
+		Topic:       newsUpdate.Topic,
+		Date:        newsUpdate.Date,
+		MinRead:     newsUpdate.MinRead,
+		Content:     newsUpdate.Content,
+		CoverImg:    newsUpdate.CoverImg,
+		Published:   newsUpdate.Published,
+		PublishedAt: nil,
+		UpdatedBy:   newsUpdate.UpdatedBy,
+		UpdatedAt:   newsUpdate.UpdatedAt,
+		CreatedAt:   newsUpdate.CreatedAt,
+		CreatedBy:   newsUpdate.CreatedBy,
+		DeletedBy:   nil,
+		DeletedAt:   nil,
+	}
+
+	if newsUpdate.PublishedAt.Valid {
+		rslt.PublishedAt = &newsUpdate.PublishedAt.Time
+	}
+	if newsUpdate.DeletedBy.Valid {
+		rslt.DeletedBy = &newsUpdate.DeletedBy.Int64
+	}
+	if newsUpdate.DeletedAt.Valid {
+		rslt.DeletedAt = &newsUpdate.DeletedAt.Time
+	}
+
+	return rslt, nil
+}
+
 func (nr *NewsRepository) ListNewsUpdate(ctx context.Context, filter *repository.NewsUpdateFilter) ([]*repository.NewsUpdate, *pkg.Pagination, error) {
 	listParams := generated.ListNewsUpdatesParams{
 		Limit:     int32(filter.Pagination.PageSize),

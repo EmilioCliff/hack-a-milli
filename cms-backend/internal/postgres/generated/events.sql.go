@@ -7,6 +7,7 @@ package generated
 
 import (
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -20,6 +21,23 @@ WHERE id = $1
 func (q *Queries) AddEventRegisteredAttedee(ctx context.Context, eventID int64) error {
 	_, err := q.db.Exec(ctx, addEventRegisteredAttedee, eventID)
 	return err
+}
+
+const checkEventIsPublishedAndUpcomingOrLive = `-- name: CheckEventIsPublishedAndUpcomingOrLive :one
+SELECT EXISTS(
+    SELECT 1 FROM events
+    WHERE id = $1
+    AND published = TRUE
+    AND deleted_at IS NULL
+    AND status IN ('upcoming', 'live')
+) AS is_published_and_upcoming_or_live
+`
+
+func (q *Queries) CheckEventIsPublishedAndUpcomingOrLive(ctx context.Context, eventID int64) (bool, error) {
+	row := q.db.QueryRow(ctx, checkEventIsPublishedAndUpcomingOrLive, eventID)
+	var is_published_and_upcoming_or_live bool
+	err := row.Scan(&is_published_and_upcoming_or_live)
+	return is_published_and_upcoming_or_live, err
 }
 
 const countEvents = `-- name: CountEvents :one
@@ -37,11 +55,11 @@ WHERE
     )
     AND (
         $3::boolean IS NULL 
-        OR b.published = $3
+        OR published = $3
     )
     AND (
         $4::text[] IS NULL 
-        OR tags = ANY($4::text[])
+        OR tags && $4::text[]
     )
     AND (
         $5::timestamptz IS NULL 
@@ -88,9 +106,9 @@ INSERT INTO events (
 VALUES (
     $1, $2, $3, 
     $4, $5, $6, 
-    $7, $8, $9, 
-    $10, $11, $12, 
-    $13, $14, $15, 
+    $7, COALESCE($8, '{}'::jsonb), COALESCE($9, 'free'), 
+    COALESCE($10, '{}'::jsonb), COALESCE($11, '{}'::text[]), COALESCE($12, '{}'::jsonb), 
+    COALESCE($13, '{}'::jsonb), COALESCE($14, '{}'::jsonb), COALESCE($15, 500), 
     $16, $17
 )
 RETURNING id
@@ -101,17 +119,17 @@ type CreateEventParams struct {
 	Topic        string      `json:"topic"`
 	Content      string      `json:"content"`
 	CoverImg     string      `json:"cover_img"`
-	StartTime    string      `json:"start_time"`
-	EndTime      string      `json:"end_time"`
+	StartTime    time.Time   `json:"start_time"`
+	EndTime      time.Time   `json:"end_time"`
 	Status       string      `json:"status"`
-	Venue        []byte      `json:"venue"`
-	Price        pgtype.Text `json:"price"`
-	Agenda       []byte      `json:"agenda"`
-	Tags         []string    `json:"tags"`
-	Organizers   []byte      `json:"organizers"`
-	Partners     []byte      `json:"partners"`
-	Speakers     []byte      `json:"speakers"`
-	MaxAttendees pgtype.Int4 `json:"max_attendees"`
+	Venue        interface{} `json:"venue"`
+	Price        interface{} `json:"price"`
+	Agenda       interface{} `json:"agenda"`
+	Tags         interface{} `json:"tags"`
+	Organizers   interface{} `json:"organizers"`
+	Partners     interface{} `json:"partners"`
+	Speakers     interface{} `json:"speakers"`
+	MaxAttendees interface{} `json:"max_attendees"`
 	UpdatedBy    int64       `json:"updated_by"`
 	CreatedBy    int64       `json:"created_by"`
 }
@@ -207,6 +225,44 @@ func (q *Queries) GetEvent(ctx context.Context, id int64) (Event, error) {
 	return i, err
 }
 
+const getPublishedEvent = `-- name: GetPublishedEvent :one
+SELECT id, title, topic, content, cover_img, start_time, end_time, status, venue, price, agenda, tags, organizers, partners, speakers, max_attendees, registered_attendees, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at FROM events
+WHERE id = $1 AND published = TRUE AND deleted_at IS NULL
+`
+
+func (q *Queries) GetPublishedEvent(ctx context.Context, id int64) (Event, error) {
+	row := q.db.QueryRow(ctx, getPublishedEvent, id)
+	var i Event
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Topic,
+		&i.Content,
+		&i.CoverImg,
+		&i.StartTime,
+		&i.EndTime,
+		&i.Status,
+		&i.Venue,
+		&i.Price,
+		&i.Agenda,
+		&i.Tags,
+		&i.Organizers,
+		&i.Partners,
+		&i.Speakers,
+		&i.MaxAttendees,
+		&i.RegisteredAttendees,
+		&i.Published,
+		&i.PublishedAt,
+		&i.UpdatedBy,
+		&i.CreatedBy,
+		&i.DeletedBy,
+		&i.DeletedAt,
+		&i.UpdatedAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const listEvents = `-- name: ListEvents :many
 SELECT id, title, topic, content, cover_img, start_time, end_time, status, venue, price, agenda, tags, organizers, partners, speakers, max_attendees, registered_attendees, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at FROM events
 WHERE 
@@ -222,11 +278,11 @@ WHERE
     )
     AND (
         $3::boolean IS NULL 
-        OR b.published = $3
+        OR published = $3
     )
     AND (
         $4::text[] IS NULL 
-        OR tags = ANY($4::text[])
+        OR tags && $4::text[]
     )
     AND (
         $5::timestamptz IS NULL 
@@ -349,24 +405,24 @@ WHERE id = $18
 `
 
 type UpdateEventParams struct {
-	Title               pgtype.Text `json:"title"`
-	Topic               pgtype.Text `json:"topic"`
-	Content             pgtype.Text `json:"content"`
-	CoverImg            pgtype.Text `json:"cover_img"`
-	StartTime           pgtype.Text `json:"start_time"`
-	EndTime             pgtype.Text `json:"end_time"`
-	Status              pgtype.Text `json:"status"`
-	Venue               []byte      `json:"venue"`
-	Price               pgtype.Text `json:"price"`
-	Agenda              []byte      `json:"agenda"`
-	Tags                []string    `json:"tags"`
-	Organizers          []byte      `json:"organizers"`
-	Partners            []byte      `json:"partners"`
-	Speakers            []byte      `json:"speakers"`
-	MaxAttendees        pgtype.Int4 `json:"max_attendees"`
-	RegisteredAttendees pgtype.Int4 `json:"registered_attendees"`
-	UpdatedBy           int64       `json:"updated_by"`
-	ID                  int64       `json:"id"`
+	Title               pgtype.Text        `json:"title"`
+	Topic               pgtype.Text        `json:"topic"`
+	Content             pgtype.Text        `json:"content"`
+	CoverImg            pgtype.Text        `json:"cover_img"`
+	StartTime           pgtype.Timestamptz `json:"start_time"`
+	EndTime             pgtype.Timestamptz `json:"end_time"`
+	Status              pgtype.Text        `json:"status"`
+	Venue               []byte             `json:"venue"`
+	Price               pgtype.Text        `json:"price"`
+	Agenda              []byte             `json:"agenda"`
+	Tags                []string           `json:"tags"`
+	Organizers          []byte             `json:"organizers"`
+	Partners            []byte             `json:"partners"`
+	Speakers            []byte             `json:"speakers"`
+	MaxAttendees        pgtype.Int4        `json:"max_attendees"`
+	RegisteredAttendees pgtype.Int4        `json:"registered_attendees"`
+	UpdatedBy           int64              `json:"updated_by"`
+	ID                  int64              `json:"id"`
 }
 
 func (q *Queries) UpdateEvent(ctx context.Context, arg UpdateEventParams) error {

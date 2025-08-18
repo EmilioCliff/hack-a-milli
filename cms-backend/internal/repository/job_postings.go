@@ -57,6 +57,7 @@ type CareerRepository interface {
 	// Job Postings Methods
 	CreateJobPosting(ctx context.Context, jobPosting *JobPosting) (*JobPosting, error)
 	GetJobPosting(ctx context.Context, id int64) (*JobPosting, error)
+	GetPublishedJobPosting(ctx context.Context, id int64) (*JobPosting, error)
 	UpdateJobPosting(ctx context.Context, jobPosting *UpdateJobPosting) (*JobPosting, error)
 	PublishJobPosting(ctx context.Context, jobPostingID int64, userID int64) (*JobPosting, error)
 	ChangeJobPostingVisibility(ctx context.Context, jobPostingID int64, userID int64, showCase bool) (*JobPosting, error)

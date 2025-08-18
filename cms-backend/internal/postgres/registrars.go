@@ -102,8 +102,8 @@ func (rr *RegistrarRepository) UpdateRegistrar(ctx context.Context, registrar *r
 	if registrar.Address != nil {
 		updateParams.Address = pgtype.Text{String: *registrar.Address, Valid: true}
 	}
-	if len(registrar.Specialities) > 0 {
-		updateParams.Specialities = registrar.Specialities
+	if registrar.Specialities != nil {
+		updateParams.Specialities = *registrar.Specialities
 	}
 	if registrar.PhoneNumber != nil {
 		updateParams.PhoneNumber = pgtype.Text{String: *registrar.PhoneNumber, Valid: true}

@@ -19,6 +19,7 @@ type Config struct {
 	TOKEN_DURATION          time.Duration `mapstructure:"TOKEN_DURATION"`
 	TOKEN_SYMMETRIC_KEY     string        `mapstructure:"TOKEN_SYMMETRIC_KEY"`
 	TOKEN_ISSUER            string        `mapstructure:"TOKEN_ISSUER"`
+	DB_NAME                 string        `mapstructure:"DB_NAME"`
 }
 
 func LoadConfig(path string) (Config, error) {
@@ -53,4 +54,6 @@ func setDefaults() {
 	viper.SetDefault("REFRESH_TOKEN_DURATION", 0)
 	viper.SetDefault("TOKEN_DURATION", 0)
 	viper.SetDefault("TOKEN_SYMMETRIC_KEY", "")
+	viper.SetDefault("TOKEN_ISSUER", "")
+	viper.SetDefault("DB_NAME", "")
 }
