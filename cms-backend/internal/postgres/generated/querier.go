@@ -71,6 +71,7 @@ type Querier interface {
 	GetJobPosting(ctx context.Context, id int64) (GetJobPostingRow, error)
 	GetNewsLetter(ctx context.Context, id int64) (NewsLetter, error)
 	GetNewsUpdate(ctx context.Context, id int64) (NewsUpdate, error)
+	GetNewsUpdateByTopicRelations(ctx context.Context, topic string) ([]NewsUpdate, error)
 	GetOrder(ctx context.Context, id int64) (GetOrderRow, error)
 	GetPayment(ctx context.Context, id int64) (Payment, error)
 	GetProduct(ctx context.Context, id int64) (GetProductRow, error)

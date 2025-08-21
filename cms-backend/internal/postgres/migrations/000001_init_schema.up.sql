@@ -18,6 +18,7 @@ CREATE TABLE "users" (
   "account_verified" boolean NOT NULL DEFAULT false,
   "multifactor_authentication" bool NOT NULL DEFAULT false,
   "refresh_token" text NOT NULL DEFAULT '',
+  "avatar_url" text NULL DEFAULT '',
   "updated_by" bigint NULL,
   "created_by" bigint NOT NULL,
   "updated_at" timestamptz NOT NULL DEFAULT (now()),
@@ -227,6 +228,7 @@ CREATE TABLE "news_updates" (
   "topic" varchar(255) NOT NULL,
   "date" timestamptz NOT NULL,
   "min_read" int NOT NULL,
+  "excerpt" text NOT NULL,
   "content" text NOT NULL,
   "cover_img" text NOT NULL,
   "published" boolean NOT NULL DEFAULT false,
@@ -328,3 +330,5 @@ INSERT INTO "users" (
   '',
   1
 ) ON CONFLICT (id) DO NOTHING;
+
+CREATE INDEX idx_events_venue_type ON events ((venue ->> 'type'));

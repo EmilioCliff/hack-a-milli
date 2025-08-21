@@ -37,6 +37,7 @@ func (ur *UserRepository) CreateUser(ctx context.Context, user *repository.User,
 			PhoneNumber:  user.PhoneNumber,
 			Address:      pgtype.Text{Valid: false},
 			PasswordHash: *user.PasswordHash,
+			AvatarUrl:    pgtype.Text{Valid: false},
 			Role:         nil,
 			DepartmentID: pgtype.Int8{Valid: false},
 			RefreshToken: pgtype.Text{Valid: true, String: ""},
@@ -54,6 +55,9 @@ func (ur *UserRepository) CreateUser(ctx context.Context, user *repository.User,
 		}
 		if user.RefreshToken != nil {
 			createParams.RefreshToken = pgtype.Text{String: *user.RefreshToken, Valid: true}
+		}
+		if user.AvatarURL != nil {
+			createParams.AvatarUrl = pgtype.Text{String: *user.AvatarURL, Valid: true}
 		}
 
 		roleNames := []string{}
@@ -230,6 +234,7 @@ func (ur *UserRepository) GetUser(ctx context.Context, id int64) (*repository.Us
 		Role:                      user.Role,
 		DepartmentID:              nil,
 		DepartmentName:            nil,
+		AvatarURL:                 nil,
 		Active:                    user.Active,
 		AccountVerified:           user.AccountVerified,
 		MultifactorAuthentication: user.MultifactorAuthentication,
@@ -248,6 +253,9 @@ func (ur *UserRepository) GetUser(ctx context.Context, id int64) (*repository.Us
 	if user.DepartmentName.Valid {
 		rslt.DepartmentName = &user.DepartmentName.String
 	}
+	if user.AvatarUrl.Valid {
+		rslt.AvatarURL = &user.AvatarUrl.String
+	}
 	if user.UpdatedBy.Valid {
 		rslt.UpdatedBy = &user.UpdatedBy.Int64
 	}
@@ -263,6 +271,7 @@ func (ur *UserRepository) UpdateUser(ctx context.Context, user *repository.Updat
 		PhoneNumber:               pgtype.Text{Valid: false},
 		Address:                   pgtype.Text{Valid: false},
 		PasswordHash:              pgtype.Text{Valid: false},
+		AvatarUrl:                 pgtype.Text{Valid: false},
 		Role:                      nil,
 		DepartmentID:              pgtype.Int8{Valid: false},
 		Active:                    pgtype.Bool{Valid: false},
@@ -282,6 +291,9 @@ func (ur *UserRepository) UpdateUser(ctx context.Context, user *repository.Updat
 	}
 	if user.PasswordHash != nil {
 		updateParams.PasswordHash = pgtype.Text{String: *user.PasswordHash, Valid: true}
+	}
+	if user.AvatarURL != nil {
+		updateParams.AvatarUrl = pgtype.Text{String: *user.AvatarURL, Valid: true}
 	}
 	if user.Role != nil {
 		updateParams.Role = *user.Role
@@ -324,6 +336,7 @@ func (ur *UserRepository) UpdateUser(ctx context.Context, user *repository.Updat
 		Role:                      updatedUser.Role,
 		DepartmentID:              nil,
 		DepartmentName:            nil,
+		AvatarURL:                 nil,
 		Active:                    updatedUser.Active,
 		AccountVerified:           updatedUser.AccountVerified,
 		MultifactorAuthentication: updatedUser.MultifactorAuthentication,
@@ -508,6 +521,7 @@ func (ur *UserRepository) ListUser(ctx context.Context, filter *repository.UserF
 			Role:                      user.Role,
 			DepartmentID:              nil,
 			DepartmentName:            nil,
+			AvatarURL:                 nil,
 			Active:                    user.Active,
 			AccountVerified:           user.AccountVerified,
 			MultifactorAuthentication: user.MultifactorAuthentication,

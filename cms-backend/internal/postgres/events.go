@@ -197,7 +197,7 @@ func (er *EventRepository) UpdateEvent(ctx context.Context, event *repository.Up
 		updateParams.RegisteredAttendees = pgtype.Int4{Int32: *event.RegisteredAttendees, Valid: true}
 	}
 
-	if event.Venue.Type != "" {
+	if event.Venue != nil {
 		venueBytes, err := json.Marshal(event.Venue)
 		if err != nil {
 			return nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error marshalling venue: %s", err.Error())
@@ -274,6 +274,7 @@ func (er *EventRepository) ListEvent(ctx context.Context, filter *repository.Eve
 		Limit:     int32(filter.Pagination.PageSize),
 		Search:    pgtype.Text{Valid: false},
 		Status:    pgtype.Text{Valid: false},
+		Venue:     pgtype.Text{Valid: false},
 		Published: pgtype.Bool{Valid: false},
 		StartTime: pgtype.Timestamptz{Valid: false},
 		EndTime:   pgtype.Timestamptz{Valid: false},
@@ -283,6 +284,7 @@ func (er *EventRepository) ListEvent(ctx context.Context, filter *repository.Eve
 	countParams := generated.CountEventsParams{
 		Search:    pgtype.Text{Valid: false},
 		Status:    pgtype.Text{Valid: false},
+		Venue:     pgtype.Text{Valid: false},
 		Published: pgtype.Bool{Valid: false},
 		StartTime: pgtype.Timestamptz{Valid: false},
 		EndTime:   pgtype.Timestamptz{Valid: false},
@@ -297,6 +299,10 @@ func (er *EventRepository) ListEvent(ctx context.Context, filter *repository.Eve
 	if filter.Status != nil {
 		listParams.Status = pgtype.Text{String: *filter.Status, Valid: true}
 		countParams.Status = pgtype.Text{String: *filter.Status, Valid: true}
+	}
+	if filter.Venue != nil {
+		listParams.Venue = pgtype.Text{String: *filter.Venue, Valid: true}
+		countParams.Venue = pgtype.Text{String: *filter.Venue, Valid: true}
 	}
 	if filter.Published != nil {
 		listParams.Published = pgtype.Bool{Bool: *filter.Published, Valid: true}

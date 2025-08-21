@@ -56,8 +56,8 @@ func (q *Queries) CountUsers(ctx context.Context, arg CountUsersParams) (int64, 
 }
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (email, full_name, phone_number, address, password_hash, role, department_id, refresh_token, created_by)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+INSERT INTO users (email, full_name, phone_number, address, password_hash, role, avatar_url, department_id, refresh_token, created_by)
+VALUES ($1, $2, $3, $4, $5,  $6, $7, $8, $9, $10)
 RETURNING id
 `
 
@@ -68,6 +68,7 @@ type CreateUserParams struct {
 	Address      pgtype.Text `json:"address"`
 	PasswordHash string      `json:"password_hash"`
 	Role         []string    `json:"role"`
+	AvatarUrl    pgtype.Text `json:"avatar_url"`
 	DepartmentID pgtype.Int8 `json:"department_id"`
 	RefreshToken pgtype.Text `json:"refresh_token"`
 	CreatedBy    int64       `json:"created_by"`
@@ -81,6 +82,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (int64, 
 		arg.Address,
 		arg.PasswordHash,
 		arg.Role,
+		arg.AvatarUrl,
 		arg.DepartmentID,
 		arg.RefreshToken,
 		arg.CreatedBy,
@@ -110,7 +112,7 @@ func (q *Queries) DeleteUser(ctx context.Context, arg DeleteUserParams) error {
 
 const getUser = `-- name: GetUser :one
 SELECT 
-    u.id, u.email, u.full_name, u.phone_number, u.address, u.password_hash, u.role, u.department_id, u.active, u.account_verified, u.multifactor_authentication, u.refresh_token, u.updated_by, u.created_by, u.updated_at, u.created_at,
+    u.id, u.email, u.full_name, u.phone_number, u.address, u.password_hash, u.role, u.department_id, u.active, u.account_verified, u.multifactor_authentication, u.refresh_token, u.avatar_url, u.updated_by, u.created_by, u.updated_at, u.created_at,
     d.name AS department_name
 FROM users u
 LEFT JOIN departments d ON u.department_id = d.id
@@ -130,6 +132,7 @@ type GetUserRow struct {
 	AccountVerified           bool        `json:"account_verified"`
 	MultifactorAuthentication bool        `json:"multifactor_authentication"`
 	RefreshToken              string      `json:"refresh_token"`
+	AvatarUrl                 pgtype.Text `json:"avatar_url"`
 	UpdatedBy                 pgtype.Int8 `json:"updated_by"`
 	CreatedBy                 int64       `json:"created_by"`
 	UpdatedAt                 time.Time   `json:"updated_at"`
@@ -153,6 +156,7 @@ func (q *Queries) GetUser(ctx context.Context, id int64) (GetUserRow, error) {
 		&i.AccountVerified,
 		&i.MultifactorAuthentication,
 		&i.RefreshToken,
+		&i.AvatarUrl,
 		&i.UpdatedBy,
 		&i.CreatedBy,
 		&i.UpdatedAt,
@@ -191,7 +195,7 @@ func (q *Queries) GetUserInternal(ctx context.Context, email string) (GetUserInt
 
 const listUsers = `-- name: ListUsers :many
 SELECT 
-    u.id, u.email, u.full_name, u.phone_number, u.address, u.password_hash, u.role, u.department_id, u.active, u.account_verified, u.multifactor_authentication, u.refresh_token, u.updated_by, u.created_by, u.updated_at, u.created_at,
+    u.id, u.email, u.full_name, u.phone_number, u.address, u.password_hash, u.role, u.department_id, u.active, u.account_verified, u.multifactor_authentication, u.refresh_token, u.avatar_url, u.updated_by, u.created_by, u.updated_at, u.created_at,
     d.name AS department_name
 FROM users u
 LEFT JOIN departments d ON u.department_id = d.id
@@ -240,6 +244,7 @@ type ListUsersRow struct {
 	AccountVerified           bool        `json:"account_verified"`
 	MultifactorAuthentication bool        `json:"multifactor_authentication"`
 	RefreshToken              string      `json:"refresh_token"`
+	AvatarUrl                 pgtype.Text `json:"avatar_url"`
 	UpdatedBy                 pgtype.Int8 `json:"updated_by"`
 	CreatedBy                 int64       `json:"created_by"`
 	UpdatedAt                 time.Time   `json:"updated_at"`
@@ -276,6 +281,7 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]ListUse
 			&i.AccountVerified,
 			&i.MultifactorAuthentication,
 			&i.RefreshToken,
+			&i.AvatarUrl,
 			&i.UpdatedBy,
 			&i.CreatedBy,
 			&i.UpdatedAt,
@@ -300,15 +306,16 @@ SET
     address = COALESCE($3, address),
     password_hash = COALESCE($4, password_hash),
     role = COALESCE($5, role),
-    department_id = COALESCE($6, department_id),
-    active = COALESCE($7, active),
-    account_verified = COALESCE($8, account_verified),
-    multifactor_authentication = COALESCE($9, multifactor_authentication),
-    refresh_token = COALESCE($10, refresh_token),
-    updated_by = $11,
+    avatar_url = COALESCE($6, avatar_url),
+    department_id = COALESCE($7, department_id),
+    active = COALESCE($8, active),
+    account_verified = COALESCE($9, account_verified),
+    multifactor_authentication = COALESCE($10, multifactor_authentication),
+    refresh_token = COALESCE($11, refresh_token),
+    updated_by = $12,
     updated_at = NOW()
-WHERE id = $12
-RETURNING id, email, full_name, phone_number, address, password_hash, role, department_id, active, account_verified, multifactor_authentication, refresh_token, updated_by, created_by, updated_at, created_at
+WHERE id = $13
+RETURNING id, email, full_name, phone_number, address, password_hash, role, department_id, active, account_verified, multifactor_authentication, refresh_token, avatar_url, updated_by, created_by, updated_at, created_at
 `
 
 type UpdateUserParams struct {
@@ -317,6 +324,7 @@ type UpdateUserParams struct {
 	Address                   pgtype.Text `json:"address"`
 	PasswordHash              pgtype.Text `json:"password_hash"`
 	Role                      []string    `json:"role"`
+	AvatarUrl                 pgtype.Text `json:"avatar_url"`
 	DepartmentID              pgtype.Int8 `json:"department_id"`
 	Active                    pgtype.Bool `json:"active"`
 	AccountVerified           pgtype.Bool `json:"account_verified"`
@@ -333,6 +341,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		arg.Address,
 		arg.PasswordHash,
 		arg.Role,
+		arg.AvatarUrl,
 		arg.DepartmentID,
 		arg.Active,
 		arg.AccountVerified,
@@ -355,6 +364,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.AccountVerified,
 		&i.MultifactorAuthentication,
 		&i.RefreshToken,
+		&i.AvatarUrl,
 		&i.UpdatedBy,
 		&i.CreatedBy,
 		&i.UpdatedAt,

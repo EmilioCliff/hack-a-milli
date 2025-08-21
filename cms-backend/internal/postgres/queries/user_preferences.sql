@@ -29,7 +29,8 @@ SELECT
     up.*,
     u.email AS user_email,
     u.full_name AS user_full_name,
-    u.role AS user_role
+    u.role AS user_role,
+    u.avatar_url AS user_avatar_url
 FROM user_preferences up
 JOIN users u ON up.user_id = u.id
 ORDER BY up.created_at DESC

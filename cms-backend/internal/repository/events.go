@@ -44,6 +44,7 @@ type Company struct {
 }
 
 type Speakers struct {
+	Name         string `json:"name" binding:"required"`
 	Title        string `json:"title" binding:"required"`
 	Organization string `json:"organization" binding:"required"`
 	Bio          string `json:"bio" binding:"required"`
@@ -101,6 +102,7 @@ type EventFilter struct {
 	Pagination *pkg.Pagination
 	Search     *string
 	Status     *string
+	Venue      *string
 	Published  *bool
 	StartTime  *time.Time
 	EndTime    *time.Time

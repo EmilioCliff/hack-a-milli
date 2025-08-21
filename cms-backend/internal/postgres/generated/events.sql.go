@@ -54,26 +54,31 @@ WHERE
         OR status = $2
     )
     AND (
-        $3::boolean IS NULL 
-        OR published = $3
+        $3::text IS NULL 
+        OR venue ->> 'type' = $3
     )
     AND (
-        $4::text[] IS NULL 
-        OR tags && $4::text[]
+        $4::boolean IS NULL 
+        OR published = $4
     )
     AND (
-        $5::timestamptz IS NULL 
-        OR start_time >= $5
+        $5::text[] IS NULL 
+        OR tags && $5::text[]
     )
     AND (
         $6::timestamptz IS NULL 
-        OR end_time <= $6
+        OR start_time >= $6
+    )
+    AND (
+        $7::timestamptz IS NULL 
+        OR end_time <= $7
     )
 `
 
 type CountEventsParams struct {
 	Search    pgtype.Text        `json:"search"`
 	Status    pgtype.Text        `json:"status"`
+	Venue     pgtype.Text        `json:"venue"`
 	Published pgtype.Bool        `json:"published"`
 	Tags      []string           `json:"tags"`
 	StartTime pgtype.Timestamptz `json:"start_time"`
@@ -84,6 +89,7 @@ func (q *Queries) CountEvents(ctx context.Context, arg CountEventsParams) (int64
 	row := q.db.QueryRow(ctx, countEvents,
 		arg.Search,
 		arg.Status,
+		arg.Venue,
 		arg.Published,
 		arg.Tags,
 		arg.StartTime,
@@ -277,28 +283,33 @@ WHERE
         OR status = $2
     )
     AND (
-        $3::boolean IS NULL 
-        OR published = $3
+        $3::text IS NULL 
+        OR venue ->> 'type' = $3
     )
     AND (
-        $4::text[] IS NULL 
-        OR tags && $4::text[]
+        $4::boolean IS NULL 
+        OR published = $4
     )
     AND (
-        $5::timestamptz IS NULL 
-        OR start_time >= $5
+        $5::text[] IS NULL 
+        OR tags && $5::text[]
     )
     AND (
         $6::timestamptz IS NULL 
-        OR end_time <= $6
+        OR start_time >= $6
+    )
+    AND (
+        $7::timestamptz IS NULL 
+        OR end_time <= $7
     )
 ORDER BY created_at DESC
-LIMIT $8 OFFSET $7
+LIMIT $9 OFFSET $8
 `
 
 type ListEventsParams struct {
 	Search    pgtype.Text        `json:"search"`
 	Status    pgtype.Text        `json:"status"`
+	Venue     pgtype.Text        `json:"venue"`
 	Published pgtype.Bool        `json:"published"`
 	Tags      []string           `json:"tags"`
 	StartTime pgtype.Timestamptz `json:"start_time"`
@@ -311,6 +322,7 @@ func (q *Queries) ListEvents(ctx context.Context, arg ListEventsParams) ([]Event
 	rows, err := q.db.Query(ctx, listEvents,
 		arg.Search,
 		arg.Status,
+		arg.Venue,
 		arg.Published,
 		arg.Tags,
 		arg.StartTime,

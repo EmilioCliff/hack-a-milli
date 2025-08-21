@@ -1,6 +1,6 @@
 -- name: CreateUser :one
-INSERT INTO users (email, full_name, phone_number, address, password_hash, role, department_id, refresh_token, created_by)
-VALUES (sqlc.arg('email'), sqlc.arg('full_name'), sqlc.arg('phone_number'), sqlc.narg('address'), sqlc.arg('password_hash'), sqlc.arg('role'), sqlc.narg('department_id'), sqlc.narg('refresh_token'), sqlc.arg('created_by'))
+INSERT INTO users (email, full_name, phone_number, address, password_hash, role, avatar_url, department_id, refresh_token, created_by)
+VALUES (sqlc.arg('email'), sqlc.arg('full_name'), sqlc.arg('phone_number'), sqlc.narg('address'), sqlc.arg('password_hash'),  sqlc.arg('role'), sqlc.narg('avatar_url'), sqlc.narg('department_id'), sqlc.narg('refresh_token'), sqlc.arg('created_by'))
 RETURNING id;
 
 -- name: GetUser :one
@@ -34,6 +34,7 @@ SET
     address = COALESCE(sqlc.narg('address'), address),
     password_hash = COALESCE(sqlc.narg('password_hash'), password_hash),
     role = COALESCE(sqlc.narg('role'), role),
+    avatar_url = COALESCE(sqlc.narg('avatar_url'), avatar_url),
     department_id = COALESCE(sqlc.narg('department_id'), department_id),
     active = COALESCE(sqlc.narg('active'), active),
     account_verified = COALESCE(sqlc.narg('account_verified'), account_verified),

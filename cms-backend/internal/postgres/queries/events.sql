@@ -93,6 +93,10 @@ WHERE
         OR status = sqlc.narg('status')
     )
     AND (
+        sqlc.narg('venue')::text IS NULL 
+        OR venue ->> 'type' = sqlc.narg('venue')
+    )
+    AND (
         sqlc.narg('published')::boolean IS NULL 
         OR published = sqlc.narg('published')
     )
@@ -123,6 +127,10 @@ WHERE
     AND (
         sqlc.narg('status')::text IS NULL 
         OR status = sqlc.narg('status')
+    )
+    AND (
+        sqlc.narg('venue')::text IS NULL 
+        OR venue ->> 'type' = sqlc.narg('venue')
     )
     AND (
         sqlc.narg('published')::boolean IS NULL 

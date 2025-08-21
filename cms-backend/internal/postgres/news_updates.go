@@ -27,6 +27,7 @@ func (nr *NewsRepository) CreateNewsUpdate(ctx context.Context, newsUpdate *repo
 		Topic:     newsUpdate.Topic,
 		Date:      newsUpdate.Date,
 		MinRead:   newsUpdate.MinRead,
+		Excerpt:   newsUpdate.Excerpt,
 		Content:   newsUpdate.Content,
 		CoverImg:  newsUpdate.CoverImg,
 		UpdatedBy: newsUpdate.UpdatedBy,
@@ -57,6 +58,7 @@ func (nr *NewsRepository) GetNewsUpdate(ctx context.Context, id int64) (*reposit
 		Topic:       newsUpdate.Topic,
 		Date:        newsUpdate.Date,
 		MinRead:     newsUpdate.MinRead,
+		Excerpt:     newsUpdate.Excerpt,
 		Content:     newsUpdate.Content,
 		CoverImg:    newsUpdate.CoverImg,
 		Published:   newsUpdate.Published,
@@ -97,6 +99,7 @@ func (nr *NewsRepository) GetPublishedNewsUpdate(ctx context.Context, id int64) 
 		Topic:       newsUpdate.Topic,
 		Date:        newsUpdate.Date,
 		MinRead:     newsUpdate.MinRead,
+		Excerpt:     newsUpdate.Excerpt,
 		Content:     newsUpdate.Content,
 		CoverImg:    newsUpdate.CoverImg,
 		Published:   newsUpdate.Published,
@@ -117,6 +120,36 @@ func (nr *NewsRepository) GetPublishedNewsUpdate(ctx context.Context, id int64) 
 	}
 	if newsUpdate.DeletedAt.Valid {
 		rslt.DeletedAt = &newsUpdate.DeletedAt.Time
+	}
+
+	return rslt, nil
+}
+
+func (nr *NewsRepository) GetNewsUpdateByTopicRelations(ctx context.Context, topic string) ([]*repository.NewsUpdate, error) {
+	newsUpdates, err := nr.queries.GetNewsUpdateByTopicRelations(ctx, topic)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error retrieving news update: %s", err.Error())
+	}
+
+	rslt := make([]*repository.NewsUpdate, len(newsUpdates))
+	for i, newsUpdate := range newsUpdates {
+		rslt[i] = &repository.NewsUpdate{
+			ID:        newsUpdate.ID,
+			Title:     newsUpdate.Title,
+			Topic:     newsUpdate.Topic,
+			Date:      newsUpdate.Date,
+			MinRead:   newsUpdate.MinRead,
+			Excerpt:   newsUpdate.Excerpt,
+			Content:   newsUpdate.Content,
+			CoverImg:  newsUpdate.CoverImg,
+			UpdatedBy: newsUpdate.UpdatedBy,
+			UpdatedAt: newsUpdate.UpdatedAt,
+			CreatedAt: newsUpdate.CreatedAt,
+			CreatedBy: newsUpdate.CreatedBy,
+		}
 	}
 
 	return rslt, nil
@@ -172,6 +205,7 @@ func (nr *NewsRepository) ListNewsUpdate(ctx context.Context, filter *repository
 			Topic:     newsUpdate.Topic,
 			Date:      newsUpdate.Date,
 			MinRead:   newsUpdate.MinRead,
+			Excerpt:   newsUpdate.Excerpt,
 			Content:   newsUpdate.Content,
 			CoverImg:  newsUpdate.CoverImg,
 			UpdatedBy: newsUpdate.UpdatedBy,
@@ -202,6 +236,7 @@ func (nr *NewsRepository) PublishNewsUpdate(ctx context.Context, newsUpdateID in
 		Topic:     newsUpdate.Topic,
 		Date:      newsUpdate.Date,
 		MinRead:   newsUpdate.MinRead,
+		Excerpt:   newsUpdate.Excerpt,
 		Content:   newsUpdate.Content,
 		CoverImg:  newsUpdate.CoverImg,
 		UpdatedBy: newsUpdate.UpdatedBy,
@@ -219,6 +254,7 @@ func (nr *NewsRepository) UpdateNewsUpdate(ctx context.Context, newsUpdate *repo
 		Topic:     pgtype.Text{Valid: false},
 		Date:      pgtype.Timestamptz{Valid: false},
 		MinRead:   pgtype.Int4{Valid: false},
+		Excerpt:   pgtype.Text{Valid: false},
 		Content:   pgtype.Text{Valid: false},
 		CoverImg:  pgtype.Text{Valid: false},
 	}
@@ -234,6 +270,9 @@ func (nr *NewsRepository) UpdateNewsUpdate(ctx context.Context, newsUpdate *repo
 	}
 	if newsUpdate.MinRead != nil {
 		updateParams.MinRead = pgtype.Int4{Int32: *newsUpdate.MinRead, Valid: true}
+	}
+	if newsUpdate.Excerpt != nil {
+		updateParams.Excerpt = pgtype.Text{String: *newsUpdate.Excerpt, Valid: true}
 	}
 	if newsUpdate.Content != nil {
 		updateParams.Content = pgtype.Text{String: *newsUpdate.Content, Valid: true}

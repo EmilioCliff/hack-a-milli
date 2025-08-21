@@ -19,6 +19,7 @@ WHERE
     AND (
         COALESCE($1::text, '') = '' 
         OR LOWER(title) LIKE $1
+        OR LOWER(excerpt) LIKE $1
         OR LOWER(topic) LIKE $1
     )
     AND (
@@ -55,14 +56,15 @@ func (q *Queries) CountNewsUpdates(ctx context.Context, arg CountNewsUpdatesPara
 }
 
 const createNewsUpdate = `-- name: CreateNewsUpdate :one
-INSERT INTO news_updates (title, topic, date, min_read, content, cover_img, updated_by, created_by)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+INSERT INTO news_updates (title, topic, excerpt, date, min_read, content, cover_img, updated_by, created_by)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 RETURNING id
 `
 
 type CreateNewsUpdateParams struct {
 	Title     string    `json:"title"`
 	Topic     string    `json:"topic"`
+	Excerpt   string    `json:"excerpt"`
 	Date      time.Time `json:"date"`
 	MinRead   int32     `json:"min_read"`
 	Content   string    `json:"content"`
@@ -75,6 +77,7 @@ func (q *Queries) CreateNewsUpdate(ctx context.Context, arg CreateNewsUpdatePara
 	row := q.db.QueryRow(ctx, createNewsUpdate,
 		arg.Title,
 		arg.Topic,
+		arg.Excerpt,
 		arg.Date,
 		arg.MinRead,
 		arg.Content,
@@ -105,7 +108,7 @@ func (q *Queries) DeleteNewsUpdate(ctx context.Context, arg DeleteNewsUpdatePara
 }
 
 const getNewsUpdate = `-- name: GetNewsUpdate :one
-SELECT id, title, topic, date, min_read, content, cover_img, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at FROM news_updates
+SELECT id, title, topic, date, min_read, excerpt, content, cover_img, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at FROM news_updates
 WHERE id = $1
 `
 
@@ -118,6 +121,7 @@ func (q *Queries) GetNewsUpdate(ctx context.Context, id int64) (NewsUpdate, erro
 		&i.Topic,
 		&i.Date,
 		&i.MinRead,
+		&i.Excerpt,
 		&i.Content,
 		&i.CoverImg,
 		&i.Published,
@@ -132,8 +136,51 @@ func (q *Queries) GetNewsUpdate(ctx context.Context, id int64) (NewsUpdate, erro
 	return i, err
 }
 
+const getNewsUpdateByTopicRelations = `-- name: GetNewsUpdateByTopicRelations :many
+SELECT id, title, topic, date, min_read, excerpt, content, cover_img, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at FROM news_updates
+WHERE topic = $1 AND deleted_at IS NULL
+ORDER BY date DESC LIMIT 5
+`
+
+func (q *Queries) GetNewsUpdateByTopicRelations(ctx context.Context, topic string) ([]NewsUpdate, error) {
+	rows, err := q.db.Query(ctx, getNewsUpdateByTopicRelations, topic)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []NewsUpdate{}
+	for rows.Next() {
+		var i NewsUpdate
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Topic,
+			&i.Date,
+			&i.MinRead,
+			&i.Excerpt,
+			&i.Content,
+			&i.CoverImg,
+			&i.Published,
+			&i.PublishedAt,
+			&i.UpdatedBy,
+			&i.CreatedBy,
+			&i.DeletedBy,
+			&i.DeletedAt,
+			&i.UpdatedAt,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getPublishedNewsUpdate = `-- name: GetPublishedNewsUpdate :one
-SELECT id, title, topic, date, min_read, content, cover_img, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at FROM news_updates
+SELECT id, title, topic, date, min_read, excerpt, content, cover_img, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at FROM news_updates
 WHERE id = $1 AND published = TRUE AND deleted_at IS NULL
 `
 
@@ -146,6 +193,7 @@ func (q *Queries) GetPublishedNewsUpdate(ctx context.Context, id int64) (NewsUpd
 		&i.Topic,
 		&i.Date,
 		&i.MinRead,
+		&i.Excerpt,
 		&i.Content,
 		&i.CoverImg,
 		&i.Published,
@@ -161,12 +209,13 @@ func (q *Queries) GetPublishedNewsUpdate(ctx context.Context, id int64) (NewsUpd
 }
 
 const listNewsUpdates = `-- name: ListNewsUpdates :many
-SELECT id, title, topic, date, min_read, content, cover_img, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at FROM news_updates
+SELECT id, title, topic, date, min_read, excerpt, content, cover_img, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at FROM news_updates
 WHERE 
     deleted_at IS NULL
     AND (
         COALESCE($1::text, '') = '' 
         OR LOWER(title) LIKE $1
+        OR LOWER(excerpt) LIKE $1
         OR LOWER(topic) LIKE $1
     )
     AND (
@@ -216,6 +265,7 @@ func (q *Queries) ListNewsUpdates(ctx context.Context, arg ListNewsUpdatesParams
 			&i.Topic,
 			&i.Date,
 			&i.MinRead,
+			&i.Excerpt,
 			&i.Content,
 			&i.CoverImg,
 			&i.Published,
@@ -244,7 +294,7 @@ SET published = TRUE,
     updated_by = $1,
     updated_at = NOW()
 WHERE id = $2
-RETURNING id, title, topic, date, min_read, content, cover_img, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at
+RETURNING id, title, topic, date, min_read, excerpt, content, cover_img, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at
 `
 
 type PublishNewsUpdateParams struct {
@@ -261,6 +311,7 @@ func (q *Queries) PublishNewsUpdate(ctx context.Context, arg PublishNewsUpdatePa
 		&i.Topic,
 		&i.Date,
 		&i.MinRead,
+		&i.Excerpt,
 		&i.Content,
 		&i.CoverImg,
 		&i.Published,
@@ -280,18 +331,20 @@ UPDATE news_updates
 SET title = COALESCE($1, title),
     topic = COALESCE($2, topic),
     date = COALESCE($3, date),
-    min_read = COALESCE($4, min_read),
-    content = COALESCE($5, content),
-    cover_img = COALESCE($6, cover_img),
-    updated_by = $7,
+    excerpt = COALESCE($4, excerpt),
+    min_read = COALESCE($5, min_read),
+    content = COALESCE($6, content),
+    cover_img = COALESCE($7, cover_img),
+    updated_by = $8,
     updated_at = NOW()
-WHERE id = $8
+WHERE id = $9
 `
 
 type UpdateNewsUpdateParams struct {
 	Title     pgtype.Text        `json:"title"`
 	Topic     pgtype.Text        `json:"topic"`
 	Date      pgtype.Timestamptz `json:"date"`
+	Excerpt   pgtype.Text        `json:"excerpt"`
 	MinRead   pgtype.Int4        `json:"min_read"`
 	Content   pgtype.Text        `json:"content"`
 	CoverImg  pgtype.Text        `json:"cover_img"`
@@ -304,6 +357,7 @@ func (q *Queries) UpdateNewsUpdate(ctx context.Context, arg UpdateNewsUpdatePara
 		arg.Title,
 		arg.Topic,
 		arg.Date,
+		arg.Excerpt,
 		arg.MinRead,
 		arg.Content,
 		arg.CoverImg,

@@ -18,6 +18,7 @@ type User struct {
 	Role                      []string  `json:"role"`
 	DepartmentID              *int64    `json:"department_id,omitempty"`
 	DepartmentName            *string   `json:"department_name,omitempty"`
+	AvatarURL                 *string   `json:"avatar_url,omitempty"`
 	Active                    bool      `json:"active"`
 	AccountVerified           bool      `json:"account_verified"`
 	MultifactorAuthentication bool      `json:"multifactor_authentication"`
@@ -34,6 +35,7 @@ type UpdateUser struct {
 	PhoneNumber               *string   `json:"phone_number"`
 	Address                   *string   `json:"address"`
 	PasswordHash              *string   `json:"password_hash"`
+	AvatarURL                 *string   `json:"avatar_url"`
 	RefreshToken              *string   `json:"refresh_token"`
 	AccountVerified           *bool     `json:"account_verified"`
 	Role                      *[]string `json:"role"`

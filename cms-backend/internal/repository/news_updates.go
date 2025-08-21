@@ -13,6 +13,7 @@ type NewsUpdate struct {
 	Topic       string     `json:"topic"`
 	Date        time.Time  `json:"date"`
 	MinRead     int32      `json:"min_read"`
+	Excerpt     string     `json:"excerpt"`
 	Content     string     `json:"content"`
 	CoverImg    string     `json:"cover_img"`
 	Published   bool       `json:"published"`
@@ -32,6 +33,7 @@ type UpdateNewsUpdate struct {
 	Topic     *string    `json:"topic"`
 	Date      *time.Time `json:"date"`
 	MinRead   *int32     `json:"min_read"`
+	Excerpt   *string    `json:"excerpt"`
 	Content   *string    `json:"content"`
 	CoverImg  *string    `json:"cover_img"`
 	Published *bool      `json:"published"`
@@ -51,6 +53,7 @@ type NewsRepository interface {
 	CreateNewsUpdate(ctx context.Context, newsUpdate *NewsUpdate) (*NewsUpdate, error)
 	GetNewsUpdate(ctx context.Context, id int64) (*NewsUpdate, error)
 	GetPublishedNewsUpdate(ctx context.Context, id int64) (*NewsUpdate, error)
+	GetNewsUpdateByTopicRelations(ctx context.Context, topic string) ([]*NewsUpdate, error)
 	ListNewsUpdate(ctx context.Context, filter *NewsUpdateFilter) ([]*NewsUpdate, *pkg.Pagination, error)
 	PublishNewsUpdate(ctx context.Context, newsUpdateID int64, userID int64) (*NewsUpdate, error)
 	UpdateNewsUpdate(ctx context.Context, newsUpdate *UpdateNewsUpdate) (*NewsUpdate, error)

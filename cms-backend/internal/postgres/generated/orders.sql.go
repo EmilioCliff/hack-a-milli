@@ -99,7 +99,8 @@ LEFT JOIN LATERAL (
         'id', u.id,
         'email', u.email,
         'full_name', u.full_name,
-        'role', u.role
+        'role', u.role,
+        'avatar_url', u.avatar_url
     ) AS user_json
     FROM users u
     WHERE u.id = o.user_id
@@ -169,7 +170,8 @@ LEFT JOIN LATERAL (
         'id', u.id,
         'email', u.email,
         'full_name', u.full_name,
-        'role', u.role
+        'role', u.role,
+        'avatar_url', u.avatar_url
     ) AS user_json
     FROM users u
     WHERE u.id = o.user_id

@@ -105,7 +105,8 @@ SELECT
     up.user_id, up.notify_news, up.notify_events, up.notify_training, up.notify_policy, up.updated_at, up.created_at,
     u.email AS user_email,
     u.full_name AS user_full_name,
-    u.role AS user_role
+    u.role AS user_role,
+    u.avatar_url AS user_avatar_url
 FROM user_preferences up
 JOIN users u ON up.user_id = u.id
 ORDER BY up.created_at DESC
@@ -118,16 +119,17 @@ type ListUserPreferencesParams struct {
 }
 
 type ListUserPreferencesRow struct {
-	UserID         int64     `json:"user_id"`
-	NotifyNews     bool      `json:"notify_news"`
-	NotifyEvents   bool      `json:"notify_events"`
-	NotifyTraining bool      `json:"notify_training"`
-	NotifyPolicy   bool      `json:"notify_policy"`
-	UpdatedAt      time.Time `json:"updated_at"`
-	CreatedAt      time.Time `json:"created_at"`
-	UserEmail      string    `json:"user_email"`
-	UserFullName   string    `json:"user_full_name"`
-	UserRole       []string  `json:"user_role"`
+	UserID         int64       `json:"user_id"`
+	NotifyNews     bool        `json:"notify_news"`
+	NotifyEvents   bool        `json:"notify_events"`
+	NotifyTraining bool        `json:"notify_training"`
+	NotifyPolicy   bool        `json:"notify_policy"`
+	UpdatedAt      time.Time   `json:"updated_at"`
+	CreatedAt      time.Time   `json:"created_at"`
+	UserEmail      string      `json:"user_email"`
+	UserFullName   string      `json:"user_full_name"`
+	UserRole       []string    `json:"user_role"`
+	UserAvatarUrl  pgtype.Text `json:"user_avatar_url"`
 }
 
 func (q *Queries) ListUserPreferences(ctx context.Context, arg ListUserPreferencesParams) ([]ListUserPreferencesRow, error) {
@@ -150,6 +152,7 @@ func (q *Queries) ListUserPreferences(ctx context.Context, arg ListUserPreferenc
 			&i.UserEmail,
 			&i.UserFullName,
 			&i.UserRole,
+			&i.UserAvatarUrl,
 		); err != nil {
 			return nil, err
 		}

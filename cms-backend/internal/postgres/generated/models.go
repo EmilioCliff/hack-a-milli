@@ -150,6 +150,7 @@ type NewsUpdate struct {
 	Topic       string             `json:"topic"`
 	Date        time.Time          `json:"date"`
 	MinRead     int32              `json:"min_read"`
+	Excerpt     string             `json:"excerpt"`
 	Content     string             `json:"content"`
 	CoverImg    string             `json:"cover_img"`
 	Published   bool               `json:"published"`
@@ -316,6 +317,7 @@ type User struct {
 	AccountVerified           bool        `json:"account_verified"`
 	MultifactorAuthentication bool        `json:"multifactor_authentication"`
 	RefreshToken              string      `json:"refresh_token"`
+	AvatarUrl                 pgtype.Text `json:"avatar_url"`
 	UpdatedBy                 pgtype.Int8 `json:"updated_by"`
 	CreatedBy                 int64       `json:"created_by"`
 	UpdatedAt                 time.Time   `json:"updated_at"`

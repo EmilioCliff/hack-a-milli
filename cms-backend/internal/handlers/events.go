@@ -262,6 +262,7 @@ func (s *Server) listPublishedEventsHandler(ctx *gin.Context) {
 		Published: &published,
 		Search:    nil,
 		Status:    nil,
+		Venue:     nil,
 		StartTime: nil,
 		EndTime:   nil,
 		Tags:      nil,
@@ -272,6 +273,9 @@ func (s *Server) listPublishedEventsHandler(ctx *gin.Context) {
 	}
 	if status := ctx.Query("status"); status != "" {
 		filter.Status = &status
+	}
+	if venue := ctx.Query("venue"); venue != "" {
+		filter.Venue = &venue
 	}
 	if startDate := ctx.Query("start_date"); startDate != "" {
 		startTime := pkg.StringToTime(startDate)

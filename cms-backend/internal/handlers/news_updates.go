@@ -11,6 +11,7 @@ import (
 type NewsUpdate struct {
 	Title    string `json:"title" binding:"required"`
 	Topic    string `json:"topic" binding:"required"`
+	Excerpt  string `json:"excerpt" binding:"required"`
 	Date     string `json:"date" binding:"required"`
 	MinRead  int32  `json:"min_read" binding:"required"`
 	Content  string `json:"content" binding:"required"`
@@ -36,6 +37,7 @@ func (s *Server) createNewsHandler(ctx *gin.Context) {
 		Date:      pkg.StringToTime(req.Date),
 		MinRead:   req.MinRead,
 		Content:   req.Content,
+		Excerpt:   req.Excerpt,
 		CoverImg:  req.CoverImg,
 		UpdatedBy: reqCtx.UserID,
 		CreatedBy: reqCtx.UserID,
@@ -79,7 +81,13 @@ func (s *Server) getPublishedNewsHandler(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"data": news})
+	relatedUpdates, err := s.repo.NewsRepository.GetNewsUpdateByTopicRelations(ctx, news.Topic)
+	if err != nil {
+		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": news, "related_updates": relatedUpdates})
 }
 
 func (s *Server) updateNewsHandler(ctx *gin.Context) {
