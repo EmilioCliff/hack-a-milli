@@ -1,88 +1,50 @@
 import { FlatList, Pressable, TouchableOpacity, View } from 'react-native';
 import AppSafeView from '~/components/shared/AppSafeView';
-import { Link, useRouter } from 'expo-router';
-import { Entypo } from '@expo/vector-icons';
+import { Link, router, useRouter } from 'expo-router';
+import { Entypo, Ionicons } from '@expo/vector-icons';
 import MerchCard from '~/components/merchandise/MerchCard';
 import { s } from 'react-native-size-matters';
 import ModalToLogo from '~/components/modal/ModalToLogo';
-
-const data = [
-	{
-		id: 1,
-		imageUrl: [
-			'https://images.unsplash.com/photo-1752867494754-f2f0accbc7d9?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyNXx8fGVufDB8fHx8fA%3D%3D',
-			'https://images.unsplash.com/photo-1752867494754-f2f0accbc7d9?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyNXx8fGVufDB8fHx8fA%3D%3D',
-		],
-		title: 'Lenovo Laptop',
-		amount: 1500,
-	},
-	{
-		id: 2,
-		imageUrl: [
-			'https://images.unsplash.com/photo-1752867494754-f2f0accbc7d9?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyNXx8fGVufDB8fHx8fA%3D%3D',
-			'https://images.unsplash.com/photo-1752867494754-f2f0accbc7d9?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyNXx8fGVufDB8fHx8fA%3D%3D',
-		],
-		title: 'iPhone 16 Pro Max',
-		amount: 1500,
-	},
-	{
-		id: 3,
-		imageUrl: [
-			'https://images.unsplash.com/photo-1752867494754-f2f0accbc7d9?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyNXx8fGVufDB8fHx8fA%3D%3D',
-			'https://images.unsplash.com/photo-1752867494754-f2f0accbc7d9?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyNXx8fGVufDB8fHx8fA%3D%3D',
-		],
-		title: 'Mac Book',
-		amount: 1000,
-	},
-	{
-		id: 4,
-		imageUrl: [
-			'https://images.unsplash.com/photo-1752867494754-f2f0accbc7d9?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyNXx8fGVufDB8fHx8fA%3D%3D',
-			'https://images.unsplash.com/photo-1752867494754-f2f0accbc7d9?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyNXx8fGVufDB8fHx8fA%3D%3D',
-		],
-		title: 'Samsung Phone',
-		amount: 1800,
-	},
-	{
-		id: 5,
-		imageUrl: [
-			'https://images.unsplash.com/photo-1752867494754-f2f0accbc7d9?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyNXx8fGVufDB8fHx8fA%3D%3D',
-			'https://images.unsplash.com/photo-1752867494754-f2f0accbc7d9?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyNXx8fGVufDB8fHx8fA%3D%3D',
-		],
-		title: 'iPhone 16 Pro Max',
-		amount: 1500,
-	},
-	{
-		id: 6,
-		imageUrl: [
-			'https://images.unsplash.com/photo-1752867494754-f2f0accbc7d9?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyNXx8fGVufDB8fHx8fA%3D%3D',
-			'https://images.unsplash.com/photo-1752867494754-f2f0accbc7d9?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyNXx8fGVufDB8fHx8fA%3D%3D',
-		],
-		title: 'Mac Book',
-		amount: 1000,
-	},
-	{
-		id: 7,
-		imageUrl: [
-			'https://images.unsplash.com/photo-1752867494754-f2f0accbc7d9?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyNXx8fGVufDB8fHx8fA%3D%3D',
-			'https://images.unsplash.com/photo-1752867494754-f2f0accbc7d9?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyNXx8fGVufDB8fHx8fA%3D%3D',
-		],
-		title: 'Samsung Phone',
-		amount: 1800,
-	},
-];
+import { useState } from 'react';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import getMerchandises from '~/services/getMerchandises';
+import JobPostingSkeleton from '~/components/careers/JobCareerSkeleton';
+import EmptyState from '~/components/shared/EmptyState';
+import MerchSkeleton from '~/components/merchandise/MerchSkeleton';
 
 const colNum = 2;
 const gap = 12;
 
 export default function index() {
-	const router = useRouter();
+	const [isRefreshing, setIsRefreshing] = useState(false);
+
+	const queryClient = useQueryClient();
+
+	const { data, fetchNextPage, isLoading } = useInfiniteQuery({
+		queryKey: ['merchandise'],
+		queryFn: ({ pageParam = 1 }) => getMerchandises(pageParam),
+		staleTime: 2 * 10000 * 5,
+		initialPageParam: 1,
+		retry: (failureCount, error) => {
+			if (failureCount < 5) {
+				return true;
+			}
+			return false;
+		},
+		getNextPageParam: (lastPage) => {
+			return lastPage.pagination?.has_next
+				? lastPage.pagination?.next_page
+				: null;
+		},
+	});
+
+	const jobMerchandises = data?.pages.flatMap((page) => page.data) ?? [];
 
 	return (
 		<AppSafeView>
 			<FlatList
 				numColumns={2}
-				data={data}
+				data={jobMerchandises}
 				keyExtractor={(item) => item.id.toString()}
 				ListHeaderComponent={() => (
 					<View className="mb-4">
@@ -117,17 +79,42 @@ export default function index() {
 							asChild
 						>
 							<Pressable>
-								<MerchCard
-									id={item.id}
-									imageUrl={item.imageUrl[0]}
-									title={item.title}
-									amount={item.amount}
-								/>
+								<MerchCard key={index} {...item} />
 							</Pressable>
 						</Link>
 					</View>
 				)}
 				showsVerticalScrollIndicator={false}
+				onEndReached={() => fetchNextPage()}
+				refreshing={isRefreshing}
+				onRefresh={() => {
+					setIsRefreshing(true);
+					queryClient.invalidateQueries({
+						queryKey: ['merchandise'],
+					});
+					setIsRefreshing(false);
+				}}
+				ListEmptyComponent={
+					isLoading ? (
+						<View className="p-4">
+							{[...Array(5)].map((_, idx) => (
+								<MerchSkeleton key={idx} />
+							))}
+						</View>
+					) : (
+						<EmptyState
+							title="No Open Job Positions"
+							subtitle="Check back later or try refreshing"
+							icon={
+								<Entypo
+									name="shopping-bag"
+									size={38}
+									color="black"
+								/>
+							}
+						/>
+					)
+				}
 			/>
 			<TouchableOpacity
 				onPress={() => router.push('/(drawer)/merchandise/cart')}

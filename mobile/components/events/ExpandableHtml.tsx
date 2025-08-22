@@ -4,7 +4,12 @@ import RenderHtml from 'react-native-render-html';
 import { TagsStyles } from '~/constants/sharedStyles';
 import { Text } from '../ui/text';
 
-const ExpandableHtml = ({ htmlContent }: { htmlContent: string }) => {
+interface expandableHtmlProps {
+	htmlContent: string;
+	showExpandButton?: boolean;
+}
+
+const ExpandableHtml = (props: expandableHtmlProps) => {
 	const [expanded, setExpanded] = useState(false);
 	const { width } = useWindowDimensions();
 
@@ -20,20 +25,22 @@ const ExpandableHtml = ({ htmlContent }: { htmlContent: string }) => {
 		}
 	};
 
-	const truncatedHtml = getShortHtml(htmlContent);
+	const truncatedHtml = getShortHtml(props.htmlContent);
 
 	return (
 		<View>
 			<RenderHtml
 				contentWidth={width - 64}
-				source={{ html: expanded ? htmlContent : truncatedHtml }}
+				source={{ html: expanded ? props.htmlContent : truncatedHtml }}
 				tagsStyles={TagsStyles}
 			/>
-			<TouchableOpacity onPress={() => setExpanded(!expanded)}>
-				<Text className="text-primary font-bold">
-					{expanded ? 'Show Less' : 'Read More'}
-				</Text>
-			</TouchableOpacity>
+			{props.showExpandButton && (
+				<TouchableOpacity onPress={() => setExpanded(!expanded)}>
+					<Text className="text-primary font-bold">
+						{expanded ? 'Show Less' : 'Read More'}
+					</Text>
+				</TouchableOpacity>
+			)}
 		</View>
 	);
 };

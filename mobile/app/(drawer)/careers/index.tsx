@@ -5,43 +5,42 @@ import { Feather, FontAwesome, Ionicons } from '@expo/vector-icons';
 import JobListing from '~/components/careers/job-listing';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 import { Text } from '~/components/ui/text';
-
-const data = [
-	{
-		id: 1,
-		title: 'Senior Software Engineer',
-		department: 'Engineering',
-		location: 'Nairobi, Kenya',
-		type: 'Full-time',
-		salary: 'KES 800K - 1.2M',
-		posted: '2 days ago',
-	},
-	{
-		id: 2,
-		title: 'Domain Registry Specialist',
-		department: 'Operations',
-		location: 'Nairobi, Kenya',
-		type: 'Full-time',
-		salary: 'KES 600K - 900K',
-		posted: '1 week ago',
-	},
-	{
-		id: 3,
-		title: 'Cybersecurity Analyst',
-		department: 'Security',
-		location: 'Remote',
-		type: 'Full-time',
-		salary: 'KES 700K - 1M',
-		posted: '3 days ago',
-	},
-];
+import { useState } from 'react';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import getJobPostings from '~/services/getJobPostings';
+import EmptyState from '~/components/shared/EmptyState';
+import JobPostingSkeleton from '~/components/careers/JobCareerSkeleton';
 
 export default function CareersPage() {
+	const [isRefreshing, setIsRefreshing] = useState(false);
+
+	const queryClient = useQueryClient();
+
+	const { data, fetchNextPage, isLoading } = useInfiniteQuery({
+		queryKey: ['job-postings'],
+		queryFn: ({ pageParam = 1 }) => getJobPostings(pageParam),
+		staleTime: 2 * 10000 * 5,
+		initialPageParam: 1,
+		retry: (failureCount, error) => {
+			if (failureCount < 5) {
+				return true;
+			}
+			return false;
+		},
+		getNextPageParam: (lastPage) => {
+			return lastPage.pagination?.has_next
+				? lastPage.pagination?.next_page
+				: null;
+		},
+	});
+
+	const jobPostings = data?.pages.flatMap((page) => page.data) ?? [];
+
 	return (
 		<AppSafeView>
 			<View className="flex-1 px-4">
 				<FlatList
-					data={data}
+					data={jobPostings}
 					keyExtractor={(item) => item.id.toString()}
 					ListHeaderComponent={() => (
 						<ModalToLogo
@@ -124,17 +123,39 @@ export default function CareersPage() {
 						</Card>
 					)}
 					renderItem={({ item, index }) => (
-						<JobListing
-							id={item.id}
-							title={item.title}
-							department={item.department}
-							location={item.location}
-							type={item.type}
-							salary={item.salary}
-							posted={item.posted}
-						/>
+						<JobListing key={index} {...item} />
 					)}
 					showsVerticalScrollIndicator={false}
+					onEndReached={() => fetchNextPage()}
+					refreshing={isRefreshing}
+					onRefresh={() => {
+						setIsRefreshing(true);
+						queryClient.invalidateQueries({
+							queryKey: ['job-postings'],
+						});
+						setIsRefreshing(false);
+					}}
+					ListEmptyComponent={
+						isLoading ? (
+							<View>
+								{[...Array(5)].map((_, idx) => (
+									<JobPostingSkeleton key={idx} />
+								))}
+							</View>
+						) : (
+							<EmptyState
+								title="No Open Job Positions"
+								subtitle="Check back later or try refreshing"
+								icon={
+									<Ionicons
+										name="people-sharp"
+										size={38}
+										color="black"
+									/>
+								}
+							/>
+						)
+					}
 				/>
 			</View>
 		</AppSafeView>

@@ -4,25 +4,63 @@ import AppSafeView from '~/components/shared/AppSafeView';
 import { useState } from 'react';
 import { Button } from '~/components/ui/button';
 import MerchCarousel from '~/components/merchandise/MerchCarousel';
+import { useLocalSearchParams } from 'expo-router';
+import { useQuery } from '@tanstack/react-query';
+import getMerchandise from '~/services/getMerchandise';
+import KeNICSpinner from '~/components/shared/KeNICSpinner';
+import EmptyState from '~/components/shared/EmptyState';
+import { Entypo } from '@expo/vector-icons';
+import { useDispatch } from 'react-redux';
+import { addToCart } from '~/store/slices/cart';
 
 const colorOptions = ['Red', 'Green', 'Blue', 'Black', 'White'];
 const sizeOptions = ['XS', 'S', 'M', 'L', 'XL'];
-const product = {
-	id: 1,
-	imageUrl: [
-		'https://images.unsplash.com/photo-1752867494754-f2f0accbc7d9?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyNXx8fGVufDB8fHx8fA%3D%3D',
-		'https://images.unsplash.com/photo-1752867494754-f2f0accbc7d9?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyNXx8fGVufDB8fHx8fA%3D%3D',
-	],
-	description:
-		'Lorem ipsum, dolor sit amet consectetur adipisicing elit. Eum eos atque deserunt repellat dicta. Similique libero vel incidunt, neque autem quidem! Reiciendis ea eligendi impedit vel repellendus nihil ab molestiae!',
-	title: 'Lenovo Laptop',
-	amount: 1500,
-};
 
 export default function MerchandiseDetails() {
 	const [selectedColor, setSelectedColor] = useState<string | null>('White');
 	const [selectedSize, setSelectedSize] = useState<string | null>('M');
 	const [selectedQuantity, setSelectedQuantity] = useState(1);
+
+	const dispatch = useDispatch();
+	const { id } = useLocalSearchParams();
+
+	const { data, isLoading, error } = useQuery({
+		queryKey: ['merchandise', { id }],
+		queryFn: () => getMerchandise(Number(id)),
+		staleTime: 2 * 10000 * 5,
+	});
+
+	const handleAddToCart = () => {
+		if (!data?.data) return;
+
+		dispatch(
+			addToCart({
+				id: data.data.id,
+				title: data.data.name,
+				price: data.data.price,
+				quantity: selectedQuantity,
+				size: selectedSize!,
+				color: selectedColor!,
+				imageUrl: data.data.image_url[0],
+			}),
+		);
+	};
+
+	if (isLoading || !data?.data)
+		return (
+			<View style={{ flex: 1, justifyContent: 'center' }}>
+				<KeNICSpinner />
+			</View>
+		);
+
+	if (error)
+		return (
+			<EmptyState
+				title=""
+				subtitle=""
+				icon={<Entypo name="shopping-bag" size={38} color="black" />}
+			/>
+		);
 
 	return (
 		<AppSafeView>
@@ -31,13 +69,13 @@ export default function MerchandiseDetails() {
 				showsHorizontalScrollIndicator={false}
 				className="flex-1 px-4"
 			>
-				<MerchCarousel images={product.imageUrl} />
-				<Text className="font-bold text-3xl">{product.title}</Text>
+				<MerchCarousel images={data.data.image_url} />
+				<Text className="font-bold text-3xl">{data.data.name}</Text>
 				<Text className="mt-2 text-2xl text-secondary">
-					KES {product.amount}
+					KES {data.data.price}
 				</Text>
 				<Text className="text-gray-600 my-4">
-					{product.description}
+					{data.data.description}
 				</Text>
 
 				<Text className="font-bold text-lg mb-2">Select Color</Text>
@@ -86,10 +124,15 @@ export default function MerchandiseDetails() {
 						<Text className="text-black">+</Text>
 					</Button>
 				</View>
-
-				<Button className="mt-6">
-					<Text className="text-xl font-bold">Add To Cart</Text>
-				</Button>
+				<TouchableOpacity
+					onPress={handleAddToCart}
+					activeOpacity={0.7} // lower = more fade on press
+					className="mt-6 bg-primary rounded-xl h-10 px-4 py-2 native:h-12 native:px-5 native:py-3"
+				>
+					<Text className="text-xl font-bold text-white text-center">
+						Add To Cart
+					</Text>
+				</TouchableOpacity>
 			</ScrollView>
 		</AppSafeView>
 	);

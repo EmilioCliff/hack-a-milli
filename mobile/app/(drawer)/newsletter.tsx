@@ -1,11 +1,17 @@
 import { AntDesign, EvilIcons, FontAwesome } from '@expo/vector-icons';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useState } from 'react';
 import { View, Text, TextInput, FlatList } from 'react-native';
+import EventSkeleton from '~/components/events/EventSkeleton';
 import ModalToLogo from '~/components/modal/ModalToLogo';
 import NewsLetterCard from '~/components/newsletter/NewsLetterCard';
+import { getDownloadURLHelper } from '~/components/registrars/helper';
 import AppSafeView from '~/components/shared/AppSafeView';
+import EmptyState from '~/components/shared/EmptyState';
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardHeader } from '~/components/ui/card';
+import { Progress } from '~/components/ui/progress';
 import {
 	Select,
 	SelectContent,
@@ -14,44 +20,51 @@ import {
 	SelectValue,
 } from '~/components/ui/select';
 import { NAV_THEME } from '~/constants/colors';
-
-const data = [
-	{
-		id: 1,
-		title: 'Kenya Launches New Tech Innovation Hub',
-		description:
-			'The government partners with local startups to open a state-of-the-art technology hub in Nairobi.',
-		date: '2025-06-15',
-	},
-	{
-		id: 2,
-		title: 'KeNIC Announces New Domain Pricing',
-		description:
-			'KeNIC has revised its .KE domain pricing structure to promote local digital adoption.',
-		date: '2025-05-10',
-	},
-	{
-		id: 3,
-		title: 'Truehost Cloud Expands Data Center Capacity',
-		description:
-			'Truehost Kenya opens new server infrastructure to boost hosting performance and redundancy.',
-		date: '2025-04-27',
-	},
-	{
-		id: 4,
-		title: 'Cybersecurity Awareness Month Campaign',
-		description:
-			'The Communications Authority launches a national campaign to educate citizens on cybersecurity best practices.',
-		date: '2025-03-08',
-	},
-];
+import getNewsLetters from '~/services/getNewsLetters';
 
 export default function NewsLetterPage() {
+	const [isRefreshing, setIsRefreshing] = useState(false);
+	const [year, setYear] = useState('');
+	// const [downloadableLink, setDownloadableLink] = useState(
+	// 	'https://firebasestorage.googleapis.com/v0/b/kenic-hack-a-milli.firebasestorage.app/o/news-letters%2Fpublished%2FTika%20In%20Action.pdf?alt=media&token=6fe8f784-ad22-4a04-af55-60fc647a0a5f',
+	// );
+
+	const queryClient = useQueryClient();
+
+	const { data, fetchNextPage, isLoading } = useInfiniteQuery({
+		queryKey: ['news-letters', { year: year }],
+		queryFn: ({ pageParam = 1 }) =>
+			getNewsLetters({ page: pageParam, date_range: year }),
+		staleTime: 2 * 10000 * 5,
+		initialPageParam: 1,
+		retry: (failureCount, error) => {
+			if (failureCount < 5) {
+				return true;
+			}
+			return false;
+		},
+		getNextPageParam: (lastPage) => {
+			return lastPage.pagination?.has_next
+				? lastPage.pagination?.next_page
+				: null;
+		},
+	});
+
+	const helperDownloadLink = async () => {
+		try {
+			const link = await getDownloadURLHelper();
+			console.log(link);
+		} catch (error) {
+			console.log(error);
+		}
+	};
+
+	const newsLetters = data?.pages.flatMap((page) => page.data) ?? [];
 	return (
 		<AppSafeView>
 			<View className="flex-1 px-4">
 				<FlatList
-					data={data}
+					data={newsLetters}
 					keyExtractor={(item) => item.id.toString()}
 					ListHeaderComponent={() => (
 						<>
@@ -117,6 +130,9 @@ export default function NewsLetterPage() {
 									</SelectContent>
 								</Select>
 							</Card>
+							<Button onPress={helperDownloadLink}>
+								<Text>Get Downloadable Link</Text>
+							</Button>
 						</>
 					)}
 					ListFooterComponent={() => (
@@ -177,6 +193,37 @@ export default function NewsLetterPage() {
 						<NewsLetterCard {...item} />
 					)}
 					showsVerticalScrollIndicator={false}
+					refreshing={isRefreshing}
+					onRefresh={() => {
+						setIsRefreshing(true);
+						queryClient.invalidateQueries({
+							queryKey: ['news-letters'],
+						});
+						setYear('');
+						setIsRefreshing(false);
+					}}
+					onEndReached={() => fetchNextPage()}
+					ListEmptyComponent={
+						isLoading ? (
+							<View>
+								{[...Array(5)].map((_, idx) => (
+									<EventSkeleton key={idx} />
+								))}
+							</View>
+						) : (
+							<EmptyState
+								title="No Events Found"
+								subtitle="Check back later or try refreshing"
+								icon={
+									<FontAwesome
+										name="envelope"
+										size={38}
+										color="black"
+									/>
+								}
+							/>
+						)
+					}
 				/>
 			</View>
 		</AppSafeView>

@@ -3,10 +3,17 @@ import { router } from 'expo-router';
 import { Stack, useRouter } from 'expo-router';
 import { Button } from '~/components/ui/button';
 import { Text } from '~/components/ui/text';
+import { NAV_THEME } from '~/constants/colors';
 
 export default function MerchLayout() {
 	return (
-		<Stack>
+		<Stack
+			screenOptions={{
+				headerStyle: {
+					backgroundColor: NAV_THEME.appBackgroundColor,
+				},
+			}}
+		>
 			<Stack.Screen
 				name="index"
 				options={{
@@ -22,6 +29,7 @@ export default function MerchLayout() {
 								paddingBottom: 0,
 								paddingStart: 0,
 								paddingEnd: 0,
+								backgroundColor: NAV_THEME.appBackgroundColor,
 							}}
 						>
 							<Entypo
@@ -72,6 +80,7 @@ export default function MerchLayout() {
 								paddingBottom: 0,
 								paddingStart: 0,
 								paddingEnd: 0,
+								backgroundColor: NAV_THEME.appBackgroundColor,
 							}}
 						>
 							<Entypo
@@ -109,6 +118,7 @@ const backButton = () => {
 				paddingBottom: 0,
 				paddingStart: 0,
 				paddingEnd: 0,
+				backgroundColor: NAV_THEME.appBackgroundColor,
 			}}
 		>
 			<Entypo name="chevron-left" size={16} color="black" />

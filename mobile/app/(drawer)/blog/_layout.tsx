@@ -1,12 +1,19 @@
 import { Entypo } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Stack } from 'expo-router';
-import { View, Text } from 'react-native';
 import { Button } from '~/components/ui/button';
+import { Text } from '~/components/ui/text';
+import { NAV_THEME } from '~/constants/colors';
 
 export default function _layout() {
 	return (
-		<Stack>
+		<Stack
+			screenOptions={{
+				headerStyle: {
+					backgroundColor: NAV_THEME.appBackgroundColor,
+				},
+			}}
+		>
 			<Stack.Screen
 				name="index"
 				options={{
@@ -22,6 +29,7 @@ export default function _layout() {
 								paddingBottom: 0,
 								paddingStart: 0,
 								paddingEnd: 0,
+								backgroundColor: NAV_THEME.appBackgroundColor,
 							}}
 						>
 							<Entypo
@@ -54,6 +62,7 @@ export default function _layout() {
 								paddingBottom: 0,
 								paddingStart: 0,
 								paddingEnd: 0,
+								backgroundColor: NAV_THEME.appBackgroundColor,
 							}}
 						>
 							<Entypo

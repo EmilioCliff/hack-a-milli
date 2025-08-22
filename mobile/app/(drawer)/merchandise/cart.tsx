@@ -6,125 +6,104 @@ import AppSafeView from '~/components/shared/AppSafeView';
 import CartItem from '~/components/merchandise/CartItem';
 import { vs } from 'react-native-size-matters';
 import { Button } from '~/components/ui/button';
-
-const data = [
-	{
-		id: 1,
-		imageUrl: [
-			'https://images.unsplash.com/photo-1752867494754-f2f0accbc7d9?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyNXx8fGVufDB8fHx8fA%3D%3D',
-			'https://images.unsplash.com/photo-1752867494754-f2f0accbc7d9?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyNXx8fGVufDB8fHx8fA%3D%3D',
-		],
-		title: 'Lenovo Laptop',
-		amount: 1500,
-	},
-	{
-		id: 2,
-		imageUrl: [
-			'https://images.unsplash.com/photo-1752867494754-f2f0accbc7d9?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyNXx8fGVufDB8fHx8fA%3D%3D',
-			'https://images.unsplash.com/photo-1752867494754-f2f0accbc7d9?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyNXx8fGVufDB8fHx8fA%3D%3D',
-		],
-		title: 'iPhone 16 Pro Max',
-		amount: 1500,
-	},
-	{
-		id: 3,
-		imageUrl: [
-			'https://images.unsplash.com/photo-1752867494754-f2f0accbc7d9?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyNXx8fGVufDB8fHx8fA%3D%3D',
-			'https://images.unsplash.com/photo-1752867494754-f2f0accbc7d9?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyNXx8fGVufDB8fHx8fA%3D%3D',
-		],
-		title: 'Mac Book',
-		amount: 1000,
-	},
-	{
-		id: 4,
-		imageUrl: [
-			'https://images.unsplash.com/photo-1752867494754-f2f0accbc7d9?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyNXx8fGVufDB8fHx8fA%3D%3D',
-			'https://images.unsplash.com/photo-1752867494754-f2f0accbc7d9?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyNXx8fGVufDB8fHx8fA%3D%3D',
-		],
-		title: 'Samsung Phone',
-		amount: 1800,
-	},
-	{
-		id: 5,
-		imageUrl: [
-			'https://images.unsplash.com/photo-1752867494754-f2f0accbc7d9?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyNXx8fGVufDB8fHx8fA%3D%3D',
-			'https://images.unsplash.com/photo-1752867494754-f2f0accbc7d9?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyNXx8fGVufDB8fHx8fA%3D%3D',
-		],
-		title: 'iPhone 16 Pro Max',
-		amount: 1500,
-	},
-	{
-		id: 6,
-		imageUrl: [
-			'https://images.unsplash.com/photo-1752867494754-f2f0accbc7d9?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyNXx8fGVufDB8fHx8fA%3D%3D',
-			'https://images.unsplash.com/photo-1752867494754-f2f0accbc7d9?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyNXx8fGVufDB8fHx8fA%3D%3D',
-		],
-		title: 'Mac Book',
-		amount: 1000,
-	},
-	{
-		id: 7,
-		imageUrl: [
-			'https://images.unsplash.com/photo-1752867494754-f2f0accbc7d9?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyNXx8fGVufDB8fHx8fA%3D%3D',
-			'https://images.unsplash.com/photo-1752867494754-f2f0accbc7d9?w=400&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxmZWF0dXJlZC1waG90b3MtZmVlZHwyNXx8fGVufDB8fHx8fA%3D%3D',
-		],
-		title: 'Samsung Phone',
-		amount: 1800,
-	},
-];
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '~/store/store';
+import {
+	decreaseQuantity,
+	increaseQuantity,
+	removeFromCart,
+} from '~/store/slices/cart';
+import { SHIPPING_FEE } from '~/constants/app';
 
 export default function CartPage() {
+	const cartItems = useSelector((state: RootState) => state.cart.items);
+	const dispatch = useDispatch();
+
+	const subtotal = cartItems.reduce(
+		(sum, item) => sum + item.price * item.quantity,
+		0,
+	);
+
 	return (
 		<AppSafeView>
-			{data.length > 0 ? (
+			{cartItems.length > 0 ? (
 				<>
 					<View className="flex-1 justify-between p-4">
 						<FlatList
-							data={data}
-							keyExtractor={(item) => item.id.toString()}
+							data={cartItems}
+							keyExtractor={(item, index) =>
+								`${item.id}-${item.size}-${item.color}-${index}`
+							}
 							renderItem={({ item }) => (
 								<CartItem
 									id={item.id}
-									imageUrl={item.imageUrl[0]}
+									imageUrl={item.imageUrl}
 									title={item.title}
-									amount={item.amount}
+									price={item.price}
+									quantity={item.quantity}
+									size={item.size}
+									color={item.color}
+									onIncrease={() =>
+										dispatch(
+											increaseQuantity({
+												id: item.id,
+												size: item.size,
+												color: item.color,
+											}),
+										)
+									}
+									onDecrease={() =>
+										dispatch(
+											decreaseQuantity({
+												id: item.id,
+												size: item.size,
+												color: item.color,
+											}),
+										)
+									}
+									onDelete={() =>
+										dispatch(
+											removeFromCart({
+												id: item.id,
+												size: item.size,
+												color: item.color,
+											}),
+										)
+									}
 								/>
 							)}
 							showsVerticalScrollIndicator={false}
 							contentContainerStyle={{ paddingBottom: vs(4) }}
 						/>
-						<View style={{ marginBlock: vs(8) }}>
-							<View className="flex flex-row justify-between items-center">
+						<View className="mt-4">
+							<View className="flex flex-row justify-between">
 								<Text className="font-bold text-lg">
-									Subtotal:{' '}
+									Subtotal:
 								</Text>
 								<Text className="font-bold text-lg">
-									KES 9893
-								</Text>
-							</View>
-							<View className="flex flex-row justify-between items-center">
-								<Text className="font-bold text-lg">
-									Shipping:{' '}
-								</Text>
-								<Text className="font-bold text-lg">
-									KES 100
+									KES {subtotal}
 								</Text>
 							</View>
-							<View
-								className="h-1 w-full bg-border"
-								style={{ marginBlock: vs(5) }}
-							/>
-							<View className="flex flex-row justify-between items-center">
+							<View className="flex flex-row justify-between">
 								<Text className="font-bold text-lg">
-									Total:{' '}
+									Shipping:
 								</Text>
 								<Text className="font-bold text-lg">
-									KES 9918
+									KES {SHIPPING_FEE}
+								</Text>
+							</View>
+							<View className="h-1 w-full bg-border my-2" />
+							<View className="flex flex-row justify-between">
+								<Text className="font-bold text-lg">
+									Total:
+								</Text>
+								<Text className="font-bold text-lg">
+									KES {subtotal + SHIPPING_FEE}
 								</Text>
 							</View>
 						</View>
 					</View>
-					<Link href={'/(drawer)/merchandise/checkout'} asChild>
+					<Link href="/(drawer)/merchandise/checkout" asChild>
 						<Button className="my-2 mx-4">
 							<Text className="text-lg font-bold">
 								Continue To Checkout

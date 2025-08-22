@@ -22,7 +22,6 @@
 			"Content-Type",
 			"Authorization",
 			"X-User-Device",
-			"X-Requested-With",
 			"X-Device-Token"
 		],
 		"allow_credentials": true,

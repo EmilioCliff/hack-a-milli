@@ -1,77 +1,68 @@
-import { AntDesign, Octicons } from '@expo/vector-icons';
+import { AntDesign, FontAwesome, Octicons } from '@expo/vector-icons';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
-import { FlatList, ScrollView, View } from 'react-native';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { FlatList, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ModalToLogo from '~/components/modal/ModalToLogo';
 import RegistrarCard from '~/components/registrars/RegistrarCard';
+import RegistrarSkeleton from '~/components/registrars/RegistrarSkeleton';
+import AppControlerInput from '~/components/shared/AppControlInput';
 import AppSafeView from '~/components/shared/AppSafeView';
+import EmptyState from '~/components/shared/EmptyState';
+import KeNICSpinnerOverlay from '~/components/shared/KeNICSpinnerOverlay';
 import { Button } from '~/components/ui/button';
 import { Card } from '~/components/ui/card';
 import {
+	Option,
 	Select,
 	SelectContent,
-	SelectGroup,
 	SelectItem,
-	SelectLabel,
 	SelectTrigger,
 	SelectValue,
 } from '~/components/ui/select';
 import { Text } from '~/components/ui/text';
 import { NAV_THEME } from '~/constants/colors';
+import getRegistrars from '~/services/getRegistrars';
 
-const data = [
-	{
-		id: 1,
-		companyLogo: 'https://picsum.photos/200/200',
-		title: 'Kenya Network Information Centre (KeNIC)',
-		location: 'Nairobi, Kenya',
-		registeredDate: '2002-10-12',
-		contactInfo: {
-			contactNumber: '+254 700 111 000',
-			email: 'info@kenic.or.ke',
-			websiteUrl: 'https://www.kenic.or.ke',
-		},
-	},
-	{
-		id: 2,
-		companyLogo: 'https://picsum.photos/200/200',
-		title: 'Safaricom PLC',
-		location: 'Westlands, Nairobi, Kenya',
-		registeredDate: '1997-05-23',
-		contactInfo: {
-			contactNumber: '+254 722 002 100',
-			email: 'corporate@safaricom.co.ke',
-			websiteUrl: 'https://www.safaricom.co.ke',
-		},
-	},
-	{
-		id: 3,
-		companyLogo: 'https://picsum.photos/200/200',
-		title: 'Truehost Cloud Kenya',
-		location: 'Mombasa Road, Nairobi, Kenya',
-		registeredDate: '2016-09-14',
-		contactInfo: {
-			contactNumber: '+254 739 755 571',
-			email: 'support@truehost.co.ke',
-			websiteUrl: 'https://www.truehost.co.ke',
-		},
-	},
-	{
-		id: 4,
-		companyLogo: 'https://picsum.photos/200/200',
-		title: 'Webhost Kenya',
-		location: 'Moi Avenue, Nairobi, Kenya',
-		registeredDate: '2014-03-09',
-		contactInfo: {
-			contactNumber: '+254 723 123 456',
-			email: 'support@webhostkenya.co.ke',
-			websiteUrl: 'https://www.webhostkenya.co.ke',
-		},
-	},
-];
+const initialState: Option = {
+	label: 'All Services',
+	value: '',
+};
 
 export default function RegistrarsPage() {
 	const insets = useSafeAreaInsets();
+	const [isRefreshing, setIsRefreshing] = useState(false);
+	const { control, handleSubmit, reset } = useForm();
+	const [search, setSearch] = useState('');
+	const [service, setService] = useState<Option>(initialState);
+
+	const queryClient = useQueryClient();
+
+	const { data, fetchNextPage, isLoading } = useInfiniteQuery({
+		queryKey: ['registrars', { search: search, service: service?.value }],
+		queryFn: ({ pageParam = 1 }) =>
+			getRegistrars({
+				page: pageParam,
+				search: search,
+				service: service?.value,
+			}),
+		staleTime: 2 * 10000 * 5,
+		initialPageParam: 1,
+		retry: (failureCount, error) => {
+			if (failureCount < 5) {
+				return true;
+			}
+			return false;
+		},
+		getNextPageParam: (lastPage) => {
+			return lastPage.pagination?.has_next
+				? lastPage.pagination?.next_page
+				: null;
+		},
+	});
+
 	const contentInsets = {
 		top: insets.top,
 		bottom: insets.bottom,
@@ -79,11 +70,13 @@ export default function RegistrarsPage() {
 		right: 12,
 	};
 
+	const registrars = data?.pages.flatMap((page) => page.data) ?? [];
+
 	return (
 		<AppSafeView>
 			<View className="flex-1 px-4">
 				<FlatList
-					data={data}
+					data={registrars}
 					keyExtractor={(item) => item.id.toString()}
 					ListHeaderComponent={() => (
 						<>
@@ -109,13 +102,27 @@ export default function RegistrarsPage() {
 										Filter by:
 									</Text>
 								</View>
+								<View className="flex-row gap-2 mb-2">
+									<AppControlerInput
+										control={control}
+										name="search"
+										placeholder="Search Registrar"
+										className="border flex-1 border-gray-300 rounded-md h-full px-4 py-2 mb-3"
+									/>
+									<Button
+										onPress={handleSubmit((val) =>
+											setSearch(val.search),
+										)}
+										variant={'default'}
+									>
+										<Text>Search</Text>
+									</Button>
+								</View>
 								<View className="flex-row gap-2">
 									<Select
-										defaultValue={{
-											value: 'all services',
-											label: 'All Services',
-										}}
-										className="w-1/2"
+										value={service}
+										onValueChange={(opt) => setService(opt)}
+										className="w-full"
 									>
 										<SelectTrigger>
 											<SelectValue
@@ -126,7 +133,7 @@ export default function RegistrarsPage() {
 										<SelectContent insets={contentInsets}>
 											<SelectItem
 												label="All Services"
-												value="all services"
+												value=""
 											>
 												All Services
 											</SelectItem>
@@ -147,46 +154,6 @@ export default function RegistrarsPage() {
 												value="email services"
 											>
 												Email Services
-											</SelectItem>
-										</SelectContent>
-									</Select>
-									<Select
-										defaultValue={{
-											value: 'all location',
-											label: 'All Location',
-										}}
-										className="w-1/2"
-									>
-										<SelectTrigger>
-											<SelectValue
-												className="text-foreground text-sm native:text-lg"
-												placeholder="Select location"
-											/>
-										</SelectTrigger>
-										<SelectContent insets={contentInsets}>
-											<SelectItem
-												label="All Location"
-												value="all location"
-											>
-												All Location
-											</SelectItem>
-											<SelectItem
-												label="Nairobi"
-												value="nairobi"
-											>
-												Nairobi
-											</SelectItem>
-											<SelectItem
-												label="Mombasa"
-												value="mombasa"
-											>
-												Mombasa
-											</SelectItem>
-											<SelectItem
-												label="Kisumu"
-												value="kisumu"
-											>
-												Kisumu
 											</SelectItem>
 										</SelectContent>
 									</Select>
@@ -230,6 +197,39 @@ export default function RegistrarsPage() {
 						<RegistrarCard {...item} />
 					)}
 					showsVerticalScrollIndicator={false}
+					onEndReached={() => fetchNextPage()}
+					refreshing={isRefreshing}
+					onRefresh={() => {
+						setIsRefreshing(true);
+						reset();
+						setSearch('');
+						setService(initialState);
+						queryClient.invalidateQueries({
+							queryKey: ['registrars'],
+						});
+						setIsRefreshing(false);
+					}}
+					ListEmptyComponent={
+						isLoading ? (
+							<View>
+								{[...Array(5)].map((_, idx) => (
+									<RegistrarSkeleton key={idx} />
+								))}
+							</View>
+						) : (
+							<EmptyState
+								title="No Open Job Positions"
+								subtitle="Check back later or try refreshing"
+								icon={
+									<FontAwesome
+										name="building"
+										size={38}
+										color="black"
+									/>
+								}
+							/>
+						)
+					}
 				/>
 			</View>
 		</AppSafeView>

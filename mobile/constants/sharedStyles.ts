@@ -251,3 +251,18 @@ export const commonStyles = StyleSheet.create({
 	my9: { marginVertical: vs(36) },
 	my10: { marginVertical: vs(40) },
 });
+
+export const FlashMessageStyles = StyleSheet.create({
+	flashMessage: {
+		opacity: 0.9,
+		alignItems: 'center',
+	},
+	flashTitle: {
+		fontWeight: 'bold',
+		fontSize: 18,
+	},
+	flashText: {
+		fontStyle: 'italic',
+		fontSize: 15,
+	},
+});

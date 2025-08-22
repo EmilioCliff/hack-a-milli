@@ -1,30 +1,28 @@
-import { Image, View } from 'react-native';
+import { Image, Share, TouchableOpacity, View } from 'react-native';
 import { Badge } from '../ui/badge';
 import { Text } from '../ui/text';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { EvilIcons, FontAwesome } from '@expo/vector-icons';
+import { EvilIcons, Feather, FontAwesome } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { NAV_THEME } from '~/constants/colors';
 import { Link } from 'expo-router';
-
-interface Publisher {
-	name: string;
-	profileUrl: string;
-}
+import { Blog } from '~/lib/types';
+import { format } from 'date-fns';
+import AppShowMessage from '../shared/AppShowMessage';
 
 interface blogCardProps {
-	id: number;
-	coverImg: string;
-	category: string;
-	title: string;
-	description: string;
-	featured: boolean;
-	readTime: number;
-	datePublished: string;
-	publisher: Publisher;
+	data: Blog;
+	isLiked: boolean;
+	toggleLike: (id: string) => void;
 }
 
 export default function BlogCard(props: blogCardProps) {
+	const onShare = async (id: number, title: string) => {
+		Share.share({
+			message: `Read about KeNIC Blog on: ${title}`,
+			url: `${process.env.EXPO_PUBLIC_WEBSITE_URL}/blogs/${id}`,
+		});
+	};
 	return (
 		<View className="mt-6 rounded-lg overflow-hidden border border-border shadow-sm  shadow-foreground/10">
 			<LinearGradient
@@ -43,43 +41,44 @@ export default function BlogCard(props: blogCardProps) {
 						height: 120,
 						resizeMode: 'cover',
 					}}
-					source={{ uri: props.coverImg }}
+					source={{ uri: props.data.cover_img }}
 				/>
 			</LinearGradient>
 			<View className="px-4">
 				<View className="flex-row justify-between items-center mb-2">
-					<Badge
-						className={`${props.featured ? 'bg-black' : ''}`}
-						variant={props.featured ? 'default' : 'outline'}
-					>
-						<Text className="font-bold">{props.category}</Text>
+					<Badge variant={'outline'}>
+						<Text className="font-bold">{props.data.topic}</Text>
 					</Badge>
-					<Text>{props.readTime} min read</Text>
+					<Text>{props.data.min_read} min read</Text>
 				</View>
 				<Link
 					href={{
 						pathname: '/(drawer)/blog/[id]',
-						params: { id: props.id },
+						params: { id: props.data.id },
 					}}
 				>
-					<Text className="text-lg font-bold">{props.title}</Text>
+					<Text className="text-lg font-bold">
+						{props.data.title}
+					</Text>
 				</Link>
 				<Text
 					numberOfLines={3}
 					ellipsizeMode="tail"
 					className="my-2 text-gray-600"
 				>
-					{props.description}
+					{props.data.description}
 				</Text>
 				<View className="flex-row justify-between items-center mb-4">
 					<View className="flex-row justify-start items-center gap-2">
 						<Avatar alt="Publisher Avatar">
 							<AvatarImage
-								source={{ uri: props.publisher.profileUrl }}
+								source={{
+									uri: props.data.author_details.avatar_url,
+								}}
 							/>
 							<AvatarFallback>
 								<Text>
-									{props.publisher.name
+									{props.data.author_details.full_name
 										.split(' ')
 										.map((word) => word.charAt(0))
 										.join('')
@@ -89,20 +88,45 @@ export default function BlogCard(props: blogCardProps) {
 						</Avatar>
 						<View>
 							<Text className="text-sm font-semibold">
-								{props.publisher.name}
+								{props.data.author_details.full_name}
 							</Text>
 							<Text className="text-xs text-gray-500">
-								{props.datePublished}
+								{format(props.data.published_at, 'yyyy-MM-dd')}
 							</Text>
 						</View>
 					</View>
 					<View className="flex-row justify-end items-center gap-2">
-						<FontAwesome name="heart-o" size={16} color="black" />
-						<EvilIcons
-							name="share-google"
-							size={24}
-							color="black"
-						/>
+						{/* <FontAwesome name="heart-o" size={16} color="black" /> */}
+						<TouchableOpacity
+							onPress={() =>
+								props.toggleLike('blog:' + props.data.id)
+							}
+						>
+							{props.isLiked ? (
+								<FontAwesome
+									name="heart"
+									size={18}
+									color="red"
+								/>
+							) : (
+								<FontAwesome
+									name="heart-o"
+									size={18}
+									color="black"
+								/>
+							)}
+						</TouchableOpacity>
+						<TouchableOpacity
+							onPress={() =>
+								onShare(props.data.id, props.data.title)
+							}
+						>
+							<EvilIcons
+								name="share-google"
+								size={24}
+								color="black"
+							/>
+						</TouchableOpacity>
 					</View>
 				</View>
 			</View>

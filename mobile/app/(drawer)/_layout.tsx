@@ -178,6 +178,9 @@ export default function DrawerLayout() {
 					headerShown: false,
 					drawerType: 'front',
 					drawerHideStatusBarOnOpen: true,
+					headerStyle: {
+						backgroundColor: NAV_THEME.appBackgroundColor,
+					},
 				}}
 			>
 				<Drawer.Screen
@@ -198,6 +201,18 @@ export default function DrawerLayout() {
 				/>
 				<Drawer.Screen
 					name="newsletter"
+					options={{
+						headerShown: true,
+						title: '',
+						headerShadowVisible: false,
+						headerLeft: () =>
+							backToHome(
+								'/(drawer)/(tabs)' as RelativePathString,
+							),
+					}}
+				/>
+				<Drawer.Screen
+					name="chatbot"
 					options={{
 						headerShown: true,
 						title: '',
@@ -255,13 +270,9 @@ export default function DrawerLayout() {
 				<Drawer.Screen
 					name="careers"
 					options={{
-						headerShown: true,
+						headerShown: false,
 						title: '',
 						headerShadowVisible: false,
-						headerLeft: () =>
-							backToHome(
-								'/(drawer)/(tabs)' as RelativePathString,
-							),
 					}}
 				/>
 				<Drawer.Screen
@@ -269,6 +280,7 @@ export default function DrawerLayout() {
 					options={{
 						headerShown: true,
 						title: '',
+						headerStyle: { backgroundColor: '#f3f4f6' },
 						headerShadowVisible: false,
 						headerLeft: () =>
 							backToHome(
@@ -295,7 +307,7 @@ const backToHome = (url: RelativePathString) => {
 	return (
 		<Button
 			onPress={() => router.navigate(url)}
-			className="ml-2 bg-white flex-row gap-2 items-center"
+			className="ml-2 bg-gray-100 flex-row gap-2 items-center"
 			style={{
 				paddingTop: 0,
 				paddingBottom: 0,

@@ -1,7 +1,7 @@
 import { AntDesign, EvilIcons, Feather, Ionicons } from '@expo/vector-icons';
 import { Link } from 'expo-router';
-import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
 import ModalToLogo from '~/components/modal/ModalToLogo';
 import AppSafeView from '~/components/shared/AppSafeView';
 import { Button } from '~/components/ui/button';
@@ -16,13 +16,19 @@ import {
 import { Separator } from '~/components/ui/separator';
 import { Switch } from '~/components/ui/switch';
 import { Text } from '~/components/ui/text';
+import {
+	toggleEventsNotifications,
+	toggleNewsNotifications,
+	togglePolicyNotifications,
+	toggleTrainingNotifications,
+	toggleTwoFactorAuth,
+} from '~/store/slices/preferences';
+import { RootState } from '~/store/store';
 
 export default function SettingsPage() {
-	const [newsUpdateChecked, setNewUpdateChecked] = useState(false);
-	const [eventsChecked, setEventsChecked] = useState(false);
-	const [trainingsChecked, setTrainingsChecked] = useState(false);
-	const [policyChangeChecked, setPolicyChangeChecked] = useState(false);
-	const [twoFactorAuth, setTwoFactorAuth] = useState(false);
+	const dispatch = useDispatch();
+	const preferences = useSelector((state: RootState) => state.preferences);
+
 	return (
 		<AppSafeView>
 			<ScrollView
@@ -128,8 +134,10 @@ export default function SettingsPage() {
 									</Text>
 								</View>
 								<Switch
-									checked={newsUpdateChecked}
-									onCheckedChange={setNewUpdateChecked}
+									checked={preferences.newsNotification}
+									onCheckedChange={() =>
+										dispatch(toggleNewsNotifications())
+									}
 									nativeID="airplane-mode"
 								/>
 							</View>
@@ -144,8 +152,10 @@ export default function SettingsPage() {
 									</Text>
 								</View>
 								<Switch
-									checked={eventsChecked}
-									onCheckedChange={setEventsChecked}
+									checked={preferences.eventsNotification}
+									onCheckedChange={() =>
+										dispatch(toggleEventsNotifications())
+									}
 									nativeID="airplane-mode"
 								/>
 							</View>
@@ -160,8 +170,10 @@ export default function SettingsPage() {
 									</Text>
 								</View>
 								<Switch
-									checked={trainingsChecked}
-									onCheckedChange={setTrainingsChecked}
+									checked={preferences.trainingNotification}
+									onCheckedChange={() =>
+										dispatch(toggleTrainingNotifications())
+									}
 									nativeID="airplane-mode"
 								/>
 							</View>
@@ -175,8 +187,10 @@ export default function SettingsPage() {
 									</Text>
 								</View>
 								<Switch
-									checked={policyChangeChecked}
-									onCheckedChange={setPolicyChangeChecked}
+									checked={preferences.policyNotifications}
+									onCheckedChange={() =>
+										dispatch(togglePolicyNotifications())
+									}
 									nativeID="airplane-mode"
 								/>
 							</View>
@@ -336,8 +350,10 @@ export default function SettingsPage() {
 									</Text>
 								</View>
 								<Switch
-									checked={twoFactorAuth}
-									onCheckedChange={setTwoFactorAuth}
+									checked={preferences.twoFactorAuthEnabled}
+									onCheckedChange={() =>
+										dispatch(toggleTwoFactorAuth())
+									}
 									nativeID="airplane-mode"
 								/>
 							</View>

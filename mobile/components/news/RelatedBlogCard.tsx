@@ -1,16 +1,11 @@
-import { Pressable, View } from 'react-native';
+import { Pressable } from 'react-native';
 import { Text } from '../ui/text';
-import { Link, router } from 'expo-router';
+import { Link } from 'expo-router';
+import { NewsUpdate } from '~/lib/types';
+import ExpandableHtml from '../events/ExpandableHtml';
+import { format } from 'date-fns';
 
-interface relatedBlogCardProps {
-	id: number;
-	title: string;
-	readTime: number;
-	datePublished: string;
-	excerpt: string;
-}
-
-export default function RelatedBlogCard(props: relatedBlogCardProps) {
+export default function RelatedBlogCard(props: NewsUpdate) {
 	return (
 		<Link
 			href={{
@@ -30,7 +25,8 @@ export default function RelatedBlogCard(props: relatedBlogCardProps) {
 				</Text>
 
 				<Text className="text-gray-600">
-					{props.datePublished} · {props.readTime} min read
+					{format(props.date, 'yyyy-MM-dd')} · {props.min_read} min
+					read
 				</Text>
 			</Pressable>
 		</Link>
