@@ -1,41 +1,45 @@
-import { Share, View } from 'react-native';
+import { Linking, Share, View } from 'react-native';
 import { Text } from '../ui/text';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { NewsLetter } from '~/lib/types';
 import { format } from 'date-fns';
 import * as FileSystem from 'expo-file-system';
-// import * as Sharing from 'shar'
-import { useState } from 'react';
-import { Progress } from '../ui/progress';
+import { FC } from 'react';
 
-export default function NewsLetterCard(props: NewsLetter) {
-	const [pp, setPP] = useState(70);
+interface newsLetterCardProps {
+	data: NewsLetter;
+	setIsDownloading: (status: boolean) => void;
+	setDownloadProgress: (progress: number) => void;
+}
+
+const NewsLetterCard: FC<newsLetterCardProps> = ({
+	data,
+	setDownloadProgress,
+	setIsDownloading,
+}) => {
 	const callback = (downloadProgress: FileSystem.DownloadProgressData) => {
 		const progress =
 			downloadProgress.totalBytesWritten /
 			downloadProgress.totalBytesExpectedToWrite;
-		console.log(progress);
-		setPP(progress);
+
+		setDownloadProgress(Math.round(progress * 100 * 100) / 100);
 	};
 
 	const downloadFile = async () => {
+		setIsDownloading(true);
+		setDownloadProgress(0);
 		const downloadableResumable = FileSystem.createDownloadResumable(
-			'https://firebasestorage.googleapis.com/v0/b/kenic-hack-a-milli.firebasestorage.app/o/news-letters%2Fpublished%2FTika%20In%20Action.pdf?alt=media&token=6fe8f784-ad22-4a04-af55-60fc647a0a5f',
-			FileSystem.documentDirectory + 'Tika In Action 2.pdf',
+			data.pdf_url,
+			FileSystem.documentDirectory + data.title + '.pdf',
 			{},
 			callback,
 		);
 		const response = await downloadableResumable.downloadAsync();
-		console.log('Finished downloading to ', response?.uri);
-		sharePdf();
-	};
-
-	const sharePdf = async () => {
-		console.log('Sharing pdf');
+		setIsDownloading(false);
 		Share.share({
-			message: 'Download the news letter',
-			url: 'file:///var/mobile/Containers/Data/Application/1718AAB9-740B-4F33-817B-21271FC3F0D1/Documents/ExponentExperienceData/@anonymous/mobile-fb730ecc-0d64-4faf-b567-4679feef9286/Tika%20In%20Action%202.pdf',
+			message: 'Save the news letter',
+			url: response?.uri,
 		});
 	};
 
@@ -44,23 +48,28 @@ export default function NewsLetterCard(props: NewsLetter) {
 			<View className="flex-row justify-between items-center mb-4">
 				<Badge className="bg-red-200">
 					<Text className="text-red-700">
-						{format(props.date, 'yyy-MM-dd')}
+						{format(data.date, 'yyy-MM-dd')}
 					</Text>
 				</Badge>
 				<Text className="text-gray-500">
-					{format(props.date, 'yyyy')}
+					{format(data.date, 'yyyy')}
 				</Text>
 			</View>
-			<Text className="text-xl font-bold">{props.title}</Text>
-			<Text className="text-gray-600 my-2">{props.description}</Text>
+			<Text className="text-xl font-bold">{data.title}</Text>
+			<Text className="text-gray-600 my-2">{data.description}</Text>
 			<View className="flex-row gap-2">
 				<Button onPress={downloadFile} className="flex-1">
 					<Text className="text-white font-bold">Download</Text>
 				</Button>
-				<Button className="bg-secondary flex-1">
+				<Button
+					onPress={() => Linking.openURL(data.pdf_url)}
+					className="bg-secondary flex-1"
+				>
 					<Text className="text-white font-bold">View</Text>
 				</Button>
 			</View>
 		</View>
 	);
-}
+};
+
+export default NewsLetterCard;

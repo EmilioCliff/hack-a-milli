@@ -1,0 +1,20 @@
+{
+	"welcome": "Welcome to KENIC",
+	"order_success": "Order Success",
+	"order_number": "Order Number: ",
+	"total_amount": "Total Amount: ",
+	"estimated_delivery": "Estimated Delivery: ",
+	"tracking_id": "Tracking ID: ",
+	"learn_more": "Learn More",
+	"join_network": "Join our network of trusted domain registrars and grow your business",
+	"order_details": "Order Details",
+	"order_success_message": "Your order has been successfully placed!",
+	"order_success_description": "Thank you for your order. Your tracking ID is {trackingId} and the total amount is KES {total}.",
+	"order_success_instructions": "You will receive an email confirmation shortly. If you have any questions, please contact our support team.",
+	"order_success_button": "Go to Home",
+	"order_success_title": "Order Success",
+	"order_success_subtitle": "Thank you for your purchase!",
+	"order_success_tracking": "Your tracking ID is {trackingId}",
+	"order_success_total": "Total Amount: KES {total}",
+	"order_success_delivery": "Estimated Delivery: 3-5 business days"
+}

@@ -56,6 +56,15 @@ const CustomeDrawerContent = (props: DrawerContentComponentProps) => {
 			</LinearGradient>
 			<DrawerItem
 				icon={() => (
+					<FontAwesome name="gavel" size={24} color="black" />
+				)}
+				label={'Auction'}
+				labelStyle={styles.label}
+				style={styles.item}
+				onPress={() => router.push('/(drawer)/auction')}
+			/>
+			<DrawerItem
+				icon={() => (
 					<Ionicons name="people-sharp" size={24} color="black" />
 				)}
 				label={'Careers'}
@@ -183,6 +192,18 @@ export default function DrawerLayout() {
 					},
 				}}
 			>
+				<Drawer.Screen
+					name="auction"
+					options={{
+						headerShown: true,
+						title: '',
+						headerShadowVisible: false,
+						headerLeft: () =>
+							backToHome(
+								'/(drawer)/(tabs)' as RelativePathString,
+							),
+					}}
+				/>
 				<Drawer.Screen
 					name="(tabs)"
 					options={{

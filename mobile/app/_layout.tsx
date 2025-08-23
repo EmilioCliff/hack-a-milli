@@ -15,6 +15,8 @@ import FlashMessage from 'react-native-flash-message';
 import { Provider } from 'react-redux';
 import store, { persistor } from '~/store/store';
 import { PersistGate } from 'redux-persist/integration/react';
+import { I18nextProvider } from 'react-i18next';
+import i18n from '~/localization/i18n';
 
 const LIGHT_THEME: Theme = {
 	...DefaultTheme,
@@ -37,16 +39,18 @@ export default function RootLayout() {
 		<QueryClientProvider client={queryClient}>
 			<Provider store={store}>
 				<PersistGate loading={null} persistor={persistor}>
-					<ThemeProvider value={LIGHT_THEME}>
-						<StatusBar style="dark" />
-						<Stack screenOptions={{ headerShown: false }}>
-							<Stack.Screen name="(drawer)" />
-							<Stack.Screen name="(auth)" />
-							<Stack.Screen name="+not-found" />
-						</Stack>
-						<PortalHost />
-					</ThemeProvider>
-					<FlashMessage position="bottom" />
+					<I18nextProvider i18n={i18n}>
+						<ThemeProvider value={LIGHT_THEME}>
+							<StatusBar style="dark" />
+							<Stack screenOptions={{ headerShown: false }}>
+								<Stack.Screen name="(drawer)" />
+								<Stack.Screen name="(auth)" />
+								<Stack.Screen name="+not-found" />
+							</Stack>
+							<PortalHost />
+						</ThemeProvider>
+						<FlashMessage position="bottom" />
+					</I18nextProvider>
 				</PersistGate>
 			</Provider>
 		</QueryClientProvider>

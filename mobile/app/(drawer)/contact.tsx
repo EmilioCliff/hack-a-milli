@@ -1,6 +1,12 @@
-import { View, ScrollView, TextInput } from 'react-native';
+import {
+	View,
+	ScrollView,
+	TextInput,
+	TouchableOpacity,
+	Linking,
+} from 'react-native';
 import AppSafeView from '~/components/shared/AppSafeView';
-import { Feather, FontAwesome, Ionicons } from '@expo/vector-icons';
+import { AntDesign, Feather, FontAwesome, Ionicons } from '@expo/vector-icons';
 import ModalToLogo from '~/components/modal/ModalToLogo';
 import { Button } from '~/components/ui/button';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -8,6 +14,7 @@ import { NAV_THEME } from '~/constants/colors';
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card';
 import { Separator } from '~/components/ui/separator';
 import {
+	Option,
 	Select,
 	SelectContent,
 	SelectItem,
@@ -16,6 +23,19 @@ import {
 } from '~/components/ui/select';
 import FAQ from '~/components/shared/FAQ';
 import { Text } from '~/components/ui/text';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+	EnqueryFormSchema,
+	EnqueryFormType,
+} from '~/components/contact/EnqueryForm';
+import { useEffect, useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import SendInqueryMessage from '~/services/sendInqury';
+import AppShowMessage from '~/components/shared/AppShowMessage';
+import AppControlerInput from '~/components/shared/AppControlInput';
+import AppControlerTextArea from '~/components/shared/AppControlTextArea';
+import { router } from 'expo-router';
 
 const faq = [
 	{
@@ -36,7 +56,55 @@ const faq = [
 	},
 ];
 
+const initialState: Option = {
+	label: 'General Inquiry',
+	value: 'general inquiry',
+};
+
 export default function ContactPage() {
+	const [subject, setSubject] = useState<Option>(initialState);
+	const { control, handleSubmit, setValue, reset, getValues } = useForm({
+		resolver: zodResolver(EnqueryFormSchema),
+		defaultValues: {
+			subject: 'General Inquiry',
+		},
+	});
+
+	const mutation = useMutation({
+		mutationFn: SendInqueryMessage,
+		onSuccess: async () => {
+			AppShowMessage({
+				message: 'Inquery Sent Successful',
+				type: 'success',
+				position: 'top',
+				icon: () => <AntDesign name="check" size={24} color="white" />,
+			});
+			reset();
+		},
+		onError: (error: any) => {
+			AppShowMessage({
+				message: error.message,
+				type: 'danger',
+				position: 'top',
+				icon: () => (
+					<AntDesign name="warning" size={24} color="black" />
+				),
+			});
+		},
+		onSettled: () => {
+			setSubject(initialState);
+		},
+	});
+
+	const onSubmitInquery = (formValues: EnqueryFormType) => {
+		console.log(formValues);
+		mutation.mutate(formValues);
+	};
+
+	const onError = (error: unknown) => {
+		console.log(error);
+	};
+
 	return (
 		<AppSafeView>
 			<ScrollView
@@ -63,12 +131,22 @@ export default function ContactPage() {
 							locations={[0, 1]}
 							style={{ borderRadius: 8, flexGrow: 1 }}
 						>
-							<View className="p-4 items-center gap-4">
-								<Feather name="phone" size={24} color="white" />
-								<Text className="text-white font-bold">
-									Call Now
-								</Text>
-							</View>
+							<TouchableOpacity
+								onPress={() =>
+									Linking.openURL('tel:+254203893777')
+								}
+							>
+								<View className="p-4 items-center gap-4">
+									<Feather
+										name="phone"
+										size={24}
+										color="white"
+									/>
+									<Text className="text-white font-bold">
+										AI Call Agent
+									</Text>
+								</View>
+							</TouchableOpacity>
 						</LinearGradient>
 						<LinearGradient
 							colors={['#16a34a', '#15803d']}
@@ -77,16 +155,22 @@ export default function ContactPage() {
 							locations={[0, 1]}
 							style={{ borderRadius: 8, flexGrow: 1 }}
 						>
-							<View className="flex-1 p-4 rounded-lg items-center gap-4">
-								<Ionicons
-									name="chatbubble-outline"
-									size={24}
-									color="white"
-								/>
-								<Text className="text-white font-bold">
-									Live Chat
-								</Text>
-							</View>
+							<TouchableOpacity
+								onPress={() =>
+									Linking.openURL('tel:+254746649466')
+								}
+							>
+								<View className="p-4 items-center gap-4">
+									<Ionicons
+										name="chatbubble-outline"
+										size={24}
+										color="white"
+									/>
+									<Text className="text-white font-bold">
+										WhatsApp AI Agent
+									</Text>
+								</View>
+							</TouchableOpacity>
 						</LinearGradient>
 					</View>
 					<View className="gap-4 mt-6">
@@ -110,7 +194,7 @@ export default function ContactPage() {
 											General Support
 										</Text>
 										<Text className="text-lg font-bold text-blue-600">
-											+254 20 2498 000
+											+254 20 3893 777
 										</Text>
 										<Text className="text-sm text-gray-600">
 											Monday - Friday: 8:00 AM - 6:00 PM
@@ -123,7 +207,7 @@ export default function ContactPage() {
 											Technical Support
 										</Text>
 										<Text className="text-lg font-bold text-blue-600">
-											+254 20 2498 100
+											+254 20 3893 777
 										</Text>
 										<Text className="text-sm text-gray-600">
 											24/7 Technical Emergency Line
@@ -162,7 +246,7 @@ export default function ContactPage() {
 											General Inquiries
 										</Text>
 										<Text className="text-green-600 font-medium">
-											info@kenic.or.ke
+											customercare@kenic.or.ke
 										</Text>
 										<Text className="text-xs text-gray-600">
 											Response time: 24-48 hours
@@ -203,7 +287,7 @@ export default function ContactPage() {
 										color="#6b21a8"
 									/>
 									<Text className="text-purple-800 text-xl font-semibold">
-										Live Chat
+										Chat Bot
 									</Text>
 								</View>
 							</CardHeader>
@@ -232,8 +316,10 @@ export default function ContactPage() {
 											<Text className="text-sm text-purple-800 font-bold">
 												Available:
 											</Text>{' '}
-											Monday - Friday, 8:00 AM - 8:00 PM
-											EAT
+											Always.
+										</Text>
+										<Text className="text-sm text-purple-800">
+											Require Logged In Action
 										</Text>
 									</View>
 								</View>
@@ -259,9 +345,10 @@ export default function ContactPage() {
 									<Text className="text-lg font-bold">
 										First Name
 									</Text>
-									<TextInput
+									<AppControlerInput
+										control={control}
+										name="first_name"
 										placeholder="John"
-										value={''}
 										className="border border-gray-300 rounded-md px-4 py-2"
 									/>
 								</View>
@@ -269,9 +356,10 @@ export default function ContactPage() {
 									<Text className="text-lg font-bold">
 										Last Name
 									</Text>
-									<TextInput
+									<AppControlerInput
+										control={control}
+										name="last_name"
 										placeholder="Doe"
-										value={''}
 										className="border border-gray-300 rounded-md px-4 py-2"
 									/>
 								</View>
@@ -279,15 +367,23 @@ export default function ContactPage() {
 							<Text className="text-lg font-bold mb-2">
 								Email
 							</Text>
-							<TextInput
+							<AppControlerInput
+								control={control}
+								name="email"
 								placeholder="john.doe@example.com"
-								value={''}
-								className="border border-gray-300 rounded-md px-4 py-2 mb-6"
+								className="border border-gray-300 rounded-md px-4 py-2"
 							/>
-							<Text className="text-lg font-bold mb-2">
+							<Text className="text-lg font-bold mb-2 mt-6">
 								Subject
 							</Text>
-							<Select className="mb-6">
+							<Select
+								value={subject}
+								onValueChange={(opt) => {
+									setSubject(opt);
+									setValue('subject', opt?.label!);
+								}}
+								className="flex-1 mb-6"
+							>
 								<SelectTrigger>
 									<SelectValue
 										className="text-foreground text-sm native:text-lg"
@@ -302,43 +398,28 @@ export default function ContactPage() {
 										Domain Registration
 									</SelectItem>
 									<SelectItem
-										label="Technical Issue"
-										value="technical issue"
+										label="Technical Support"
+										value="technical support"
 									>
-										Technical Issue
+										Technical Support
 									</SelectItem>
 									<SelectItem
-										label="Billing Question"
-										value="billing question"
+										label="General Inquiry"
+										value="general inquiry"
 									>
-										Billing Question
-									</SelectItem>
-									<SelectItem
-										label="Policy Question"
-										value="policy question"
-									>
-										Policy Question
-									</SelectItem>
-									<SelectItem label="Other" value="other">
-										Other
+										General Inqury
 									</SelectItem>
 								</SelectContent>
 							</Select>
 							<Text className="text-lg font-bold mb-2">
 								Message
 							</Text>
-							<TextInput
-								multiline={true}
-								numberOfLines={10}
-								placeholder="Describe tour question or issue"
-								value={''}
-								style={{
-									height: 120,
-									textAlignVertical: 'top',
-								}}
-								className="border items-start justify-start border-gray-300 rounded-md px-4 py-2 mb-6"
+							<AppControlerTextArea
+								control={control}
+								name="message"
+								placeholder="Describe your question or issue"
+								className="border items-start justify-start border-gray-300 rounded-md px-4 py-2"
 							/>
-
 							<LinearGradient
 								colors={[
 									NAV_THEME.kenyaFlag.red.front,
@@ -347,9 +428,15 @@ export default function ContactPage() {
 								start={{ x: 0, y: 0 }}
 								end={{ x: 1, y: 0 }}
 								locations={[0, 1]}
-								style={{ borderRadius: 8 }}
+								style={{ borderRadius: 8, marginTop: 24 }}
 							>
-								<Button className="flex-row bg-transparent gap-6 items-center">
+								<Button
+									onPress={handleSubmit(
+										onSubmitInquery,
+										onError,
+									)}
+									className="flex-row bg-transparent gap-6 items-center"
+								>
 									<Feather
 										name="send"
 										size={18}
@@ -415,13 +502,13 @@ export default function ContactPage() {
 									Kenya Network Information Center (KENIC)
 								</Text>
 								<Text className="text-white text-sm">
-									Teleposta Towers, 9th Floor
+									CAK Center, Opposite Kianda School
 								</Text>
 								<Text className="text-white text-sm">
-									Koinange Street
+									Waiyaki Way
 								</Text>
 								<Text className="text-white text-sm">
-									P.O Box 24757 - 00100
+									P.O Box 14448 - 00800
 								</Text>
 								<Text className="text-white text-sm">
 									Nairobi, Kenya
@@ -432,7 +519,7 @@ export default function ContactPage() {
 								<Text className="text-white font-bold">
 									Office Hours:
 								</Text>{' '}
-								Monday - Friday, 8:00 AM - 5:00 PM EAST
+								Monday - Friday, 8:00 AM - 5:00 PM EAT
 							</Text>
 						</LinearGradient>
 					</View>

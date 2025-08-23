@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { persistor } from '../store';
 
 interface ChatSession {
 	id: string;

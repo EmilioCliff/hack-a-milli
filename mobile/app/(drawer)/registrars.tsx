@@ -3,7 +3,7 @@ import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { FlatList, View } from 'react-native';
+import { FlatList, Linking, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ModalToLogo from '~/components/modal/ModalToLogo';
 import RegistrarCard from '~/components/registrars/RegistrarCard';
@@ -185,7 +185,12 @@ export default function RegistrarsPage() {
 									Join our network of trusted domain
 									registrars and grow your business
 								</Text>
-								<Button className="bg-white mb-4">
+								<Button
+									onPress={() =>
+										Linking.openURL('https://kenic.or.ke/')
+									}
+									className="bg-white mb-4"
+								>
 									<Text className="text-black">
 										Learn More
 									</Text>

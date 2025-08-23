@@ -17,7 +17,7 @@ import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import { Card } from '~/components/ui/card';
 import RenderHtml from 'react-native-render-html';
-import { FlashMessageStyles, TagsStyles } from '~/constants/sharedStyles';
+import { TagsStyles } from '~/constants/sharedStyles';
 import { useForm } from 'react-hook-form';
 import {
 	ApplicationFormSchema,
@@ -28,7 +28,6 @@ import AppControlerInput from '~/components/shared/AppControlInput';
 import AppControlerTextArea from '~/components/shared/AppControlTextArea';
 import { Button } from '~/components/ui/button';
 import * as DocumentPicker from 'expo-document-picker';
-import { showMessage } from 'react-native-flash-message';
 import { UploadFile } from '../../../components/careers/fileUpload';
 import postJobApplication from '~/services/postJobApplication';
 import AppShowMessage from '~/components/shared/AppShowMessage';

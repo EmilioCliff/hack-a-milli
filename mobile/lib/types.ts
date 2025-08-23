@@ -169,6 +169,32 @@ export interface AuthData {
 	roles?: string[];
 }
 
+// Bids
+export interface Bids {
+	id: number;
+	auction_id: number;
+	user_identifier: number;
+	amount: string;
+	created_at: string;
+	user_id?: string;
+}
+
+// Auction
+export interface Auction {
+	id: number;
+	domain: string;
+	category: string;
+	description: string;
+	current_bid: number;
+	start_price: number;
+	start_time: string;
+	end_time: string;
+	watchers: string;
+	bids_count: string;
+	status: string;
+	top_three_bidders?: Bids[];
+}
+
 export interface EventsResponse extends Omit<CommonResponse, 'data'> {
 	data: EventItem[];
 }
@@ -224,4 +250,8 @@ export interface RegistrarResponse extends Omit<CommonResponse, 'data'> {
 
 export interface AuthResponse extends Omit<CommonResponse, 'data'> {
 	data: AuthData;
+}
+
+export interface AuctionResponse extends Omit<CommonResponse, 'data'> {
+	data: Auction[];
 }

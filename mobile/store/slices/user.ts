@@ -1,20 +1,20 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface UserState {
-	id: string | null;
-	email: string | null;
-	full_name: string | null;
-	phone_number: string | null;
+	id: number;
+	email: string;
+	full_name: string;
+	phone_number: string;
 	address?: string | null;
 	avatar_url?: string | null;
 	roles?: string[];
 }
 
 const initialState: UserState = {
-	id: null,
-	full_name: null,
-	email: null,
-	phone_number: null,
+	id: 0,
+	full_name: '',
+	email: '',
+	phone_number: '',
 	address: null,
 	avatar_url: null,
 	roles: [],

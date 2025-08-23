@@ -2,9 +2,11 @@ import { View } from 'react-native';
 import { Text } from '~/components/ui/text';
 import { Button } from '~/components/ui/button';
 import { CheckCircle } from 'lucide-react-native'; // Optional success icon
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 
 export default function OrderSuccessScreen() {
+	const { trackingId, total } = useLocalSearchParams();
+
 	return (
 		<View className="flex-1 justify-center bg-white px-6">
 			<View className="mx-auto">
@@ -25,11 +27,11 @@ export default function OrderSuccessScreen() {
 			</Text>
 			<View className="flex-row justify-between">
 				<Text className="text-lg">Order Number: </Text>
-				<Text className="text-lg font-bold">#KENIC-2025-001</Text>
+				<Text className="text-lg font-bold">{trackingId}</Text>
 			</View>
 			<View className="flex-row justify-between">
 				<Text className="text-lg">Total Amount: </Text>
-				<Text className="text-lg font-bold">KES 2,600</Text>
+				<Text className="text-lg font-bold">KES {total}</Text>
 			</View>
 			<View className="flex-row justify-between">
 				<Text className="text-lg">Estimated Delivery: </Text>
