@@ -1,0 +1,15 @@
+version: "2"
+sql:
+  - engine: ""
+    queries: "../../internal//queries/*.sql"
+    schema: "../../internal//migrations/*.sql"
+    gen:
+      go:
+        package: "generated"
+        out: "../../internal//generated"
+        emit_json_tags: true
+        emit_interface: true
+        
+        overrides:
+          - db_type: "timestamptz"
+            go_type: "time.Time"

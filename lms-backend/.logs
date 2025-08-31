@@ -1,0 +1,23 @@
+2025/08/06 08:14:29 Initializing project github.com/EmilioCliff/hack-a-milli/lms-backend
+2025/08/06 08:14:29 Creating directory: /home/emilio-cliff/hack-a-milli/lms-backend/.envs
+2025/08/06 08:14:29 Creating directory: /home/emilio-cliff/hack-a-milli/lms-backend/.envs/configs
+2025/08/06 08:14:29 Creating file: /home/emilio-cliff/hack-a-milli/lms-backend/.envs/configs/sqlc.yaml
+2025/08/06 08:14:29 Creating directory: /home/emilio-cliff/hack-a-milli/lms-backend/.envs/.local
+2025/08/06 08:14:29 Creating file: /home/emilio-cliff/hack-a-milli/lms-backend/.envs/.local/config.env
+2025/08/06 08:14:29 Creating directory: /home/emilio-cliff/hack-a-milli/lms-backend/cmd
+2025/08/06 08:14:29 Creating directory: /home/emilio-cliff/hack-a-milli/lms-backend/cmd/server
+2025/08/06 08:14:29 Creating file: /home/emilio-cliff/hack-a-milli/lms-backend/cmd/server/main.go
+2025/08/06 08:14:29 Creating directory: /home/emilio-cliff/hack-a-milli/lms-backend/cmd/cli
+2025/08/06 08:14:29 Creating file: /home/emilio-cliff/hack-a-milli/lms-backend/cmd/cli/main.go
+2025/08/06 08:14:29 Creating directory: /home/emilio-cliff/hack-a-milli/lms-backend/internal
+2025/08/06 08:14:29 Creating empty directory: /home/emilio-cliff/hack-a-milli/lms-backend/internal/repository
+2025/08/06 08:14:29 Creating empty directory: /home/emilio-cliff/hack-a-milli/lms-backend/internal/mock
+2025/08/06 08:14:29 Creating empty directory: /home/emilio-cliff/hack-a-milli/lms-backend/internal/services
+2025/08/06 08:14:29 Creating empty directory: /home/emilio-cliff/hack-a-milli/lms-backend/internal/handlers
+2025/08/06 08:14:29 Creating directory: /home/emilio-cliff/hack-a-milli/lms-backend/pkg
+2025/08/06 08:14:29 Creating file: /home/emilio-cliff/hack-a-milli/lms-backend/pkg/errors.go
+2025/08/06 08:14:29 Creating file: /home/emilio-cliff/hack-a-milli/lms-backend/README.md
+2025/08/06 08:14:29 Creating file: /home/emilio-cliff/hack-a-milli/lms-backend/.gitignore
+2025/08/06 08:14:29 Creating file: /home/emilio-cliff/hack-a-milli/lms-backend/Makefile
+2025/08/06 08:14:29 Initializing go module...
+2025/08/06 08:14:29 Initializing git repository...
