@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/EmilioCliff/hack-a-milli/cms-backend/internal/postgres/generated"
+	"github.com/EmilioCliff/hack-a-milli/cms-backend/internal/services"
 	"github.com/EmilioCliff/hack-a-milli/cms-backend/pkg"
 	psqlwatcher "github.com/IguteChung/casbin-psql-watcher"
 	pgadapter "github.com/casbin/casbin-pg-adapter"
@@ -28,9 +29,11 @@ type PostgresRepo struct {
 	DepartmentRepository *DepartmentRepository
 	CareerRepository     *CareerRepository
 	NewsRepository       *NewsRepository
+	ChatRepository       *ChatRepository
+	AuctionRepository    *AuctionRepository
 }
 
-func NewPostgresRepo(store *Store) *PostgresRepo {
+func NewPostgresRepo(store *Store, fb services.IFirebaseService) *PostgresRepo {
 	return &PostgresRepo{
 		UserRepository:       NewUserRepository(store),
 		MerchRepository:      NewMerchRepository(store),
@@ -39,7 +42,9 @@ func NewPostgresRepo(store *Store) *PostgresRepo {
 		RegistrarRepository:  NewRegistrarRepository(generated.New(store.pool)),
 		DepartmentRepository: NewDepartmentRepository(generated.New(store.pool)),
 		CareerRepository:     NewCareerRepository(generated.New(store.pool)),
-		NewsRepository:       NewNewsRepository(generated.New(store.pool)),
+		NewsRepository:       NewNewsRepository(store, fb),
+		ChatRepository:       NewChatRepository(generated.New(store.pool)),
+		AuctionRepository:    NewAuctionRepository(store),
 	}
 }
 

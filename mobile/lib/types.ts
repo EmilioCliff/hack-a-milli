@@ -1,3 +1,12 @@
+import z from 'zod';
+import {
+	ForgotPasswordSchema,
+	ResetPasswordSchema,
+	SignInFormShema,
+	SignUpFormSchema,
+	VerifyOTPSchema,
+} from './schemas';
+
 // Pagination info
 export interface Pagination {
 	page: number;
@@ -157,15 +166,23 @@ export interface Registrar {
 	created_at: string;
 }
 
+// Chat Message
 export interface Message {
-	id: number;
-	message: string;
-	type: string; // 'SENT' or 'RECEIVED'
+	id: string;
+	content: string;
+	role: string; // 'user' or 'assistant'
 }
 
+// Auth Data
 export interface AuthData {
+	user: User;
+	auth: AuthPayload;
+}
+
+export interface AuthPayload {
 	access_token: string;
 	refresh_token?: string;
+	firebase_token?: string;
 	roles?: string[];
 }
 
@@ -174,7 +191,7 @@ export interface Bids {
 	id: number;
 	auction_id: number;
 	user_identifier: number;
-	amount: string;
+	amount: number;
 	created_at: string;
 	user_id?: string;
 }
@@ -192,8 +209,64 @@ export interface Auction {
 	watchers: string;
 	bids_count: string;
 	status: string;
-	top_three_bidders?: Bids[];
+	top_four_bids?: Bids[];
 }
+
+// Notification Data
+export interface NotificationData {
+	type: string;
+	id: number;
+}
+
+export interface User {
+	id: number;
+	email: string;
+	full_name: string;
+	phone_number: string;
+	address?: string;
+	avatar_url?: string;
+	roles: string[];
+}
+
+export interface SendMessageData {
+	sessionId?: string; // if not provided, create new session
+	message: Message;
+	history: Message[];
+}
+
+export interface SendMessageResponse {
+	data: string;
+	title?: string;
+	chat_id?: number;
+	message?: string;
+	status_code?: string;
+}
+
+export interface Bid {
+	id: number;
+	auction_id: number;
+	user_id: number;
+	amount: number;
+	user_identifier: string;
+	created_at: string;
+	user?: User;
+}
+
+export interface Watcher {
+	id: number;
+	auction_id: number;
+	user_id: number;
+	status: string;
+	created_at: string;
+	user?: User;
+}
+
+// from schemas
+export type SignUpFormType = z.infer<typeof SignUpFormSchema>;
+export type SignInFormType = z.infer<typeof SignInFormShema>;
+export type ForgotPasswordForm = z.infer<typeof ForgotPasswordSchema>;
+export type VerifyOTPForm = z.infer<typeof VerifyOTPSchema>;
+export type ResetPasswordForm = z.infer<typeof ResetPasswordSchema>;
 
 export interface EventsResponse extends Omit<CommonResponse, 'data'> {
 	data: EventItem[];
@@ -254,4 +327,22 @@ export interface AuthResponse extends Omit<CommonResponse, 'data'> {
 
 export interface AuctionResponse extends Omit<CommonResponse, 'data'> {
 	data: Auction[];
+}
+
+export interface GetChatResponse extends Omit<CommonResponse, 'data'> {
+	data: {
+		id: number;
+		user_id: number;
+		title: string;
+		message: Message[];
+		created_at: string;
+	};
+}
+
+export interface PostBidResponse extends Omit<CommonResponse, 'data'> {
+	data: Bid;
+}
+
+export interface PostWatcherResponse extends Omit<CommonResponse, 'data'> {
+	data: Watcher;
 }

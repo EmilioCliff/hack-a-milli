@@ -68,11 +68,32 @@
 			"url_pattern": "/api/v1/public/users/forgot-password"
 		},
 		{
-			"path": "/api/v1/public/users/:id/refresh-token",
+			"path": "/api/v1/public/users/reset-password",
 			"method": "POST",
 			"public": true,
 			"host": "cms-backend",
-			"url_pattern": "/api/v1/public/users/:id/refresh-token"
+			"url_pattern": "/api/v1/public/users/reset-password"
+		},
+		{
+			"path": "/api/v1/public/users/refresh-token",
+			"method": "POST",
+			"public": true,
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/public/users/refresh-token"
+		},
+		{
+			"path": "/api/v1/public/users/resend-otp",
+			"method": "POST",
+			"public": true,
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/public/users/resend-otp"
+		},
+		{
+			"path": "/api/v1//public/users/verify-otp",
+			"method": "POST",
+			"public": true,
+			"host": "cms-backend",
+			"url_pattern": "/api/v1//public/users/verify-otp"
 		},
 		{
 			"path": "/api/v1/public/departments",
@@ -403,6 +424,36 @@
 			"url_pattern": "/api/v1/public/merchandise/orders/:id/payments"
 		},
 		{
+			"path": "/api/v1/public/auctions",
+			"method": "GET",
+			"public": true,
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/public/auctions"
+		},
+		{
+			"path": "/api/v1/public/company-docs/:id",
+			"method": "GET",
+			"public": true,
+			"resource": "company-docs",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/public/company-docs/:id"
+		},
+		{
+			"path": "/api/v1/public/inquery",
+			"method": "POST",
+			"public": true,
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/public/inquery"
+		},
+		{
+			"path": "/api/v1/sms/callback",
+			"method": "POST",
+			"public": true,
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/sms/callback"
+		},
+		{
 			"path": "/api/v1/users/register",
 			"method": "POST",
 			"public": false,
@@ -618,6 +669,15 @@
 			"host": "cms-backend",
 			"url_pattern": "/api/v1/user/:id/merchandise/payments/:payment_id",
 			"user_scoped": true
+		},
+		{
+			"path": "/api/v1/users/:id/chats",
+			"method": "GET",
+			"public": false,
+			"resource": "chats",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/users/:id/chats"
 		},
 		{
 			"path": "/api/v1/departments",
@@ -1261,6 +1321,141 @@
 					"PUT:/api/v1/merchandise/payments/*"
 				]
 			}
+		},
+		{
+			"path": "/api/v1/auctions",
+			"method": "POST",
+			"public": false,
+			"resource": "auctions",
+			"action": "create",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/auctions"
+		},
+		{
+			"path": "/api/v1/auctions/:id",
+			"method": "PUT",
+			"public": false,
+			"resource": "auctions",
+			"action": "update",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/auctions/:id"
+		},
+		{
+			"path": "/api/v1/auctions/:id",
+			"method": "GET",
+			"public": false,
+			"resource": "auctions",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/auctions/:id"
+		},
+		{
+			"path": "/api/v1/auctions/:id",
+			"method": "DELETE",
+			"public": false,
+			"resource": "payments",
+			"action": "delete",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/auctions/:id"
+		},
+		{
+			"path": "/api/v1/auctions/:id/bids",
+			"method": "POST",
+			"public": false,
+			"resource": "auctions",
+			"action": "create",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/auctions/:id/bids"
+		},
+		{
+			"path": "/api/v1/auctions/:id/bids",
+			"method": "GET",
+			"public": false,
+			"resource": "auctions",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/auctions/:id/bids"
+		},
+		{
+			"path": "/api/v1/auctions/:id/watch",
+			"method": "POST",
+			"public": false,
+			"resource": "auctions",
+			"action": "create",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/auctions/:id/watch"
+		},
+		{
+			"path": "/api/v1/chats",
+			"method": "POST",
+			"public": false,
+			"resource": "chats",
+			"action": "create",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/chats"
+		},
+		{
+			"path": "/api/v1/chats/:id/messages",
+			"method": "POST",
+			"public": false,
+			"resource": "chats",
+			"action": "create",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/chats/:id/messages"
+		},
+		{
+			"path": "/api/v1/chats/:id",
+			"method": "GET",
+			"public": true,
+			"resource": "chats",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/chats/:id"
+		},
+		{
+			"path": "/api/v1/chats/:id",
+			"method": "DELETE",
+			"public": false,
+			"resource": "chats",
+			"action": "delete",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/chats/:id"
+		},
+		{
+			"path": "/api/v1/company-docs",
+			"method": "POST",
+			"public": false,
+			"resource": "company-docs",
+			"action": "create",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/company-docs"
+		},
+		{
+			"path": "/api/v1/company-docs",
+			"method": "GET",
+			"public": false,
+			"resource": "company-docs",
+			"action": "read",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/company-docs"
+		},
+		{
+			"path": "/api/v1/company-docs/:id",
+			"method": "PUT",
+			"public": false,
+			"resource": "company-docs",
+			"action": "update",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/company-docs/:id"
+		},
+		{
+			"path": "/api/v1/company-docs/:id",
+			"method": "DELETE",
+			"public": false,
+			"resource": "company-docs",
+			"action": "delete",
+			"host": "cms-backend",
+			"url_pattern": "/api/v1/company-docs/:id"
 		},
 		{
 			"path": "/api/v1/admin/dashboard",

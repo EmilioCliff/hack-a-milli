@@ -11,11 +11,10 @@ import (
 )
 
 type Payload struct {
-	ID          uuid.UUID `json:"id"`
-	UserID      uint32    `json:"user_id"`
-	Email       string    `json:"email"`
-	Roles       []string  `json:"roles"`
-	Permissions []string  `json:"permissions"`
+	ID     uuid.UUID `json:"id"`
+	UserID uint32    `json:"user_id"`
+	Email  string    `json:"email"`
+	Roles  []string  `json:"roles"`
 	jwt.RegisteredClaims
 }
 

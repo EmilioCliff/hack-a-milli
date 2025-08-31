@@ -1,7 +1,6 @@
 import { View } from 'react-native';
 import { Text } from '../ui/text';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { IMAGES } from '~/constants/images';
 import TypingEffect from './TypingEffect';
 
 interface responseMessageCardProps {

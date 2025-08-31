@@ -7,6 +7,7 @@ import (
 
 	"github.com/EmilioCliff/hack-a-milli/cms-backend/internal/postgres/generated"
 	"github.com/EmilioCliff/hack-a-milli/cms-backend/internal/repository"
+	"github.com/EmilioCliff/hack-a-milli/cms-backend/internal/services"
 	"github.com/EmilioCliff/hack-a-milli/cms-backend/pkg"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -15,10 +16,12 @@ var _ repository.NewsRepository = (*NewsRepository)(nil)
 
 type NewsRepository struct {
 	queries *generated.Queries
+	db      *Store
+	fb      services.IFirebaseService
 }
 
-func NewNewsRepository(queries *generated.Queries) *NewsRepository {
-	return &NewsRepository{queries: queries}
+func NewNewsRepository(db *Store, fb services.IFirebaseService) *NewsRepository {
+	return &NewsRepository{queries: generated.New(db.pool), db: db, fb: fb}
 }
 
 func (nr *NewsRepository) CreateNewsUpdate(ctx context.Context, newsUpdate *repository.NewsUpdate) (*repository.NewsUpdate, error) {

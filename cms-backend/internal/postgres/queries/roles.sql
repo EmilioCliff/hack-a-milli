@@ -23,10 +23,3 @@ WHERE ur.user_id = sqlc.arg('user_id');
 -- name: LogAuditLog :exec
 INSERT INTO rbac_audit_log (action, entity_type, entity_id, old_values, new_values, performed_by)
 VALUES (sqlc.arg('action'), sqlc.arg('entity_type'), sqlc.arg('entity_id'), sqlc.narg('old_values'), sqlc.narg('new_values'), sqlc.arg('performed_by'));
-
--- Action      string `json:"action"`
--- EntityType  string `json:"entity_type"`
--- EntityID    int64  `json:"entity_id"`
--- OldValues   []byte `json:"old_values"`
--- NewValues   []byte `json:"new_values"`
--- PerformedBy int64  `json:"performed_by"`

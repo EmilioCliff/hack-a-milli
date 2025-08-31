@@ -8,6 +8,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/EmilioCliff/hack-a-milli/cms-backend/internal/chat"
+	fbase "github.com/EmilioCliff/hack-a-milli/cms-backend/internal/firebase"
 	"github.com/EmilioCliff/hack-a-milli/cms-backend/internal/handlers"
 	"github.com/EmilioCliff/hack-a-milli/cms-backend/internal/postgres"
 	"github.com/EmilioCliff/hack-a-milli/cms-backend/pkg"
@@ -28,6 +30,18 @@ func main() {
 		log.Fatalf("Error creating token maker: %v", err)
 	}
 
+	// initialize firebase
+	fb, err := fbase.NewFirebaseService(context.Background())
+	if err != nil {
+		log.Fatalf("Error initializing firebase: %v", err)
+	}
+
+	// initialize gemini_ai
+	c, err := chat.NewChatService(context.Background(), config.GEMINI_DEFAULT_MODEL)
+	if err != nil {
+		log.Fatalf("Error initializing chat service: %v", err)
+	}
+
 	// open database
 	store := postgres.NewStore(config)
 	err = store.OpenDB(context.Background())
@@ -36,10 +50,10 @@ func main() {
 	}
 
 	// initialize repo
-	postgresRepo := postgres.NewPostgresRepo(store)
+	postgresRepo := postgres.NewPostgresRepo(store, fb)
 
 	// start server
-	server := handlers.NewServer(config, tokenMaker, postgresRepo)
+	server := handlers.NewServer(config, tokenMaker, postgresRepo, fb, c)
 
 	log.Println("starting server at address: ", config.SERVER_ADDRESS)
 	if err := server.Start(); err != nil {
@@ -47,6 +61,7 @@ func main() {
 	}
 
 	<-quit
+
 	signal.Stop(quit)
 
 	log.Println("shutting down server...")

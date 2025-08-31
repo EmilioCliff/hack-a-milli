@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/EmilioCliff/hack-a-milli/cms-backend/internal/postgres"
+	"github.com/EmilioCliff/hack-a-milli/cms-backend/internal/services"
 	"github.com/EmilioCliff/hack-a-milli/cms-backend/pkg"
 	"github.com/gin-gonic/gin"
 )
@@ -20,12 +21,21 @@ type Server struct {
 	config     pkg.Config
 	tokenMaker pkg.JWTMaker
 	repo       *postgres.PostgresRepo
+	firebase   services.IFirebaseService
+	chat       services.IChatService
+	sms        pkg.ISmsSender
+	email      pkg.EmailSender
 }
 
-func NewServer(config pkg.Config, tokenMaker pkg.JWTMaker, repo *postgres.PostgresRepo) *Server {
+func NewServer(config pkg.Config, tokenMaker pkg.JWTMaker, repo *postgres.PostgresRepo, fb services.IFirebaseService, chat services.IChatService) *Server {
 	if config.ENVIRONMENT == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}
+
+	// initialize tiara sms sender
+	smsSender := pkg.NewTiaraSmsSender(config.TIARA_API_KEY, config.TIARA_FROM, config.TIARA_ENDPOINT)
+
+	emailSender := pkg.NewGmailSender(config.EMAIL_SENDER_NAME, config.EMAIL_SENDER_ADDRESS, config.EMAIL_SENDER_PASSWORD)
 
 	r := gin.Default()
 
@@ -36,6 +46,10 @@ func NewServer(config pkg.Config, tokenMaker pkg.JWTMaker, repo *postgres.Postgr
 		config:     config,
 		tokenMaker: tokenMaker,
 		repo:       repo,
+		firebase:   fb,
+		chat:       chat,
+		sms:        smsSender,
+		email:      emailSender,
 	}
 
 	s.setUpRoutes()
@@ -54,7 +68,10 @@ func (s *Server) setUpRoutes() {
 	public.GET("/public/users/logout", s.userLogoutHandler)
 	public.POST("/public/users/register", s.userRegisterHandler)
 	public.POST("/public/users/forgot-password", s.forgotPasswordHandler)
-	public.POST("/public/users/:id/refresh-token", s.refreshTokenHandler)
+	public.POST("/public/users/reset-password", s.resetPasswordHandler)
+	public.POST("/public/users/refresh-token", s.refreshTokenHandler)
+	public.POST("/public/users/resend-otp", s.resendOTPHandler)
+	public.POST("/public/users/verify-otp", s.verifyOTPHandler)
 
 	public.GET("/public/departments", s.listDepartmentsHandler)
 	public.GET("/public/departments/:id", s.getDepartmentHandler)
@@ -91,6 +108,18 @@ func (s *Server) setUpRoutes() {
 
 	public.POST("/public/merchandise/orders/:id/payments", s.createPaymentHandler)
 
+	// auctions
+	public.GET("/public/auctions", s.getAuctionsHandler)
+
+	// company - docs
+	public.GET("/public/company-docs/:id", s.getCompanyDocByIDHandler)
+
+	// helpers
+	public.POST("/public/inquery", s.sendInqueryMessageHandler)
+
+	// callbacks routes
+	public.POST("/sms/callback", s.smsCallbackHandler)
+
 	// users routes
 	protected.POST("/users/register", s.userRegisterHandler)
 	protected.GET("/users/:id", s.getUserHandler)
@@ -116,6 +145,8 @@ func (s *Server) setUpRoutes() {
 	protected.GET("/user/:id/merchandise/orders/:order_id", s.getUserOrderHandler)
 	protected.GET("/users/:id/merchandise/payments", s.listUserPaymentsHandler)
 	protected.GET("/user/:id/merchandise/payments/:payment_id", s.getUserPaymentHandler)
+
+	protected.GET("/users/:id/chats", s.getChatsByUserIDHandler)
 
 	// roles
 	// protected.POST("/roles", s.createRoleHandler)
@@ -201,6 +232,29 @@ func (s *Server) setUpRoutes() {
 	protected.GET("/merchandise/payments/:id", s.getPaymentHandler)
 	protected.PUT("/merchandise/payments/:id", s.updatePaymentHandler)
 	protected.GET("/merchandise/payments", s.listPaymentsHandler)
+
+	// auction routes
+	protected.POST("/auctions", s.createAuctionHandler)
+	protected.PUT("/auctions/:id", s.updatedAuctionHandler)
+	protected.GET("/auctions/:id", s.getAuctionHandler)
+	protected.DELETE("/auctions/:id", s.deleteAuctionHandler)
+
+	protected.POST("/auctions/:id/bids", s.createBidHandler)
+	protected.GET("/auctions/:id/bids", s.listBidsHandler)
+
+	protected.POST("/auctions/:id/watch", s.createWatchAuctionHandler)
+
+	// chat routes
+	protected.POST("/chats", s.createChatHandler)
+	protected.POST("/chats/:id/messages", s.addMessageToChatHandler)
+	protected.GET("/chats/:id", s.getChatByIDHandler)
+	protected.DELETE("/chats/:id", s.deleteChatHandler)
+
+	// company documents routes
+	protected.POST("/company-docs", s.createCompanyDocHandler)
+	protected.GET("/company-docs", s.getAllCompanyDocsHandler)
+	protected.PUT("/company-docs/:id", s.updateCompanyDocHandler)
+	protected.DELETE("/company-docs/:id", s.deleteCompanyDocHandler)
 
 	// health check
 	protected.GET("/health-check", s.healthCheckHandler)

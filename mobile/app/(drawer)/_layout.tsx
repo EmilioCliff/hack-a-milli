@@ -54,7 +54,7 @@ const CustomeDrawerContent = (props: DrawerContentComponentProps) => {
 				</Text>
 				<Text className="text-white text-md">Explore all features</Text>
 			</LinearGradient>
-			<DrawerItem
+			{/* <DrawerItem
 				icon={() => (
 					<FontAwesome name="gavel" size={24} color="black" />
 				)}
@@ -62,7 +62,7 @@ const CustomeDrawerContent = (props: DrawerContentComponentProps) => {
 				labelStyle={styles.label}
 				style={styles.item}
 				onPress={() => router.push('/(drawer)/auction')}
-			/>
+			/> */}
 			<DrawerItem
 				icon={() => (
 					<Ionicons name="people-sharp" size={24} color="black" />
@@ -193,7 +193,7 @@ export default function DrawerLayout() {
 				}}
 			>
 				<Drawer.Screen
-					name="auction"
+					name="chatbot"
 					options={{
 						headerShown: true,
 						title: '',
@@ -204,6 +204,18 @@ export default function DrawerLayout() {
 							),
 					}}
 				/>
+				{/* <Drawer.Screen
+					name="auction"
+					options={{
+						headerShown: true,
+						title: '',
+						headerShadowVisible: false,
+						headerLeft: () =>
+							backToHome(
+								'/(drawer)/(tabs)' as RelativePathString,
+							),
+					}}
+				/> */}
 				<Drawer.Screen
 					name="(tabs)"
 					options={{
@@ -222,18 +234,6 @@ export default function DrawerLayout() {
 				/>
 				<Drawer.Screen
 					name="newsletter"
-					options={{
-						headerShown: true,
-						title: '',
-						headerShadowVisible: false,
-						headerLeft: () =>
-							backToHome(
-								'/(drawer)/(tabs)' as RelativePathString,
-							),
-					}}
-				/>
-				<Drawer.Screen
-					name="chatbot"
 					options={{
 						headerShown: true,
 						title: '',

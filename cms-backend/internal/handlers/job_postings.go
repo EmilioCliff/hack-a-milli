@@ -71,6 +71,13 @@ func (s *Server) getJobPostingHandler(ctx *gin.Context) {
 		return
 	}
 
+	if publishedScope := ctx.GetHeader("X-Published-Only"); publishedScope == "true" {
+		if !jobPosting.Published {
+			ctx.JSON(http.StatusNotFound, errorResponse(pkg.Errorf(pkg.NOT_FOUND_ERROR, "Blog not found or not published")))
+			return
+		}
+	}
+
 	ctx.JSON(http.StatusOK, gin.H{"data": jobPosting})
 }
 

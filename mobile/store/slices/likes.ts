@@ -3,11 +3,13 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 interface LikesState {
 	likedBlogIds: Record<string, true>;
 	likedNewsIds: Record<string, true>;
+	watchAuctionIds: Record<string, true>;
 }
 
 const initialState: LikesState = {
 	likedBlogIds: {},
 	likedNewsIds: {},
+	watchAuctionIds: {},
 };
 
 const likesSlice = createSlice({
@@ -42,10 +44,25 @@ const likesSlice = createSlice({
 			});
 		},
 
+		// -- Auctions ---
+		watchAuction(state, action: PayloadAction<string>) {
+			state.watchAuctionIds[action.payload] = true;
+		},
+		unWatchAuction(state, action: PayloadAction<string>) {
+			delete state.watchAuctionIds[action.payload];
+		},
+		setWatchingAuction(state, action: PayloadAction<string[]>) {
+			state.watchAuctionIds = {};
+			action.payload.forEach((id) => {
+				state.watchAuctionIds[id] = true;
+			});
+		},
+
 		// --- Clear all ---
 		clearLikes(state) {
 			state.likedBlogIds = {};
 			state.likedNewsIds = {};
+			state.watchAuctionIds = {};
 		},
 	},
 });
@@ -57,6 +74,9 @@ export const {
 	likeNews,
 	unlikeNews,
 	setLikedNews,
+	watchAuction,
+	unWatchAuction,
+	setWatchingAuction,
 	clearLikes,
 } = likesSlice.actions;
 

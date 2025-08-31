@@ -29,7 +29,7 @@ export default function CheckoutScreen() {
 	const [selectedPayment, setSelectedPayment] = useState('M-Pesa');
 	const [loading, setLoading] = useState(false);
 	const cartItems = useSelector((state: RootState) => state.cart.items);
-	const userProfile = useSelector((state: RootState) => state.user);
+	const user = useSelector((state: RootState) => state.user.user);
 	const dispatch = useDispatch();
 
 	const subtotal = cartItems.reduce(
@@ -56,14 +56,14 @@ export default function CheckoutScreen() {
 	};
 
 	// there is a logged in user
-	if (userProfile.id !== 0) {
-		const userNames = userProfile.full_name?.split(' ', 1);
+	if (user) {
+		const userNames = user.full_name?.split(' ', 1);
 		order_details = {
 			first_name: userNames?.length > 0 ? userNames[0] : '',
 			last_name: userNames?.length > 1 ? userNames[1] : '',
-			email: userProfile.email,
-			phone_number: userProfile.phone_number,
-			address: userProfile.address || '',
+			email: user.email,
+			phone_number: user.phone_number,
+			address: user.address || '',
 			city: '',
 			postal_code: '',
 			payment_method: 'mpesa',
@@ -72,7 +72,7 @@ export default function CheckoutScreen() {
 	const { control, handleSubmit, setValue, reset } = useForm({
 		resolver: zodResolver(OrderPayloadSchema),
 		defaultValues: {
-			user_id: userProfile.id,
+			user_id: user?.id,
 			status: 'pending',
 			payment_status: 'false',
 			items: mappedItems,

@@ -3,7 +3,7 @@ import { Text } from '../ui/text';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
 interface sentMessageCardProps {
-	avatar_url: string;
+	avatar_url: string | undefined;
 	full_name: string;
 	message: string;
 }

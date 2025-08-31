@@ -1,8 +1,10 @@
+import { router } from 'expo-router';
 import { ScrollView, View } from 'react-native';
 import Carousel from '~/components/home/Carousel';
 import SearchDomain from '~/components/home/SearchDomain';
 import AppSafeView from '~/components/shared/AppSafeView';
 import KenyaWave from '~/components/shared/KenyaWave';
+import { Button } from '~/components/ui/button';
 import { Card, CardTitle } from '~/components/ui/card';
 import { Text } from '~/components/ui/text';
 

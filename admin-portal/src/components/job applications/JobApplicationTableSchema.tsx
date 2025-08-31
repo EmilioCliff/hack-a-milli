@@ -109,6 +109,9 @@ export const JobApplicationTableSchema = (
 		cell: ({ row }) => {
 			return (
 				<Button
+					className="hover:bg-primary"
+					size={'icon'}
+					variant={'outline'}
 					onClick={() => navigate(`/applications/${row.original.id}`)}
 				>
 					<Eye />

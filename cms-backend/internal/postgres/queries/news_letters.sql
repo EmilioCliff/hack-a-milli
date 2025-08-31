@@ -1,6 +1,6 @@
 -- name: CreateNewsLetter :one
-INSERT INTO news_letters (title, description, pdf_url, date, updated_by, created_by)
-VALUES (sqlc.arg('title'), sqlc.arg('description'), sqlc.arg('pdf_url'), sqlc.arg('date'), sqlc.arg('updated_by'), sqlc.arg('created_by'))
+INSERT INTO news_letters (title, description, storage_path, pdf_url, date, updated_by, created_by)
+VALUES (sqlc.arg('title'), sqlc.arg('description'), sqlc.arg('storage_path'), sqlc.arg('pdf_url'), sqlc.arg('date'), sqlc.arg('updated_by'), sqlc.arg('created_by'))
 RETURNING id;
 
 -- name: GetNewsLetter :one
@@ -15,11 +15,17 @@ WHERE id = $1 AND published = TRUE AND deleted_at IS NULL;
 UPDATE news_letters
 SET title = COALESCE(sqlc.narg('title'), title),
     description = COALESCE(sqlc.narg('description'), description),
+    storage_path = COALESCE(sqlc.narg('storage_path'), storage_path),
     pdf_url = COALESCE(sqlc.narg('pdf_url'), pdf_url),
     date = COALESCE(sqlc.narg('date'), date),
     updated_by = sqlc.arg('updated_by'),
     updated_at = NOW()
 WHERE id = sqlc.arg('id');
+
+-- name: UpdateNewsLetterPdfUrl :exec
+UPDATE news_letters
+SET pdf_url = $2
+WHERE id = $1;
 
 -- name: DeleteNewsLetter :exec
 UPDATE news_letters
@@ -27,13 +33,14 @@ SET deleted_at = NOW(),
     deleted_by = sqlc.arg('deleted_by')
 WHERE id = sqlc.arg('id');
 
--- name: PublishNewsLetter :exec
+-- name: PublishNewsLetter :one
 UPDATE news_letters
 SET published = TRUE,
     published_at = NOW(),
     updated_by = sqlc.arg('updated_by'),
     updated_at = NOW()
-WHERE id = sqlc.arg('id');
+WHERE id = sqlc.arg('id')
+RETURNING *;
 
 -- name: ListNewsLetters :many
 SELECT * FROM news_letters

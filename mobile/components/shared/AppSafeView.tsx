@@ -13,7 +13,10 @@ interface AppSafeViewProps {
 	style?: ViewStyle;
 }
 
-export default function AppSafeView({ children, style }: AppSafeViewProps) {
+export default function AppSafeView({
+	children,
+	style = {},
+}: AppSafeViewProps) {
 	return (
 		<SafeAreaView style={styles.safeArea}>
 			<View style={[styles.container, style]}>{children}</View>

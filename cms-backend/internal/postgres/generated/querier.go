@@ -12,11 +12,16 @@ import (
 
 type Querier interface {
 	AddEventRegisteredAttedee(ctx context.Context, eventID int64) error
+	AddMessageToChat(ctx context.Context, arg AddMessageToChatParams) error
 	ChangeVisibilityJobPosting(ctx context.Context, arg ChangeVisibilityJobPostingParams) error
+	CheckAuctionDomainExistsAndActive(ctx context.Context, domain string) (bool, error)
 	CheckEventIsPublishedAndUpcomingOrLive(ctx context.Context, eventID int64) (bool, error)
 	CheckEventRegistrantExists(ctx context.Context, arg CheckEventRegistrantExistsParams) (bool, error)
 	CheckJobApplicationExists(ctx context.Context, arg CheckJobApplicationExistsParams) (bool, error)
 	CheckJobPostingIsPublished(ctx context.Context, id int64) (bool, error)
+	CheckUserBidExists(ctx context.Context, arg CheckUserBidExistsParams) (bool, error)
+	CountAuctions(ctx context.Context, arg CountAuctionsParams) (int64, error)
+	CountBidsByAuctionID(ctx context.Context, auctionID int64) (int64, error)
 	CountBlogs(ctx context.Context, arg CountBlogsParams) (int64, error)
 	CountDepartments(ctx context.Context, search pgtype.Text) (int64, error)
 	CountDeviceTokens(ctx context.Context, arg CountDeviceTokensParams) (int64, error)
@@ -31,9 +36,13 @@ type Querier interface {
 	CountProductCategories(ctx context.Context, search pgtype.Text) (int64, error)
 	CountProducts(ctx context.Context, arg CountProductsParams) (int64, error)
 	CountRegistrars(ctx context.Context, arg CountRegistrarsParams) (int64, error)
+	CountUserChats(ctx context.Context, userID int64) (int64, error)
 	CountUserPreferences(ctx context.Context) (int64, error)
 	CountUsers(ctx context.Context, arg CountUsersParams) (int64, error)
+	CreateAuction(ctx context.Context, arg CreateAuctionParams) (Auction, error)
+	CreateBid(ctx context.Context, arg CreateBidParams) error
 	CreateBlog(ctx context.Context, arg CreateBlogParams) (int64, error)
+	CreateCompanyDoc(ctx context.Context, arg CreateCompanyDocParams) (CompanyDoc, error)
 	CreateDepartment(ctx context.Context, name string) (int64, error)
 	CreateDeviceToken(ctx context.Context, arg CreateDeviceTokenParams) (int64, error)
 	CreateEvent(ctx context.Context, arg CreateEventParams) (int64, error)
@@ -49,8 +58,13 @@ type Querier interface {
 	CreateProductCategory(ctx context.Context, arg CreateProductCategoryParams) (int64, error)
 	CreateRegistrar(ctx context.Context, arg CreateRegistrarParams) (int64, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (int64, error)
+	CreateUserChat(ctx context.Context, arg CreateUserChatParams) (UserChat, error)
 	CreateUserPreferences(ctx context.Context, arg CreateUserPreferencesParams) (UserPreference, error)
+	CreateWatcher(ctx context.Context, arg CreateWatcherParams) (Watcher, error)
+	DeleteAuction(ctx context.Context, arg DeleteAuctionParams) error
 	DeleteBlog(ctx context.Context, arg DeleteBlogParams) error
+	DeleteChat(ctx context.Context, id int64) error
+	DeleteCompanyDoc(ctx context.Context, id int64) error
 	DeleteEvent(ctx context.Context, arg DeleteEventParams) error
 	DeleteJobPosting(ctx context.Context, arg DeleteJobPostingParams) error
 	DeleteNewsLetter(ctx context.Context, arg DeleteNewsLetterParams) error
@@ -61,7 +75,14 @@ type Querier interface {
 	DeleteUser(ctx context.Context, arg DeleteUserParams) error
 	DepartmentExists(ctx context.Context, id int64) (bool, error)
 	EventExists(ctx context.Context, id int64) (bool, error)
+	GetActiveDeviceTokenByActiveAuctionWatchers(ctx context.Context, auctionID int64) ([]string, error)
+	GetAuctionByID(ctx context.Context, id int64) (Auction, error)
+	GetBidsByAuctionID(ctx context.Context, auctionID int64) ([]Bid, error)
+	GetBidsByAuctionIDFullData(ctx context.Context, arg GetBidsByAuctionIDFullDataParams) ([]GetBidsByAuctionIDFullDataRow, error)
 	GetBlog(ctx context.Context, id int64) (GetBlogRow, error)
+	GetChatByID(ctx context.Context, id int64) (UserChat, error)
+	GetCompanyDocByID(ctx context.Context, id int64) (CompanyDoc, error)
+	GetCompanyDocs(ctx context.Context) ([]CompanyDoc, error)
 	GetDepartment(ctx context.Context, id int64) (Department, error)
 	GetDeviceTokenByID(ctx context.Context, id int64) (GetDeviceTokenByIDRow, error)
 	GetDeviceTokenByUserID(ctx context.Context, userID int64) ([]GetDeviceTokenByUserIDRow, error)
@@ -85,12 +106,17 @@ type Querier interface {
 	GetRole(ctx context.Context, id int64) (RbacRole, error)
 	GetRoleByName(ctx context.Context, name string) (RbacRole, error)
 	GetUser(ctx context.Context, id int64) (GetUserRow, error)
-	GetUserInternal(ctx context.Context, email string) (GetUserInternalRow, error)
+	GetUserByPhoneInternal(ctx context.Context, phoneNumber string) (User, error)
+	GetUserChats(ctx context.Context, arg GetUserChatsParams) ([]UserChat, error)
+	GetUserInternal(ctx context.Context, email string) (User, error)
 	GetUserOrderByID(ctx context.Context, arg GetUserOrderByIDParams) (GetUserOrderByIDRow, error)
 	GetUserPayment(ctx context.Context, arg GetUserPaymentParams) (Payment, error)
 	GetUserPreferences(ctx context.Context, userID int64) (GetUserPreferencesRow, error)
 	GetUserRoles(ctx context.Context, userID int64) ([]RbacRole, error)
+	GetWatchersByAuctionID(ctx context.Context, auctionID int64) ([]GetWatchersByAuctionIDRow, error)
 	GrantRole(ctx context.Context, arg GrantRoleParams) error
+	IsUserWatchingAuction(ctx context.Context, arg IsUserWatchingAuctionParams) (bool, error)
+	ListAuctions(ctx context.Context, arg ListAuctionsParams) ([]ListAuctionsRow, error)
 	ListBlogs(ctx context.Context, arg ListBlogsParams) ([]ListBlogsRow, error)
 	ListDepartments(ctx context.Context, arg ListDepartmentsParams) ([]Department, error)
 	ListDeviceTokens(ctx context.Context, arg ListDeviceTokensParams) ([]ListDeviceTokensRow, error)
@@ -113,16 +139,22 @@ type Querier interface {
 	PublishBlog(ctx context.Context, arg PublishBlogParams) error
 	PublishEvent(ctx context.Context, arg PublishEventParams) error
 	PublishJobPosting(ctx context.Context, arg PublishJobPostingParams) error
-	PublishNewsLetter(ctx context.Context, arg PublishNewsLetterParams) error
+	PublishNewsLetter(ctx context.Context, arg PublishNewsLetterParams) (NewsLetter, error)
 	PublishNewsUpdate(ctx context.Context, arg PublishNewsUpdateParams) (NewsUpdate, error)
 	RemoveUserRoles(ctx context.Context, userID int64) error
+	UpdateAuction(ctx context.Context, arg UpdateAuctionParams) (Auction, error)
+	UpdateAuctionStats(ctx context.Context, arg UpdateAuctionStatsParams) (Auction, error)
+	// get latest 4 bids
+	UpdateBid(ctx context.Context, arg UpdateBidParams) error
 	UpdateBlog(ctx context.Context, arg UpdateBlogParams) error
+	UpdateCompanyDoc(ctx context.Context, arg UpdateCompanyDocParams) (CompanyDoc, error)
 	UpdateDepartment(ctx context.Context, arg UpdateDepartmentParams) error
 	UpdateDeviceToken(ctx context.Context, arg UpdateDeviceTokenParams) error
 	UpdateEvent(ctx context.Context, arg UpdateEventParams) error
 	UpdateJobApplication(ctx context.Context, arg UpdateJobApplicationParams) (JobApplication, error)
 	UpdateJobPosting(ctx context.Context, arg UpdateJobPostingParams) error
 	UpdateNewsLetter(ctx context.Context, arg UpdateNewsLetterParams) error
+	UpdateNewsLetterPdfUrl(ctx context.Context, arg UpdateNewsLetterPdfUrlParams) error
 	UpdateNewsUpdate(ctx context.Context, arg UpdateNewsUpdateParams) error
 	UpdateOrder(ctx context.Context, arg UpdateOrderParams) (Order, error)
 	UpdatePayment(ctx context.Context, arg UpdatePaymentParams) (Payment, error)
@@ -133,6 +165,7 @@ type Querier interface {
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
 	UpdateUserCredentialsInternal(ctx context.Context, arg UpdateUserCredentialsInternalParams) error
 	UpdateUserPreferences(ctx context.Context, arg UpdateUserPreferencesParams) (UserPreference, error)
+	UpdateWatcherStatus(ctx context.Context, arg UpdateWatcherStatusParams) (Watcher, error)
 	UserExists(ctx context.Context, id int64) (bool, error)
 	UserHasActiveDeviceToken(ctx context.Context, userID int64) (bool, error)
 	UserHasPreferences(ctx context.Context, userID int64) (bool, error)

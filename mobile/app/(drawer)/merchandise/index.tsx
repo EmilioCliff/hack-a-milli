@@ -103,7 +103,7 @@ export default function index() {
 						</View>
 					) : (
 						<EmptyState
-							title="No Open Job Positions"
+							title="No Products Vailable"
 							subtitle="Check back later or try refreshing"
 							icon={
 								<Entypo

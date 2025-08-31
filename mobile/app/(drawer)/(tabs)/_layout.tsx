@@ -62,11 +62,11 @@ export default function TabLayout() {
 				}}
 			/>
 			<Tabs.Screen
-				name="profile"
+				name="auction"
 				options={{
 					title: 'Profile',
 					tabBarIcon: ({ color, size }) => (
-						<Feather name="user" size={size} color={color} />
+						<FontAwesome name="gavel" size={size} color={color} />
 					),
 				}}
 			/>

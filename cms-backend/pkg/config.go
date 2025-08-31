@@ -8,18 +8,29 @@ import (
 )
 
 type Config struct {
-	DATABASE_URL            string        `mapstructure:"DATABASE_URL"`
-	MIGRATION_PATH          string        `mapstructure:"MIGRATION_PATH"`
-	FRONTEND_URL            string        `mapstructure:"FRONTEND_URL"`
-	ENVIRONMENT             string        `mapstructure:"ENVIRONMENT"`
-	SERVER_ADDRESS          string        `mapstructure:"SERVER_ADDRESS"`
-	PASSWORD_COST           int           `mapstructure:"PASSWORD_COST"`
-	PASSWORD_RESET_DURATION time.Duration `mapstructure:"PASSWORD_RESET_DURATION"`
-	REFRESH_TOKEN_DURATION  time.Duration `mapstructure:"REFRESH_TOKEN_DURATION"`
-	TOKEN_DURATION          time.Duration `mapstructure:"TOKEN_DURATION"`
-	TOKEN_SYMMETRIC_KEY     string        `mapstructure:"TOKEN_SYMMETRIC_KEY"`
-	TOKEN_ISSUER            string        `mapstructure:"TOKEN_ISSUER"`
-	DB_NAME                 string        `mapstructure:"DB_NAME"`
+	DATABASE_URL                   string        `mapstructure:"DATABASE_URL"`
+	MIGRATION_PATH                 string        `mapstructure:"MIGRATION_PATH"`
+	FRONTEND_URL                   string        `mapstructure:"FRONTEND_URL"`
+	ENVIRONMENT                    string        `mapstructure:"ENVIRONMENT"`
+	SERVER_ADDRESS                 string        `mapstructure:"SERVER_ADDRESS"`
+	PASSWORD_COST                  int           `mapstructure:"PASSWORD_COST"`
+	PASSWORD_RESET_DURATION        time.Duration `mapstructure:"PASSWORD_RESET_DURATION"`
+	REFRESH_TOKEN_DURATION         time.Duration `mapstructure:"REFRESH_TOKEN_DURATION"`
+	TOKEN_DURATION                 time.Duration `mapstructure:"TOKEN_DURATION"`
+	TOKEN_SYMMETRIC_KEY            string        `mapstructure:"TOKEN_SYMMETRIC_KEY"`
+	TOKEN_ISSUER                   string        `mapstructure:"TOKEN_ISSUER"`
+	DB_NAME                        string        `mapstructure:"DB_NAME"`
+	TIARA_API_KEY                  string        `mapstructure:"TIARA_API_KEY"`
+	TIARA_FROM                     string        `mapstructure:"TIARA_FROM"`
+	TIARA_ENDPOINT                 string        `mapstructure:"TIARA_ENDPOINT"`
+	GOOGLE_APPLICATION_CREDENTIALS string        `mapstructure:"GOOGLE_APPLICATION_CREDENTIALS"`
+	FIREBASE_STORAGE_BUCKET        string        `mapstructure:"FIREBASE_STORAGE_BUCKET"`
+	FIREBASE_PROJECT_ID            string        `mapstructure:"FIREBASE_PROJECT_ID"`
+	GEMINI_API_KEY                 string        `mapstructure:"GEMINI_API_KEY"`
+	GEMINI_DEFAULT_MODEL           string        `mapstructure:"GEMINI_DEFAULT_MODEL"`
+	EMAIL_SENDER_NAME              string        `mapstructure:"EMAIL_SENDER_NAME"`
+	EMAIL_SENDER_ADDRESS           string        `mapstructure:"EMAIL_SENDER_ADDRESS"`
+	EMAIL_SENDER_PASSWORD          string        `mapstructure:"EMAIL_SENDER_PASSWORD"`
 }
 
 func LoadConfig(path string) (Config, error) {
@@ -56,4 +67,15 @@ func setDefaults() {
 	viper.SetDefault("TOKEN_SYMMETRIC_KEY", "")
 	viper.SetDefault("TOKEN_ISSUER", "")
 	viper.SetDefault("DB_NAME", "")
+	viper.SetDefault("TIARA_API_KEY", "")
+	viper.SetDefault("TIARA_FROM", "CONNECT")
+	viper.SetDefault("TIARA_ENDPOINT", "https://api2.tiaraconnect.io/api/messaging/sendsms")
+	viper.SetDefault("GOOGLE_APPLICATION_CREDENTIALS", "")
+	viper.SetDefault("FIREBASE_STORAGE_BUCKET", "")
+	viper.SetDefault("FIREBASE_PROJECT_ID", "")
+	viper.SetDefault("GEMINI_API_KEY", "")
+	viper.SetDefault("GEMINI_DEFAULT_MODEL", "gemini-1.5-flash")
+	viper.SetDefault("EMAIL_SENDER_NAME", "")
+	viper.SetDefault("EMAIL_SENDER_ADDRESS", "")
+	viper.SetDefault("EMAIL_SENDER_PASSWORD", "")
 }

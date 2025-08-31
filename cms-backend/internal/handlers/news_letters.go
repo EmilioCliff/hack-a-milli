@@ -11,6 +11,7 @@ import (
 type newsLetterReq struct {
 	Title       string `json:"title" binding:"required"`
 	Description string `json:"description" binding:"required"`
+	StoragePath string `json:"storage_path" binding:"required"`
 	PdfUrl      string `json:"pdf_url" binding:"required"`
 	Date        string `json:"date" binding:"required"`
 }
@@ -31,6 +32,7 @@ func (s *Server) createNewsletterHandler(ctx *gin.Context) {
 	newLetter := &repository.NewsLetter{
 		Title:       req.Title,
 		Description: req.Description,
+		StoragePath: req.StoragePath,
 		PdfUrl:      req.PdfUrl,
 		Date:        pkg.StringToTime(req.Date),
 		CreatedBy:   reqCtx.UserID,
@@ -57,6 +59,13 @@ func (s *Server) getNewsletterHandler(ctx *gin.Context) {
 	if err != nil {
 		ctx.JSON(pkg.ErrorToStatusCode(err), errorResponse(err))
 		return
+	}
+
+	if publishedScope := ctx.GetHeader("X-Published-Only"); publishedScope == "true" {
+		if !newLetter.Published {
+			ctx.JSON(http.StatusNotFound, errorResponse(pkg.Errorf(pkg.NOT_FOUND_ERROR, "Blog not found or not published")))
+			return
+		}
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"data": newLetter})

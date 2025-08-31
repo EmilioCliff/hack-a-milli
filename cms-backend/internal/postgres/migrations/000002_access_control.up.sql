@@ -11,7 +11,7 @@ CREATE TABLE "casbin_rule" (
 
 CREATE TABLE "rbac_resources" (
   "id" bigserial PRIMARY KEY,
-  "name" varchar(100) UNIQUE NOT NULL, -- e.g., 'users', 'blogs', 'events', 'products'
+  "name" varchar(100) UNIQUE NOT NULL, 
   "description" text NOT NULL,
   "created_at" timestamptz NOT NULL DEFAULT (now()),
   "updated_at" timestamptz NOT NULL DEFAULT (now())
@@ -19,7 +19,7 @@ CREATE TABLE "rbac_resources" (
 
 CREATE TABLE "rbac_actions" (
   "id" bigserial PRIMARY KEY,
-  "name" varchar(50) UNIQUE NOT NULL, -- e.g., 'create', 'read', 'update', 'delete', 'publish'
+  "name" varchar(50) UNIQUE NOT NULL, 
   "description" text NOT NULL,
   "created_at" timestamptz NOT NULL DEFAULT (now()),
   "updated_at" timestamptz NOT NULL DEFAULT (now())
@@ -27,7 +27,7 @@ CREATE TABLE "rbac_actions" (
 
 CREATE TABLE "rbac_roles" (
   "id" bigserial PRIMARY KEY,
-  "name" varchar(100) UNIQUE NOT NULL, -- e.g., 'admin', 'editor', 'moderator', 'staff'
+  "name" varchar(100) UNIQUE NOT NULL,
   "description" text NOT NULL,
   "is_system_role" boolean NOT NULL DEFAULT false, -- prevents deletion of core roles
   "is_active" boolean NOT NULL DEFAULT true,
@@ -72,7 +72,7 @@ CREATE TABLE "rbac_user_roles" (
   "role_id" bigint NOT NULL,
   "assigned_by" bigint NOT NULL,
   "assigned_at" timestamptz NOT NULL DEFAULT (now()),
-  "expires_at" timestamptz NULL, -- optional role expiration
+  "expires_at" timestamptz NULL,
 
   PRIMARY KEY ("user_id", "role_id"),
   CONSTRAINT "rbac_user_roles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users" ("id"),
@@ -82,7 +82,7 @@ CREATE TABLE "rbac_user_roles" (
 
 CREATE TABLE "rbac_audit_log" (
   "id" bigserial PRIMARY KEY,
-  "action" varchar(50) NOT NULL, -- 'role_created', 'permission_granted', 'user_assigned_role', etc.
+  "action" varchar(50) NOT NULL, -- 'role_created', 'permission_granted', 'user_assigned_role'.
   "entity_type" varchar(50) NOT NULL, -- 'role', 'permission', 'user_role'
   "entity_id" bigint NOT NULL,
   "old_values" jsonb NULL,
@@ -105,6 +105,9 @@ INSERT INTO "rbac_resources" ("name", "description") VALUES
 ('payments', 'Payments management'),
 ('registrars', 'Registrars management'),
 ('roles', 'Role management'),
+('auctions', 'Auction management'),
+('chats', 'Gemini chat management'),
+('company-docs', 'Company Documents managements'),
 ('departments', 'Department management')
 ON CONFLICT DO NOTHING;
 
@@ -121,13 +124,9 @@ ON CONFLICT DO NOTHING;
 
 -- Insert default system roles
 INSERT INTO "rbac_roles" ("name", "description", "is_system_role", "created_by") VALUES
-('super_admin', 'Full system access', true, 1),
-('admin', 'Administrative access to most resources', false, 1),
-('content_manager', 'Manage content (blogs, events, news)', false, 1),
-('hr_manager', 'Manage job postings and applications', false, 1),
-('sales_manager', 'Manage products, orders and payments', false, 1),
-('staff', 'Basic staff access', false, 1),
-('guest', 'Minimal read-only access', true, 1);
+('admin', 'Full administrative access', true, 1),
+('staff', 'Staff with standard permissions', false, 1),
+('guest', 'Minimal public access', true, 1);
 
 -- Insert permissions (cartesian product of resources x actions)
 INSERT INTO "rbac_permissions" ("resource_id", "action_id", "description")
@@ -145,76 +144,47 @@ WHERE r.name IN ('blogs', 'events', 'news', 'career')
 ON CONFLICT DO NOTHING;
 
 -- Assign role permissions
--- Super admin gets ALL
+-- admin gets ALL
 INSERT INTO rbac_role_permissions (role_id, permission_id, granted_by)
-SELECT sr.id, p.id, 1
-FROM rbac_roles sr, rbac_permissions p
-WHERE sr.name = 'super_admin'
-ON CONFLICT DO NOTHING;
-
--- Admin: all except publish
-INSERT INTO rbac_role_permissions (role_id, permission_id, granted_by)
-SELECT sr.id, p.id, 1
-FROM rbac_roles sr
-JOIN rbac_permissions p ON NOT EXISTS (
-  SELECT 1 FROM rbac_actions a WHERE a.id = p.action_id AND a.name = 'publish'
-)
-WHERE sr.name = 'admin'
-ON CONFLICT DO NOTHING;
-
--- Content manager: full on blogs, events, news, career
-INSERT INTO rbac_role_permissions (role_id, permission_id, granted_by)
-SELECT sr.id, p.id, 1
-FROM rbac_roles sr
-JOIN rbac_permissions p ON p.resource_id IN (
-  SELECT id FROM rbac_resources WHERE name IN ('blogs','events','news','career')
-)
-WHERE sr.name = 'content_manager'
-ON CONFLICT DO NOTHING;
-
--- HR Manager: career only
-INSERT INTO rbac_role_permissions (role_id, permission_id, granted_by)
-SELECT sr.id, p.id, 1
-FROM rbac_roles sr
-JOIN rbac_permissions p ON p.resource_id IN (
-  SELECT id FROM rbac_resources WHERE name = 'career'
-)
-WHERE sr.name = 'hr_manager'
-ON CONFLICT DO NOTHING;
-
--- Sales Manager: merch, orders, payments
-INSERT INTO rbac_role_permissions (role_id, permission_id, granted_by)
-SELECT sr.id, p.id, 1
-FROM rbac_roles sr
-JOIN rbac_permissions p ON p.resource_id IN (
-  SELECT id FROM rbac_resources WHERE name IN ('merch','orders','payments')
-)
-WHERE sr.name = 'sales_manager'
+SELECT r.id, p.id, 1
+FROM rbac_roles r, rbac_permissions p
+WHERE r.name = 'admin'
 ON CONFLICT DO NOTHING;
 
 -- Staff: read:any on most resources
 INSERT INTO rbac_role_permissions (role_id, permission_id, granted_by)
-SELECT sr.id, p.id, 1
-FROM rbac_roles sr
-JOIN rbac_permissions p ON p.action_id = (SELECT id FROM rbac_actions WHERE name='read:any')
-WHERE sr.name = 'staff'
+SELECT r.id, p.id, 1
+FROM rbac_roles r
+JOIN rbac_permissions p ON (
+    -- Staff has wide access but not full
+    (p.action_id IN (SELECT id FROM rbac_actions WHERE name IN ('create','read:any','update:own','delete')))
+    OR
+    -- Staff can publish selected resources
+    (p.action_id = (SELECT id FROM rbac_actions WHERE name = 'publish')
+     AND p.resource_id IN (SELECT id FROM rbac_resources WHERE name IN ('blogs','events','news','career')))
+)
+WHERE r.name = 'staff'
 ON CONFLICT DO NOTHING;
 
 -- Guest: read:any on blogs, events, news, registrars
 -- and read:own on users, orders, payments, career (job applications)
 INSERT INTO rbac_role_permissions (role_id, permission_id, granted_by)
-SELECT sr.id, p.id, 1
-FROM rbac_roles sr
+SELECT r.id, p.id, 1
+FROM rbac_roles r
 JOIN rbac_permissions p ON (
     -- Public readable
     (p.action_id = (SELECT id FROM rbac_actions WHERE name='read:any')
      AND p.resource_id IN (SELECT id FROM rbac_resources WHERE name IN ('blogs','events','news','registrars')))
     OR
-    -- Restricted to own data
+    -- Own restricted
     (p.action_id = (SELECT id FROM rbac_actions WHERE name='read:own')
-     AND p.resource_id IN (SELECT id FROM rbac_resources WHERE name IN ('users','orders','payments','career')))
+     AND p.resource_id IN (SELECT id FROM rbac_resources WHERE name IN ('orders','payments','career')))
+    -- Create auctions(bids and watches) and chats
+    OR
+    (p.action_id = (SELECT id FROM rbac_actions WHERE name='create')
+     AND p.resource_id IN (SELECT id FROM rbac_resources WHERE name IN ('auctions','chats')))
 )
-WHERE sr.name = 'guest'
+WHERE r.name = 'guest'
 ON CONFLICT DO NOTHING;
 
 -- Universal guarantee: all roles must have read:own + update:own on users
@@ -228,9 +198,9 @@ JOIN rbac_permissions p
  )
 ON CONFLICT DO NOTHING;
 
--- 6. Assign bootstrap super_admin user role
+-- 6. Assign bootstrap admin user role
 INSERT INTO rbac_user_roles (user_id, role_id, assigned_by)
-SELECT 1, sr.id, 1 FROM rbac_roles sr WHERE sr.name = 'super_admin'
+SELECT 1, sr.id, 1 FROM rbac_roles sr WHERE sr.name = 'admin'
 ON CONFLICT DO NOTHING;
 
 -- Create indexes for better performance

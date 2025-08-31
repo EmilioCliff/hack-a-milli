@@ -3,8 +3,10 @@ import { Badge } from '../ui/badge';
 import { Clock, Edit, Eye, Trash2, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '../ui/button';
+import { Blog } from './BlogSchema';
 
-function BlogCard({ blog }: { blog: any }) {
+function BlogCard({ blog }: { blog: Blog }) {
+	const statusBadge = getStatusBadge(blog.published ? 'published' : 'draft');
 	return (
 		<Card
 			key={blog.id}
@@ -13,15 +15,17 @@ function BlogCard({ blog }: { blog: any }) {
 			<CardHeader className="p-0">
 				<div className="aspect-video bg-muted rounded-t-lg flex items-center justify-center relative overflow-hidden">
 					{/* Placeholder for blog cover image */}
-					<div className="absolute inset-0 bg-gradient-to-br from-kenic-teal to-kenic-teal-light"></div>
-					<div className="relative z-10 text-white text-center p-4">
-						<h4 className="font-semibold text-sm">{blog.topic}</h4>
+					<div className="absolute inset-0 bg-gradient-to-br from-kenic-teal to-kenic-teal-light">
+						<img
+							src={blog.cover_img}
+							alt={blog.title}
+							className="w-full h-full object-cover"
+						/>
 					</div>
 					<Badge
-						// className={`absolute top-3 right-3 ${statusBadge.color}`}
-						className={`absolute top-3 right-3`}
+						className={`absolute top-3 font-semibold right-3 ${statusBadge.color}`}
 					>
-						{blog.status}
+						{blog.published ? 'Published' : 'Draft'}
 					</Badge>
 				</div>
 			</CardHeader>
@@ -32,20 +36,28 @@ function BlogCard({ blog }: { blog: any }) {
 						<span>{blog.author}</span>
 						<span>•</span>
 						<Clock className="h-3 w-3" />
-						<span>{blog.minReadTime} min read</span>
+						<span>{blog.min_read} min read</span>
 					</div>
 
-					<h3 className="font-semibold text-foreground line-clamp-2 leading-tight">
-						{blog.title}
-					</h3>
+					<div>
+						<h4 className="font-extralight text-xs text-accent uppercase">
+							{blog.topic}
+						</h4>
+
+						<h3 className="font-semibold text-foreground line-clamp-2 leading-tight">
+							{blog.title}
+						</h3>
+					</div>
 
 					<p className="text-sm text-muted-foreground line-clamp-3">
-						{blog.excerpt}
+						{blog.description}
 					</p>
 
 					<div className="flex items-center justify-between pt-2 border-t border-border">
 						<div className="text-xs text-muted-foreground">
-							{format(blog.publishedAt, 'ppp')}
+							{blog.published_at
+								? format(blog.published_at, 'ppp')
+								: 'Unpublished'}
 						</div>
 						<div className="flex gap-1">
 							<Button variant="ghost" size="sm">
@@ -70,3 +82,22 @@ function BlogCard({ blog }: { blog: any }) {
 }
 
 export default BlogCard;
+
+const getStatusBadge = (status: string) => {
+	const variants = {
+		published: 'outline',
+		draft: 'secondary',
+		review: 'outline',
+	} as const;
+
+	const colors = {
+		published: 'bg-green-800/60 text-white',
+		draft: 'bg-muted text-muted-foreground',
+		review: 'bg-warning text-warning-foreground',
+	} as const;
+
+	return {
+		variant: variants[status as keyof typeof variants],
+		color: colors[status as keyof typeof colors],
+	};
+};

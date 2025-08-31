@@ -11,7 +11,6 @@ import RegistrarSkeleton from '~/components/registrars/RegistrarSkeleton';
 import AppControlerInput from '~/components/shared/AppControlInput';
 import AppSafeView from '~/components/shared/AppSafeView';
 import EmptyState from '~/components/shared/EmptyState';
-import KeNICSpinnerOverlay from '~/components/shared/KeNICSpinnerOverlay';
 import { Button } from '~/components/ui/button';
 import { Card } from '~/components/ui/card';
 import {

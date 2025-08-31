@@ -174,16 +174,21 @@ func (ur *UserRepository) GetUserInternal(ctx context.Context, email string) (*r
 	user, err := ur.queries.GetUserInternal(ctx, email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, pkg.Errorf(pkg.AUTHENTICATION_ERROR, "check login credentials")
+			return nil, pkg.Errorf(pkg.NOT_FOUND_ERROR, "user with email %s not found", email)
 		}
 		return nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error fetching user by ID: %s", err.Error())
 	}
 
 	rslt := &repository.User{
 		ID:                        user.ID,
+		Email:                     user.Email,
+		FullName:                  user.FullName,
+		PhoneNumber:               user.PhoneNumber,
 		PasswordHash:              &user.PasswordHash,
 		RefreshToken:              &user.RefreshToken,
 		Role:                      user.Role,
+		Active:                    user.Active,
+		AccountVerified:           user.AccountVerified,
 		MultifactorAuthentication: user.MultifactorAuthentication,
 	}
 
@@ -356,6 +361,31 @@ func (ur *UserRepository) UpdateUser(ctx context.Context, user *repository.Updat
 	}
 	if updatedUser.UpdatedBy.Valid {
 		rslt.UpdatedBy = &updatedUser.UpdatedBy.Int64
+	}
+
+	return rslt, nil
+}
+
+func (us *UserRepository) GetUserByPhoneInternal(ctx context.Context, phone string) (*repository.User, error) {
+	user, err := us.queries.GetUserByPhoneInternal(ctx, phone)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, pkg.Errorf(pkg.NOT_FOUND_ERROR, "user with phone %s not found", phone)
+		}
+		return nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error fetching user by phone: %s", err.Error())
+	}
+
+	rslt := &repository.User{
+		ID:                        user.ID,
+		Email:                     user.Email,
+		FullName:                  user.FullName,
+		PhoneNumber:               user.PhoneNumber,
+		PasswordHash:              &user.PasswordHash,
+		RefreshToken:              &user.RefreshToken,
+		Role:                      user.Role,
+		Active:                    user.Active,
+		AccountVerified:           user.AccountVerified,
+		MultifactorAuthentication: user.MultifactorAuthentication,
 	}
 
 	return rslt, nil

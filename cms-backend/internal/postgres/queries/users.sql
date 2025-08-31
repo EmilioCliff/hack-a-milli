@@ -15,7 +15,7 @@ WHERE u.id = sqlc.arg('id');
 SELECT EXISTS (SELECT 1 FROM users WHERE id = sqlc.arg('id')) AS exists;
 
 -- name: GetUserInternal :one
-SELECT id, password_hash, refresh_token, role, multifactor_authentication
+SELECT *
 FROM users
 WHERE email = sqlc.arg('email');
 
@@ -23,8 +23,14 @@ WHERE email = sqlc.arg('email');
 UPDATE users
 SET
     password_hash = sqlc.narg('password_hash'),
-    refresh_token = sqlc.narg('refresh_token')
+    refresh_token = sqlc.narg('refresh_token'),
+    last_login = NOW()
 WHERE id = sqlc.arg('id');
+
+-- name: GetUserByPhoneInternal :one
+SELECT *
+FROM users
+WHERE phone_number = sqlc.arg('phone_number');
 
 -- name: UpdateUser :one
 UPDATE users

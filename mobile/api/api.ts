@@ -27,7 +27,6 @@ const protectedApi = axios.create({
 	},
 });
 
-// 🔹 Attach access_token to every protected request
 protectedApi.interceptors.request.use(
 	(config) => {
 		const token = getAccessToken();
@@ -39,12 +38,10 @@ protectedApi.interceptors.request.use(
 	(error) => Promise.reject(error),
 );
 
-// 🔹 Handle 401 → try refresh flow
 protectedApi.interceptors.response.use(
 	(response) => response,
 	async (error: AxiosError) => {
 		const originalRequest: any = error.config;
-
 		if (
 			error.response?.status === 401 &&
 			originalRequest &&
@@ -71,10 +68,10 @@ async function refreshTokenFlow() {
 
 	try {
 		const response = await refreshUserToken(refreshToken);
-		const { access_token, refresh_token: newRefresh } = response.data;
-		setAccessToken(access_token);
-		if (newRefresh) {
-			await saveRefreshToken(newRefresh);
+		const data = response.data;
+		setAccessToken(data.auth.access_token);
+		if (data.auth.refresh_token) {
+			await saveRefreshToken(data.auth.refresh_token);
 		}
 	} catch (error) {
 		console.error('Refresh token failed:', error);
@@ -87,7 +84,9 @@ export { protectedApi };
 const refreshUserToken = async (refreshToken: string) => {
 	try {
 		const response = await api
-			.post<AuthResponse>(`/public/users/refresh-token`, refreshToken)
+			.post<AuthResponse>(`/public/users/refresh-token`, {
+				refresh_token: refreshToken,
+			})
 			.then((res) => res.data);
 
 		if (response.message) {

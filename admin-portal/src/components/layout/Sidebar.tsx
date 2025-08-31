@@ -36,7 +36,8 @@ const menuGroups = [
 		items: [
 			{ title: 'User Management', url: '/users', icon: Users },
 			{ title: 'Departments', url: '/departments', icon: Building2 },
-			{ title: 'Roles & Permissions', url: '/roles', icon: Shield },
+			// { title: 'Roles & Permissions', url: '/roles', icon: Shield },
+			// { title: 'Test', url: '/test', icon: Shield },
 		],
 	},
 	{
@@ -132,7 +133,7 @@ export function Sidebar() {
 				</div>
 			</SidebarHeader>
 
-			<SidebarContent className="pb-10">
+			<SidebarContent className="pb-10 no-scrollbar">
 				{menuGroups.map((group) => (
 					<SidebarGroup className="py-0" key={group.title}>
 						{!collapsed && (

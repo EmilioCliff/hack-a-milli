@@ -49,6 +49,11 @@ const dummyNewsUpdates = [
 	},
 ];
 
+const newsLetterPublished = [
+	{ value: 'published', label: 'Published' },
+	{ value: 'draft', label: 'Draft' },
+];
+
 function NewsUpdates() {
 	const navigate = useNavigate();
 	return (
@@ -68,28 +73,26 @@ function NewsUpdates() {
 				</Button>
 			</div>
 
-			{/* <NewsLetterStats /> */}
-
 			<DataTable
 				data={dummyNewsUpdates}
 				columns={NewsUpdateTableSchema(navigate)}
-				// searchableColumns={[
-				// 	{
-				// 		id: 'id',
-				// 		title: 'Title',
-				// 	},
-				// 	{
-				// 		id: 'author',
-				// 		title: 'Author',
-				// 	},
-				// ]}
-				// facetedFilterColumns={[
-				// 	{
-				// 		id: 'published',
-				// 		title: 'Published',
-				// 		options: newsLetterPublished,
-				// 	},
-				// ]}
+				searchableColumns={[
+					{
+						id: 'title',
+						title: 'Title',
+					},
+					{
+						id: 'topic',
+						title: 'Topic',
+					},
+				]}
+				facetedFilterColumns={[
+					{
+						id: 'published',
+						title: 'Published',
+						options: newsLetterPublished,
+					},
+				]}
 			/>
 		</div>
 	);

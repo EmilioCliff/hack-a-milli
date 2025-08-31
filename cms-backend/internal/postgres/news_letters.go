@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"strings"
 
 	"github.com/EmilioCliff/hack-a-milli/cms-backend/internal/postgres/generated"
 	"github.com/EmilioCliff/hack-a-milli/cms-backend/internal/repository"
@@ -15,6 +16,7 @@ func (nr *NewsRepository) CreateNewsLetter(ctx context.Context, newsLetter *repo
 	createParams := generated.CreateNewsLetterParams{
 		Title:       newsLetter.Title,
 		Description: newsLetter.Description,
+		StoragePath: newsLetter.StoragePath,
 		PdfUrl:      newsLetter.PdfUrl,
 		Date:        newsLetter.Date,
 		UpdatedBy:   newsLetter.UpdatedBy,
@@ -45,6 +47,7 @@ func (nr *NewsRepository) GetNewsLetter(ctx context.Context, id int64) (*reposit
 		ID:          newsLetter.ID,
 		Title:       newsLetter.Title,
 		Description: newsLetter.Description,
+		StoragePath: newsLetter.StoragePath,
 		PdfUrl:      newsLetter.PdfUrl,
 		Date:        newsLetter.Date,
 		UpdatedBy:   newsLetter.UpdatedBy,
@@ -83,6 +86,7 @@ func (nr *NewsRepository) GetPublishedNewsLetter(ctx context.Context, id int64) 
 		ID:          newsLetter.ID,
 		Title:       newsLetter.Title,
 		Description: newsLetter.Description,
+		StoragePath: newsLetter.StoragePath,
 		PdfUrl:      newsLetter.PdfUrl,
 		Date:        newsLetter.Date,
 		UpdatedBy:   newsLetter.UpdatedBy,
@@ -156,6 +160,7 @@ func (nr *NewsRepository) ListNewsLetters(ctx context.Context, filter *repositor
 			ID:          newsLetter.ID,
 			Title:       newsLetter.Title,
 			Description: newsLetter.Description,
+			StoragePath: newsLetter.StoragePath,
 			PdfUrl:      newsLetter.PdfUrl,
 			Date:        newsLetter.Date,
 			UpdatedBy:   newsLetter.UpdatedBy,
@@ -183,13 +188,33 @@ func (nr *NewsRepository) ListNewsLetters(ctx context.Context, filter *repositor
 }
 
 func (nr *NewsRepository) PublishNewsLetter(ctx context.Context, newsLetterID int64, userID int64) (*repository.NewsLetter, error) {
-	if err := nr.queries.PublishNewsLetter(ctx, generated.PublishNewsLetterParams{
-		ID:        newsLetterID,
-		UpdatedBy: userID,
-	}); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, pkg.Errorf(pkg.NOT_FOUND_ERROR, "newsletter with ID %d not found", newsLetterID)
+	err := nr.db.ExecTx(ctx, func(q *generated.Queries) error {
+		newsLetter, err := q.PublishNewsLetter(ctx, generated.PublishNewsLetterParams{
+			ID:        newsLetterID,
+			UpdatedBy: userID,
+		})
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return pkg.Errorf(pkg.NOT_FOUND_ERROR, "newsletter with ID %d not found", newsLetterID)
+			}
+			return pkg.Errorf(pkg.INTERNAL_ERROR, "error publishing newsletter: %s", err.Error())
 		}
+
+		downloadUrl, err := nr.fb.TransferFile(ctx, newsLetter.StoragePath, strings.Replace(newsLetter.StoragePath, "draft/", "published/", 1))
+		if err != nil {
+			return err
+		}
+
+		if err = q.UpdateNewsLetterPdfUrl(ctx, generated.UpdateNewsLetterPdfUrlParams{
+			ID:     newsLetterID,
+			PdfUrl: downloadUrl,
+		}); err != nil {
+			return pkg.Errorf(pkg.INTERNAL_ERROR, "failed to update news letter pdf_url: %s", err.Error())
+		}
+
+		return nil
+	})
+	if err != nil {
 		return nil, pkg.Errorf(pkg.INTERNAL_ERROR, "error publishing newsletter: %s", err.Error())
 	}
 
@@ -202,6 +227,7 @@ func (nr *NewsRepository) UpdateNewsLetter(ctx context.Context, newsLetter *repo
 		UpdatedBy:   newsLetter.UpdatedBy,
 		Title:       pgtype.Text{Valid: false},
 		Description: pgtype.Text{Valid: false},
+		StoragePath: pgtype.Text{Valid: false},
 		PdfUrl:      pgtype.Text{Valid: false},
 		Date:        pgtype.Timestamptz{Valid: false},
 	}
@@ -211,6 +237,9 @@ func (nr *NewsRepository) UpdateNewsLetter(ctx context.Context, newsLetter *repo
 	}
 	if newsLetter.Description != nil {
 		updateParams.Description = pgtype.Text{String: *newsLetter.Description, Valid: true}
+	}
+	if newsLetter.StoragePath != nil {
+		updateParams.StoragePath = pgtype.Text{String: *newsLetter.StoragePath, Valid: true}
 	}
 	if newsLetter.PdfUrl != nil {
 		updateParams.PdfUrl = pgtype.Text{String: *newsLetter.PdfUrl, Valid: true}

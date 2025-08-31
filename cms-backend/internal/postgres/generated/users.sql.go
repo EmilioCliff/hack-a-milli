@@ -112,7 +112,7 @@ func (q *Queries) DeleteUser(ctx context.Context, arg DeleteUserParams) error {
 
 const getUser = `-- name: GetUser :one
 SELECT 
-    u.id, u.email, u.full_name, u.phone_number, u.address, u.password_hash, u.role, u.department_id, u.active, u.account_verified, u.multifactor_authentication, u.refresh_token, u.avatar_url, u.updated_by, u.created_by, u.updated_at, u.created_at,
+    u.id, u.email, u.full_name, u.phone_number, u.address, u.password_hash, u.role, u.department_id, u.active, u.account_verified, u.multifactor_authentication, u.refresh_token, u.avatar_url, u.last_login, u.updated_by, u.created_by, u.updated_at, u.created_at,
     d.name AS department_name
 FROM users u
 LEFT JOIN departments d ON u.department_id = d.id
@@ -120,24 +120,25 @@ WHERE u.id = $1
 `
 
 type GetUserRow struct {
-	ID                        int64       `json:"id"`
-	Email                     string      `json:"email"`
-	FullName                  string      `json:"full_name"`
-	PhoneNumber               string      `json:"phone_number"`
-	Address                   pgtype.Text `json:"address"`
-	PasswordHash              string      `json:"password_hash"`
-	Role                      []string    `json:"role"`
-	DepartmentID              pgtype.Int8 `json:"department_id"`
-	Active                    bool        `json:"active"`
-	AccountVerified           bool        `json:"account_verified"`
-	MultifactorAuthentication bool        `json:"multifactor_authentication"`
-	RefreshToken              string      `json:"refresh_token"`
-	AvatarUrl                 pgtype.Text `json:"avatar_url"`
-	UpdatedBy                 pgtype.Int8 `json:"updated_by"`
-	CreatedBy                 int64       `json:"created_by"`
-	UpdatedAt                 time.Time   `json:"updated_at"`
-	CreatedAt                 time.Time   `json:"created_at"`
-	DepartmentName            pgtype.Text `json:"department_name"`
+	ID                        int64              `json:"id"`
+	Email                     string             `json:"email"`
+	FullName                  string             `json:"full_name"`
+	PhoneNumber               string             `json:"phone_number"`
+	Address                   pgtype.Text        `json:"address"`
+	PasswordHash              string             `json:"password_hash"`
+	Role                      []string           `json:"role"`
+	DepartmentID              pgtype.Int8        `json:"department_id"`
+	Active                    bool               `json:"active"`
+	AccountVerified           bool               `json:"account_verified"`
+	MultifactorAuthentication bool               `json:"multifactor_authentication"`
+	RefreshToken              string             `json:"refresh_token"`
+	AvatarUrl                 pgtype.Text        `json:"avatar_url"`
+	LastLogin                 pgtype.Timestamptz `json:"last_login"`
+	UpdatedBy                 pgtype.Int8        `json:"updated_by"`
+	CreatedBy                 int64              `json:"created_by"`
+	UpdatedAt                 time.Time          `json:"updated_at"`
+	CreatedAt                 time.Time          `json:"created_at"`
+	DepartmentName            pgtype.Text        `json:"department_name"`
 }
 
 func (q *Queries) GetUser(ctx context.Context, id int64) (GetUserRow, error) {
@@ -157,6 +158,7 @@ func (q *Queries) GetUser(ctx context.Context, id int64) (GetUserRow, error) {
 		&i.MultifactorAuthentication,
 		&i.RefreshToken,
 		&i.AvatarUrl,
+		&i.LastLogin,
 		&i.UpdatedBy,
 		&i.CreatedBy,
 		&i.UpdatedAt,
@@ -166,36 +168,73 @@ func (q *Queries) GetUser(ctx context.Context, id int64) (GetUserRow, error) {
 	return i, err
 }
 
+const getUserByPhoneInternal = `-- name: GetUserByPhoneInternal :one
+SELECT id, email, full_name, phone_number, address, password_hash, role, department_id, active, account_verified, multifactor_authentication, refresh_token, avatar_url, last_login, updated_by, created_by, updated_at, created_at
+FROM users
+WHERE phone_number = $1
+`
+
+func (q *Queries) GetUserByPhoneInternal(ctx context.Context, phoneNumber string) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByPhoneInternal, phoneNumber)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.FullName,
+		&i.PhoneNumber,
+		&i.Address,
+		&i.PasswordHash,
+		&i.Role,
+		&i.DepartmentID,
+		&i.Active,
+		&i.AccountVerified,
+		&i.MultifactorAuthentication,
+		&i.RefreshToken,
+		&i.AvatarUrl,
+		&i.LastLogin,
+		&i.UpdatedBy,
+		&i.CreatedBy,
+		&i.UpdatedAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getUserInternal = `-- name: GetUserInternal :one
-SELECT id, password_hash, refresh_token, role, multifactor_authentication
+SELECT id, email, full_name, phone_number, address, password_hash, role, department_id, active, account_verified, multifactor_authentication, refresh_token, avatar_url, last_login, updated_by, created_by, updated_at, created_at
 FROM users
 WHERE email = $1
 `
 
-type GetUserInternalRow struct {
-	ID                        int64    `json:"id"`
-	PasswordHash              string   `json:"password_hash"`
-	RefreshToken              string   `json:"refresh_token"`
-	Role                      []string `json:"role"`
-	MultifactorAuthentication bool     `json:"multifactor_authentication"`
-}
-
-func (q *Queries) GetUserInternal(ctx context.Context, email string) (GetUserInternalRow, error) {
+func (q *Queries) GetUserInternal(ctx context.Context, email string) (User, error) {
 	row := q.db.QueryRow(ctx, getUserInternal, email)
-	var i GetUserInternalRow
+	var i User
 	err := row.Scan(
 		&i.ID,
+		&i.Email,
+		&i.FullName,
+		&i.PhoneNumber,
+		&i.Address,
 		&i.PasswordHash,
-		&i.RefreshToken,
 		&i.Role,
+		&i.DepartmentID,
+		&i.Active,
+		&i.AccountVerified,
 		&i.MultifactorAuthentication,
+		&i.RefreshToken,
+		&i.AvatarUrl,
+		&i.LastLogin,
+		&i.UpdatedBy,
+		&i.CreatedBy,
+		&i.UpdatedAt,
+		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const listUsers = `-- name: ListUsers :many
 SELECT 
-    u.id, u.email, u.full_name, u.phone_number, u.address, u.password_hash, u.role, u.department_id, u.active, u.account_verified, u.multifactor_authentication, u.refresh_token, u.avatar_url, u.updated_by, u.created_by, u.updated_at, u.created_at,
+    u.id, u.email, u.full_name, u.phone_number, u.address, u.password_hash, u.role, u.department_id, u.active, u.account_verified, u.multifactor_authentication, u.refresh_token, u.avatar_url, u.last_login, u.updated_by, u.created_by, u.updated_at, u.created_at,
     d.name AS department_name
 FROM users u
 LEFT JOIN departments d ON u.department_id = d.id
@@ -232,24 +271,25 @@ type ListUsersParams struct {
 }
 
 type ListUsersRow struct {
-	ID                        int64       `json:"id"`
-	Email                     string      `json:"email"`
-	FullName                  string      `json:"full_name"`
-	PhoneNumber               string      `json:"phone_number"`
-	Address                   pgtype.Text `json:"address"`
-	PasswordHash              string      `json:"password_hash"`
-	Role                      []string    `json:"role"`
-	DepartmentID              pgtype.Int8 `json:"department_id"`
-	Active                    bool        `json:"active"`
-	AccountVerified           bool        `json:"account_verified"`
-	MultifactorAuthentication bool        `json:"multifactor_authentication"`
-	RefreshToken              string      `json:"refresh_token"`
-	AvatarUrl                 pgtype.Text `json:"avatar_url"`
-	UpdatedBy                 pgtype.Int8 `json:"updated_by"`
-	CreatedBy                 int64       `json:"created_by"`
-	UpdatedAt                 time.Time   `json:"updated_at"`
-	CreatedAt                 time.Time   `json:"created_at"`
-	DepartmentName            pgtype.Text `json:"department_name"`
+	ID                        int64              `json:"id"`
+	Email                     string             `json:"email"`
+	FullName                  string             `json:"full_name"`
+	PhoneNumber               string             `json:"phone_number"`
+	Address                   pgtype.Text        `json:"address"`
+	PasswordHash              string             `json:"password_hash"`
+	Role                      []string           `json:"role"`
+	DepartmentID              pgtype.Int8        `json:"department_id"`
+	Active                    bool               `json:"active"`
+	AccountVerified           bool               `json:"account_verified"`
+	MultifactorAuthentication bool               `json:"multifactor_authentication"`
+	RefreshToken              string             `json:"refresh_token"`
+	AvatarUrl                 pgtype.Text        `json:"avatar_url"`
+	LastLogin                 pgtype.Timestamptz `json:"last_login"`
+	UpdatedBy                 pgtype.Int8        `json:"updated_by"`
+	CreatedBy                 int64              `json:"created_by"`
+	UpdatedAt                 time.Time          `json:"updated_at"`
+	CreatedAt                 time.Time          `json:"created_at"`
+	DepartmentName            pgtype.Text        `json:"department_name"`
 }
 
 func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]ListUsersRow, error) {
@@ -282,6 +322,7 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]ListUse
 			&i.MultifactorAuthentication,
 			&i.RefreshToken,
 			&i.AvatarUrl,
+			&i.LastLogin,
 			&i.UpdatedBy,
 			&i.CreatedBy,
 			&i.UpdatedAt,
@@ -315,7 +356,7 @@ SET
     updated_by = $12,
     updated_at = NOW()
 WHERE id = $13
-RETURNING id, email, full_name, phone_number, address, password_hash, role, department_id, active, account_verified, multifactor_authentication, refresh_token, avatar_url, updated_by, created_by, updated_at, created_at
+RETURNING id, email, full_name, phone_number, address, password_hash, role, department_id, active, account_verified, multifactor_authentication, refresh_token, avatar_url, last_login, updated_by, created_by, updated_at, created_at
 `
 
 type UpdateUserParams struct {
@@ -365,6 +406,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.MultifactorAuthentication,
 		&i.RefreshToken,
 		&i.AvatarUrl,
+		&i.LastLogin,
 		&i.UpdatedBy,
 		&i.CreatedBy,
 		&i.UpdatedAt,
@@ -377,7 +419,8 @@ const updateUserCredentialsInternal = `-- name: UpdateUserCredentialsInternal :e
 UPDATE users
 SET
     password_hash = $1,
-    refresh_token = $2
+    refresh_token = $2,
+    last_login = NOW()
 WHERE id = $3
 `
 

@@ -303,6 +303,15 @@
 		background-color: oklch(var(--kenic-red)) !important;
 	}
 
+	/* .no-scrollbar::-webkit-scrollbar {
+		display: none;
+	} */
+
+	.no-scrollbar {
+		scrollbar-width: thin;
+		scrollbar-color: var(--muted) transparent;
+	}
+
 	/* Transition utilities */
 	.transition-smooth {
 		transition: var(--transition-smooth);

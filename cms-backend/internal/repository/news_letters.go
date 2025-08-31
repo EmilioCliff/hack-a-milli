@@ -10,6 +10,7 @@ type NewsLetter struct {
 	ID          int64      `json:"id"`
 	Title       string     `json:"title"`
 	Description string     `json:"description"`
+	StoragePath string     `json:"storage_path"`
 	PdfUrl      string     `json:"pdf_url"`
 	Date        time.Time  `json:"date"`
 	Published   bool       `json:"published"`
@@ -27,6 +28,7 @@ type UpdateNewsLetter struct {
 	UpdatedBy   int64      `json:"updated_by"`
 	Title       *string    `json:"title"`
 	Description *string    `json:"description"`
+	StoragePath *string    `json:"storage_path"`
 	PdfUrl      *string    `json:"pdf_url"`
 	Date        *time.Time `json:"date"`
 	Published   *bool      `json:"published"`

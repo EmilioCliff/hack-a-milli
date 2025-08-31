@@ -55,14 +55,15 @@ func (q *Queries) CountNewsLetters(ctx context.Context, arg CountNewsLettersPara
 }
 
 const createNewsLetter = `-- name: CreateNewsLetter :one
-INSERT INTO news_letters (title, description, pdf_url, date, updated_by, created_by)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO news_letters (title, description, storage_path, pdf_url, date, updated_by, created_by)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 RETURNING id
 `
 
 type CreateNewsLetterParams struct {
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
+	StoragePath string    `json:"storage_path"`
 	PdfUrl      string    `json:"pdf_url"`
 	Date        time.Time `json:"date"`
 	UpdatedBy   int64     `json:"updated_by"`
@@ -73,6 +74,7 @@ func (q *Queries) CreateNewsLetter(ctx context.Context, arg CreateNewsLetterPara
 	row := q.db.QueryRow(ctx, createNewsLetter,
 		arg.Title,
 		arg.Description,
+		arg.StoragePath,
 		arg.PdfUrl,
 		arg.Date,
 		arg.UpdatedBy,
@@ -101,7 +103,7 @@ func (q *Queries) DeleteNewsLetter(ctx context.Context, arg DeleteNewsLetterPara
 }
 
 const getNewsLetter = `-- name: GetNewsLetter :one
-SELECT id, title, description, pdf_url, date, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at FROM news_letters
+SELECT id, title, description, storage_path, pdf_url, date, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at FROM news_letters
 WHERE id = $1
 `
 
@@ -112,6 +114,7 @@ func (q *Queries) GetNewsLetter(ctx context.Context, id int64) (NewsLetter, erro
 		&i.ID,
 		&i.Title,
 		&i.Description,
+		&i.StoragePath,
 		&i.PdfUrl,
 		&i.Date,
 		&i.Published,
@@ -127,7 +130,7 @@ func (q *Queries) GetNewsLetter(ctx context.Context, id int64) (NewsLetter, erro
 }
 
 const getPublishedNewsLetter = `-- name: GetPublishedNewsLetter :one
-SELECT id, title, description, pdf_url, date, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at FROM news_letters
+SELECT id, title, description, storage_path, pdf_url, date, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at FROM news_letters
 WHERE id = $1 AND published = TRUE AND deleted_at IS NULL
 `
 
@@ -138,6 +141,7 @@ func (q *Queries) GetPublishedNewsLetter(ctx context.Context, id int64) (NewsLet
 		&i.ID,
 		&i.Title,
 		&i.Description,
+		&i.StoragePath,
 		&i.PdfUrl,
 		&i.Date,
 		&i.Published,
@@ -153,7 +157,7 @@ func (q *Queries) GetPublishedNewsLetter(ctx context.Context, id int64) (NewsLet
 }
 
 const listNewsLetters = `-- name: ListNewsLetters :many
-SELECT id, title, description, pdf_url, date, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at FROM news_letters
+SELECT id, title, description, storage_path, pdf_url, date, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at FROM news_letters
 WHERE 
     deleted_at IS NULL
     AND (
@@ -206,6 +210,7 @@ func (q *Queries) ListNewsLetters(ctx context.Context, arg ListNewsLettersParams
 			&i.ID,
 			&i.Title,
 			&i.Description,
+			&i.StoragePath,
 			&i.PdfUrl,
 			&i.Date,
 			&i.Published,
@@ -227,13 +232,14 @@ func (q *Queries) ListNewsLetters(ctx context.Context, arg ListNewsLettersParams
 	return items, nil
 }
 
-const publishNewsLetter = `-- name: PublishNewsLetter :exec
+const publishNewsLetter = `-- name: PublishNewsLetter :one
 UPDATE news_letters
 SET published = TRUE,
     published_at = NOW(),
     updated_by = $1,
     updated_at = NOW()
 WHERE id = $2
+RETURNING id, title, description, storage_path, pdf_url, date, published, published_at, updated_by, created_by, deleted_by, deleted_at, updated_at, created_at
 `
 
 type PublishNewsLetterParams struct {
@@ -241,25 +247,44 @@ type PublishNewsLetterParams struct {
 	ID        int64 `json:"id"`
 }
 
-func (q *Queries) PublishNewsLetter(ctx context.Context, arg PublishNewsLetterParams) error {
-	_, err := q.db.Exec(ctx, publishNewsLetter, arg.UpdatedBy, arg.ID)
-	return err
+func (q *Queries) PublishNewsLetter(ctx context.Context, arg PublishNewsLetterParams) (NewsLetter, error) {
+	row := q.db.QueryRow(ctx, publishNewsLetter, arg.UpdatedBy, arg.ID)
+	var i NewsLetter
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Description,
+		&i.StoragePath,
+		&i.PdfUrl,
+		&i.Date,
+		&i.Published,
+		&i.PublishedAt,
+		&i.UpdatedBy,
+		&i.CreatedBy,
+		&i.DeletedBy,
+		&i.DeletedAt,
+		&i.UpdatedAt,
+		&i.CreatedAt,
+	)
+	return i, err
 }
 
 const updateNewsLetter = `-- name: UpdateNewsLetter :exec
 UPDATE news_letters
 SET title = COALESCE($1, title),
     description = COALESCE($2, description),
-    pdf_url = COALESCE($3, pdf_url),
-    date = COALESCE($4, date),
-    updated_by = $5,
+    storage_path = COALESCE($3, storage_path),
+    pdf_url = COALESCE($4, pdf_url),
+    date = COALESCE($5, date),
+    updated_by = $6,
     updated_at = NOW()
-WHERE id = $6
+WHERE id = $7
 `
 
 type UpdateNewsLetterParams struct {
 	Title       pgtype.Text        `json:"title"`
 	Description pgtype.Text        `json:"description"`
+	StoragePath pgtype.Text        `json:"storage_path"`
 	PdfUrl      pgtype.Text        `json:"pdf_url"`
 	Date        pgtype.Timestamptz `json:"date"`
 	UpdatedBy   int64              `json:"updated_by"`
@@ -270,10 +295,27 @@ func (q *Queries) UpdateNewsLetter(ctx context.Context, arg UpdateNewsLetterPara
 	_, err := q.db.Exec(ctx, updateNewsLetter,
 		arg.Title,
 		arg.Description,
+		arg.StoragePath,
 		arg.PdfUrl,
 		arg.Date,
 		arg.UpdatedBy,
 		arg.ID,
 	)
+	return err
+}
+
+const updateNewsLetterPdfUrl = `-- name: UpdateNewsLetterPdfUrl :exec
+UPDATE news_letters
+SET pdf_url = $2
+WHERE id = $1
+`
+
+type UpdateNewsLetterPdfUrlParams struct {
+	ID     int64  `json:"id"`
+	PdfUrl string `json:"pdf_url"`
+}
+
+func (q *Queries) UpdateNewsLetterPdfUrl(ctx context.Context, arg UpdateNewsLetterPdfUrlParams) error {
+	_, err := q.db.Exec(ctx, updateNewsLetterPdfUrl, arg.ID, arg.PdfUrl)
 	return err
 }

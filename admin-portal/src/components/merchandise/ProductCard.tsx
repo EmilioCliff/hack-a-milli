@@ -35,11 +35,13 @@ export default function ProductCard({ product }: ProductCardProps) {
 			>
 				{product.image_url.map((img, idx) => (
 					<SwiperSlide key={idx}>
-						<img
-							src={img}
-							alt={`${product.name}-${idx}`}
-							className="w-full h-56 object-cover rounded-t-2xl"
-						/>
+						<div className="bg-gradient-to-br from-kenic-teal to-kenic-teal-light">
+							<img
+								src={img}
+								alt={`${product.name}-${idx}`}
+								className="w-full h-56 object-cover rounded-t-2xl"
+							/>
+						</div>
 					</SwiperSlide>
 				))}
 			</Swiper>

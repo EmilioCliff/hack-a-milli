@@ -93,6 +93,13 @@ func (s *Server) getEventHandler(ctx *gin.Context) {
 		return
 	}
 
+	if publishedScope := ctx.GetHeader("X-Published-Only"); publishedScope == "true" {
+		if !event.Published {
+			ctx.JSON(http.StatusNotFound, errorResponse(pkg.Errorf(pkg.NOT_FOUND_ERROR, "Blog not found or not published")))
+			return
+		}
+	}
+
 	ctx.JSON(http.StatusOK, gin.H{"data": event})
 }
 
@@ -233,7 +240,6 @@ func (s *Server) listEventsHandler(ctx *gin.Context) {
 		"data":       data,
 		"pagination": pagination,
 	})
-
 }
 
 func (s *Server) listPublishedEventsHandler(ctx *gin.Context) {

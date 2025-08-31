@@ -10,6 +10,33 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Auction struct {
+	ID          int64          `json:"id"`
+	Domain      string         `json:"domain"`
+	Category    string         `json:"category"`
+	Description string         `json:"description"`
+	CurrentBid  pgtype.Numeric `json:"current_bid"`
+	StartPrice  pgtype.Numeric `json:"start_price"`
+	StartTime   time.Time      `json:"start_time"`
+	EndTime     time.Time      `json:"end_time"`
+	Watchers    int64          `json:"watchers"`
+	BidsCount   int64          `json:"bids_count"`
+	Status      string         `json:"status"`
+	CreatedBy   int64          `json:"created_by"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedBy   int64          `json:"updated_by"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+}
+
+type Bid struct {
+	ID             int64          `json:"id"`
+	UserID         int64          `json:"user_id"`
+	AuctionID      int64          `json:"auction_id"`
+	UserIdentifier string         `json:"user_identifier"`
+	Amount         pgtype.Numeric `json:"amount"`
+	CreatedAt      time.Time      `json:"created_at"`
+}
+
 type Blog struct {
 	ID          int64              `json:"id"`
 	Title       string             `json:"title"`
@@ -39,6 +66,14 @@ type CasbinRule struct {
 	V3    pgtype.Text `json:"v3"`
 	V4    pgtype.Text `json:"v4"`
 	V5    pgtype.Text `json:"v5"`
+}
+
+type CompanyDoc struct {
+	ID        int64              `json:"id"`
+	Title     string             `json:"title"`
+	Content   string             `json:"content"`
+	DeletedAt pgtype.Timestamptz `json:"deleted_at"`
+	CreatedAt time.Time          `json:"created_at"`
 }
 
 type Department struct {
@@ -132,6 +167,7 @@ type NewsLetter struct {
 	ID          int64              `json:"id"`
 	Title       string             `json:"title"`
 	Description string             `json:"description"`
+	StoragePath string             `json:"storage_path"`
 	PdfUrl      string             `json:"pdf_url"`
 	Date        time.Time          `json:"date"`
 	Published   bool               `json:"published"`
@@ -305,23 +341,33 @@ type Registrar struct {
 }
 
 type User struct {
-	ID                        int64       `json:"id"`
-	Email                     string      `json:"email"`
-	FullName                  string      `json:"full_name"`
-	PhoneNumber               string      `json:"phone_number"`
-	Address                   pgtype.Text `json:"address"`
-	PasswordHash              string      `json:"password_hash"`
-	Role                      []string    `json:"role"`
-	DepartmentID              pgtype.Int8 `json:"department_id"`
-	Active                    bool        `json:"active"`
-	AccountVerified           bool        `json:"account_verified"`
-	MultifactorAuthentication bool        `json:"multifactor_authentication"`
-	RefreshToken              string      `json:"refresh_token"`
-	AvatarUrl                 pgtype.Text `json:"avatar_url"`
-	UpdatedBy                 pgtype.Int8 `json:"updated_by"`
-	CreatedBy                 int64       `json:"created_by"`
-	UpdatedAt                 time.Time   `json:"updated_at"`
-	CreatedAt                 time.Time   `json:"created_at"`
+	ID                        int64              `json:"id"`
+	Email                     string             `json:"email"`
+	FullName                  string             `json:"full_name"`
+	PhoneNumber               string             `json:"phone_number"`
+	Address                   pgtype.Text        `json:"address"`
+	PasswordHash              string             `json:"password_hash"`
+	Role                      []string           `json:"role"`
+	DepartmentID              pgtype.Int8        `json:"department_id"`
+	Active                    bool               `json:"active"`
+	AccountVerified           bool               `json:"account_verified"`
+	MultifactorAuthentication bool               `json:"multifactor_authentication"`
+	RefreshToken              string             `json:"refresh_token"`
+	AvatarUrl                 pgtype.Text        `json:"avatar_url"`
+	LastLogin                 pgtype.Timestamptz `json:"last_login"`
+	UpdatedBy                 pgtype.Int8        `json:"updated_by"`
+	CreatedBy                 int64              `json:"created_by"`
+	UpdatedAt                 time.Time          `json:"updated_at"`
+	CreatedAt                 time.Time          `json:"created_at"`
+}
+
+type UserChat struct {
+	ID        int64              `json:"id"`
+	Title     string             `json:"title"`
+	UserID    int64              `json:"user_id"`
+	Messages  []byte             `json:"messages"`
+	DeletedAt pgtype.Timestamptz `json:"deleted_at"`
+	CreatedAt time.Time          `json:"created_at"`
 }
 
 type UserPreference struct {
@@ -332,4 +378,12 @@ type UserPreference struct {
 	NotifyPolicy   bool      `json:"notify_policy"`
 	UpdatedAt      time.Time `json:"updated_at"`
 	CreatedAt      time.Time `json:"created_at"`
+}
+
+type Watcher struct {
+	ID        int64     `json:"id"`
+	UserID    int64     `json:"user_id"`
+	AuctionID int64     `json:"auction_id"`
+	Status    string    `json:"status"`
+	CreatedAt time.Time `json:"created_at"`
 }

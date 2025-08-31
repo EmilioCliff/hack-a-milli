@@ -18,6 +18,13 @@ import Orders from './pages/Orders';
 import NewsLetters from './pages/NewsLetters';
 import NewsUpdates from './pages/NewsUpdates';
 import Blogs from './pages/Blogs';
+import Events from './pages/Events';
+import Departments from './pages/Departments';
+import RolesAndPermissions from './pages/RolesAndPermissions';
+import Documents from './pages/Documents';
+import DeviceManagement from './pages/DeviceManagement';
+import AuditLogs from './pages/AuditLogs';
+import RBACPage from './pages/RolesTest';
 
 const queryClient = new QueryClient();
 
@@ -35,8 +42,18 @@ const App = () => (
 						<Route path="/" element={<AppLayout />}>
 							<Route index element={<Index />} />
 							<Route path="users" element={<Users />} />
+							<Route
+								path="departments"
+								element={<Departments />}
+							/>
+							<Route
+								path="roles"
+								element={<RolesAndPermissions />}
+							/>
+							<Route path="test" element={<RBACPage />} />
 							<Route path="registrars" element={<Registrars />} />
 							<Route path="auctions" element={<Auctions />} />
+							<Route path="events" element={<Events />} />
 							<Route path="blogs" element={<Blogs />} />
 							<Route
 								path="news-updates"
@@ -59,6 +76,12 @@ const App = () => (
 								path="job-applications"
 								element={<JobApplications />}
 							/>
+							<Route path="documents" element={<Documents />} />
+							<Route
+								path="device-management"
+								element={<DeviceManagement />}
+							/>
+							<Route path="audit-logs" element={<AuditLogs />} />
 							<Route path="*" element={<NotFound />} />
 						</Route>
 					</Routes>

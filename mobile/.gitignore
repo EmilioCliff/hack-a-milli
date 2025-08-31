@@ -38,4 +38,9 @@ FirebaseConfig.js
 # typescript
 *.tsbuildinfo
 
+kenic-hack-a-milli-firebase-adminsdk-fbsvc-a9552f588a.json
+google-services.json
+GoogleService-Info.plist
 app-example
+/ios
+/android

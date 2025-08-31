@@ -31,11 +31,9 @@ const ChatInput: FC<chatInputProps> = ({
 				placeholder="Type your message"
 				className="border flex-1 border-gray-300 rounded-md h-full px-4 py-2"
 			/>
-			{/* <TouchableOpacity> */}
 			<Button onPress={sendMessageHandler} size="icon">
 				<Feather name="send" size={20} color="white" />
 			</Button>
-			{/* </TouchableOpacity> */}
 		</View>
 	);
 };

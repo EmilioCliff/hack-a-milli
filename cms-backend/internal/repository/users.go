@@ -29,19 +29,20 @@ type User struct {
 }
 
 type UpdateUser struct {
-	ID                        int64     `json:"id"`
-	UpdatedBy                 int64     `json:"updated_by"`
-	FullName                  *string   `json:"full_name"`
-	PhoneNumber               *string   `json:"phone_number"`
-	Address                   *string   `json:"address"`
-	PasswordHash              *string   `json:"password_hash"`
-	AvatarURL                 *string   `json:"avatar_url"`
-	RefreshToken              *string   `json:"refresh_token"`
-	AccountVerified           *bool     `json:"account_verified"`
-	Role                      *[]string `json:"role"`
-	DepartmentID              *int64    `json:"department_id"`
-	Active                    *bool     `json:"active"`
-	MultifactorAuthentication *bool     `json:"multifactor_authentication"`
+	ID                        int64      `json:"id"`
+	UpdatedBy                 int64      `json:"updated_by"`
+	FullName                  *string    `json:"full_name"`
+	PhoneNumber               *string    `json:"phone_number"`
+	Address                   *string    `json:"address"`
+	PasswordHash              *string    `json:"password_hash"`
+	AvatarURL                 *string    `json:"avatar_url"`
+	RefreshToken              *string    `json:"refresh_token"`
+	AccountVerified           *bool      `json:"account_verified"`
+	Role                      *[]string  `json:"role"`
+	DepartmentID              *int64     `json:"department_id"`
+	Active                    *bool      `json:"active"`
+	LastLogin                 *time.Time `json:"last_login"`
+	MultifactorAuthentication *bool      `json:"multifactor_authentication"`
 }
 
 type UserFilter struct {
@@ -65,6 +66,7 @@ type UserRepositort interface {
 
 	// User Internal Methods
 	GetUserInternal(ctx context.Context, email string) (*User, error)
+	GetUserByPhoneInternal(ctx context.Context, phone string) (*User, error)
 	UpdateUserCredentialsInternal(ctx context.Context, id int64, passwordHash string, refreshToken string) error
 
 	// User Preferences Methods
